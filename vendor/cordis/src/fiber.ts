@@ -143,8 +143,13 @@ function emitPluginDisposed(context: Context, fiber: Fiber) {
  * is running; `ACTIVE` — loaded and providing; `FAILED` — the callback or its
  * config threw; `UNLOADING` — disposers are running; `DISPOSED` — the fiber
  * was removed and cannot restart.
+ *
+ * A real (non-`const`) enum: bundlers that compile consuming sources in
+ * isolation cannot inline a `const enum` across packages, so a `const enum`
+ * would force every consumer to inline at TypeScript-compile time to obtain
+ * these members.
  */
-export const enum FiberState {
+export enum FiberState {
   PENDING,
   LOADING,
   ACTIVE,

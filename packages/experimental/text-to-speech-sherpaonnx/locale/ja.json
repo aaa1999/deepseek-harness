@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "ローカル vits-melo 音声合成",
+    "description": "vits-melo でテキストをローカルに音声合成します。"
+  }
+}

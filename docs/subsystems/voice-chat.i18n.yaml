@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for voice-chat.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/voice-chat.md
+/voice-chat:
+  en: 722745519237b6ba
+  zh: 2ebf6d8f8a8a5c69
+/voice-chat/synthesis-chain:
+  en: 5e7eabd696be5d4a
+  zh: 885b3243e319d31f
+/voice-chat/conversation-loop:
+  en: 624964f0177e33c3
+  zh: efaa3c6f5b093a18
+/voice-chat/bundle:
+  en: 8f360750d6d28767
+  zh: 4a5fd437c8812c12
+/voice-chat/design-rationale:
+  en: a0ca9a8145a4394d
+  zh: 5c69593f16e0bea0

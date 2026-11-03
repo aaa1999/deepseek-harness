@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "API de synthèse vocale",
+    "description": "Expose la synthèse vocale aux clients navigateurs."
+  }
+}

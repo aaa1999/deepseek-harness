@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/voice-chat-bundle/README.md
+/:
+  en: c0a92c59908e7248
+  zh: 30edc6d965f7a113
+/deepseek-ai-dsh-experimental-voice-chat-bundle:
+  en: 5fb6cba0b1e636fc
+  zh: c56c4102949aaa92
+/deepseek-ai-dsh-experimental-voice-chat-bundle/summary:
+  en: a9546cb998bd99f6
+  zh: 6ee11b786f4b69a0
+/deepseek-ai-dsh-experimental-voice-chat-bundle/use-this-package:
+  en: 7c1818741e4e158f
+  zh: f304d9f292555f94
+/deepseek-ai-dsh-experimental-voice-chat-bundle/known-limitations:
+  en: bfb94eabf1c095b4
+  zh: 36d458a0f63c55e9

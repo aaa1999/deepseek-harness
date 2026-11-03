@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "语音通话",
+    "description": "用本地 SenseVoice 识别和 vits-melo 合成进行实时语音对话，首次使用需下载模型。",
+    "detail": "docs/DETAIL.zh.md"
+  }
+}

@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for 2026-11-01-realtime-voice-chat.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-11-01-realtime-voice-chat.md
+/agent-note-realtime-voice-chat-spoken-turns:
+  en: 8be6e7919af58188
+  zh: aec0c87a21f1c5e3
+/agent-note-realtime-voice-chat-spoken-turns/problem:
+  en: 80b1a1b57e14789f
+  zh: cb34f65919096d63
+/agent-note-realtime-voice-chat-spoken-turns/current-state:
+  en: 7ed9b30357d28d62
+  zh: 5a03e38158996001
+/agent-note-realtime-voice-chat-spoken-turns/proposal:
+  en: 44637bbe5caa1d38
+  zh: 197534b203863a0d
+/agent-note-realtime-voice-chat-spoken-turns/proposal/phase-1-closed-loop-default-goal:
+  en: 27aca5a1aab1542d
+  zh: 46fe727d7c6659ca
+/agent-note-realtime-voice-chat-spoken-turns/proposal/phase-2-word-level-streaming-later:
+  en: a67904ab92c131c0
+  zh: a2aa6055956cfd72
+/agent-note-realtime-voice-chat-spoken-turns/key-design-decisions:
+  en: 8051d29e9b17d449
+  zh: c0ba2123179a8abd
+/agent-note-realtime-voice-chat-spoken-turns/package-layout-new-all-under-packages-experimental:
+  en: c9af25fd602e4453
+  zh: 268c4e5eb2d506d3
+/agent-note-realtime-voice-chat-spoken-turns/plan:
+  en: b9fd6a0b9e6888d6
+  zh: 6a00503450f5c231
+/agent-note-realtime-voice-chat-spoken-turns/acceptance-criteria:
+  en: e5376f2779471723
+  zh: 0871092acd6a8dc6
+/agent-note-realtime-voice-chat-spoken-turns/risks-and-open-questions:
+  en: d9e57d26649303c8
+  zh: 4e6cf6b85581b8cd

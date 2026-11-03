@@ -37,6 +37,7 @@
     "apps/web/tests/scaffold.ts",
     "apps/web/tests/clock.e2e.ts",
     "apps/web/tests/voice-input.e2e.ts",
+    "apps/web/tests/voice-chat.e2e.ts",
     "apps/web/tests/cot-translation.e2e.ts",
     "apps/web/tests/cot-translation-paid.e2e.ts",
     "apps/web/tests/forge-panel.e2e.ts",
@@ -290,6 +291,10 @@
     { "path": "./packages/experimental/speech-to-text-sensevoice" },
     { "path": "./packages/experimental/api-speech-to-text" },
     { "path": "./packages/experimental/voice-input-bundle" },
+    { "path": "./packages/experimental/text-to-speech" },
+    { "path": "./packages/experimental/text-to-speech-sherpaonnx" },
+    { "path": "./packages/experimental/api-text-to-speech" },
+    { "path": "./packages/experimental/voice-chat-bundle" },
     { "path": "./packages/experimental/plugin-market-bundle" },
     { "path": "./packages/client/locale/tsconfig.host.json" },
     { "path": "./packages/client/ui-theme/tsconfig.host.json" },
@@ -591,6 +596,7 @@
     { "path": "./apps/cli" },
     { "path": "./apps/plugin-market-generator" },
     { "path": "./apps/desktop-host" },
-    { "path": "./apps/desktop/tsconfig.host.json" }
+    { "path": "./apps/desktop/tsconfig.host.json" },
+    { "path": "./packages/session-node/session-node" }
   ]
 }

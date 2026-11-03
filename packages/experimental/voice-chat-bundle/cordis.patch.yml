@@ -1,0 +1,23 @@
+- insert:
+    - id: speech-to-text
+      name: '@deepseek-ai/dsh-experimental-speech-to-text'
+      config:
+        defaultProvider: sensevoice-local
+    - id: speech-to-text-sensevoice
+      name: '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice'
+      config:
+        dataRoot: !!js dshHomePath('speech-to-text', 'sensevoice')
+    - id: api-speech-to-text
+      name: '@deepseek-ai/dsh-experimental-api-speech-to-text'
+    - id: text-to-speech
+      name: '@deepseek-ai/dsh-experimental-text-to-speech'
+      config:
+        defaultProvider: vits-melo-local
+    - id: text-to-speech-sherpaonnx
+      name: '@deepseek-ai/dsh-experimental-text-to-speech-sherpaonnx'
+      config:
+        dataRoot: !!js dshHomePath('text-to-speech', 'vits-melo')
+    - id: api-text-to-speech
+      name: '@deepseek-ai/dsh-experimental-api-text-to-speech'
+    - id: ui-voice-chat
+      name: '@deepseek-ai/dsh-experimental-client-ui-voice-chat'

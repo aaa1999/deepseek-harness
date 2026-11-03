@@ -1,0 +1,199 @@
+/* session-node surfaces: the per-turn pin, the New Session picker chip, and
+   the composer dock strip. Every color, radius, and control size comes from
+   the host token families so the plugin reads as native chrome. */
+
+/* --- Icon action: geometry mirrors ui-chat's MessageIconActions .action, so
+   the pin sits as a sibling of copy/branch inside the same hover row. --- */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(28px + var(--dsh-content-font-delta, 0px));
+  height: calc(28px + var(--dsh-content-font-delta, 0px));
+  padding: 6px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.action svg {
+  width: calc(15px + var(--dsh-content-font-delta, 0px));
+  height: calc(15px + var(--dsh-content-font-delta, 0px));
+}
+
+.action:focus-visible {
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .action:not(:disabled):hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+    color: var(--dsw-alias-label-secondary);
+  }
+}
+
+.action:disabled {
+  cursor: default;
+  color: var(--dsw-alias-label-quaternary);
+}
+
+/* Destructive action (dock delete): the resting glyph stays a quiet tertiary
+   icon like its siblings; the error tint joins only the danger hover. */
+@media (hover: hover) {
+  .actionDanger:not(:disabled):hover {
+    background: var(--dsw-alias-interactive-bg-hover-danger);
+    color: var(--dsw-alias-state-error-primary);
+  }
+}
+
+/* --- Seat chip: mirrors ui-agent-preset's AgentPresetSeat .seat so the
+   picker reads as a third citizen of the New Session row. --- */
+.seat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seat svg {
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.seat[aria-expanded='true'] {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.seat:focus-visible {
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .seat:not(:disabled):hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.seat:disabled {
+  cursor: default;
+  color: var(--dsw-alias-label-quaternary);
+}
+
+.seatLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The Menu anchor wrapper; the explicit floor keeps the glyphs from crushing
+   once the label has ellipsized away (mirrors the preset seat). */
+.menuAnchor {
+  min-width: 54px;
+  max-width: 100%;
+}
+
+/* --- Menu item content: stacked name and description (preset menu rows). */
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 280px;
+}
+
+.itemName {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemDesc {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Dock strip above the composer card. */
+.dock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 10px;
+  font-size: 13px;
+}
+
+.dockMark {
+  flex: none;
+  display: inline-flex;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dockMark svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* The title grows toward its Save button so the pair reads as one create
+   group, clearly clear of the message action column above. */
+.dockTitle {
+  flex: 1 1 180px;
+  max-width: 440px;
+  min-width: 80px;
+  padding: 2px 6px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.dockTitle::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.dockTitle:focus-visible {
+  outline-offset: -2px;
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* The node-addressing cluster pins to the strip's right edge, keeping the
+   dead width between the two groups instead of around the Save button. The
+   auto margin sits on the Menu's anchor wrapper — the actual flex item. */
+.dockAnchor {
+  margin-left: auto;
+}
+
+.dockChip {
+  max-width: 240px;
+}
+
+.dockError {
+  flex: none;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-state-error-primary);
+}
