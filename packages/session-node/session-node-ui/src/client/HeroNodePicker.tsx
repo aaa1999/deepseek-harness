@@ -1,9 +1,9 @@
 /**
  * HeroNodePicker: the New Session row chip that forks the staged session
  * from a saved node of the picked workspace. Picking a node in the menu is
- * the whole action: the fork opens the child session immediately. Nodes
- * saved without a resolved workspace never appear here, so the chip never
- * mixes projects.
+ * the whole action: the fork opens the child session immediately. Nodes of
+ * other workspaces never appear; nodes saved without a resolved workspace
+ * appear only while the staged session has no workspace either.
  */
 
 import { useEffect, useState } from 'react'
@@ -14,6 +14,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionNode, SessionNodeId } from 'dsh-session-node/client'
 import type { HeroNodePickerInjected } from './slots.ts'
+import { nodesInWorkspaceScope } from './node-scope.ts'
 import css from './SessionNodes.module.css'
 
 /** Full props of the hero-options entry: runtime share, copy, and the list/fork verbs. */
@@ -40,9 +41,7 @@ export function HeroNodePicker({ list, fork, t, sessionId, useWorkspaces }: Hero
   }, [list])
 
   if (nodes === null && error === null) return null
-  const visible = workspaceId === undefined
-    ? (nodes ?? []).filter(node => node.workspaceId === undefined)
-    : (nodes ?? []).filter(node => node.workspaceId === workspaceId)
+  const visible = nodesInWorkspaceScope(nodes ?? [], workspaceId)
   if (visible.length === 0) return null
 
   const pick = (nodeId: SessionNodeId): void => {
@@ -51,7 +50,7 @@ export function HeroNodePicker({ list, fork, t, sessionId, useWorkspaces }: Hero
     setError(null)
     void fork(nodeId).then((result) => {
       setBusy(false)
-      if (!result.ok && result.error !== undefined) setError(result.error.message)
+      if (!result.ok) setError(result.error.message)
     })
   }
 

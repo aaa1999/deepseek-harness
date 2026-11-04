@@ -3,25 +3,32 @@
  * half names and saves the current session's node; the right half addresses
  * one saved node through a chip menu and forks or deletes it. State is the
  * global node registry (not a session projection), so every verb arrives
- * through the injected face bound to the current session.
+ * through the injected face bound to the current session. The chip menu
+ * scopes to this session's workspace: nodes of other workspaces never
+ * appear, and nodes saved without a resolved workspace appear only while
+ * this session has no workspace either.
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { GlobalStandardProps, InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import {
   Button, IconBranchOutlineRegular, IconChevronDownOutlineRegular, IconPinOutlineRegular,
   IconTrashOutlineRegular, Menu, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionNode, SessionNodeId } from 'dsh-session-node/client'
 import type { SessionNodeDockActions } from './slots.ts'
+import { nodesInWorkspaceScope } from './node-scope.ts'
 import css from './SessionNodes.module.css'
 
-/** Full props of the dock entry: runtime share, copy, and injected verbs. */
-export type SessionNodeDockProps = PropsRuntime<'conversation.input.dock'>
+/** Full props of the dock entry: the session identity, copy, and injected verbs. */
+export type SessionNodeDockProps = Pick<PropsRuntime<'conversation.input.dock'>, 'sessionId'>
   & PropsLocale<'sessionNodes'>
   & InjectFace<SessionNodeDockActions>
+  & Pick<GlobalStandardProps, 'useWorkspaces'>
 
-export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }: SessionNodeDockProps) {
+export function SessionNodeDock({
+  save, list, fork, remove, useNodeRevision, t, sessionId, useWorkspaces,
+}: SessionNodeDockProps) {
   const [nodes, setNodes] = useState<SessionNode[]>([])
   const [selected, setSelected] = useState<SessionNodeId | null>(null)
   const [title, setTitle] = useState('')
@@ -30,14 +37,13 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
   const [error, setError] = useState<string | null>(null)
   // Registry revision: a per-turn pin save elsewhere in the tree bumps it.
   const revision = useNodeRevision(value => value)
+  const workspaceId = useWorkspaces(state =>
+    state.items.find(workspace => workspace.sessionIds.includes(sessionId))?.workspaceId)
 
   const refresh = useCallback(async () => {
     const result = await list()
     if (!result.ok) { setError(result.error.message); return }
     setNodes(result.value)
-    setSelected(current => current !== null && result.value.some(node => node.id === current)
-      ? current
-      : result.value[0]?.id ?? null)
   }, [list])
 
   useEffect(() => { void refresh() }, [refresh, revision])
@@ -57,18 +63,22 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
     if (ok) setTitle('')
   }, [run, save, title])
 
+  const visible = nodesInWorkspaceScope(nodes, workspaceId)
+  // Effective selection: the user's pick while it stays in scope, else the first scoped node.
+  const selectedInScope = visible.some(node => node.id === selected) ? selected : visible[0]?.id ?? null
+
   const handleFork = useCallback(async () => {
-    if (selected === null) return
-    await run(() => fork(selected))
-  }, [run, fork, selected])
+    if (selectedInScope === null) return
+    await run(() => fork(selectedInScope))
+  }, [run, fork, selectedInScope])
 
   const handleRemove = useCallback(async () => {
-    if (selected === null) return
-    const ok = await run(() => remove(selected))
+    if (selectedInScope === null) return
+    const ok = await run(() => remove(selectedInScope))
     if (ok) setSelected(null)
-  }, [run, remove, selected])
+  }, [run, remove, selectedInScope])
 
-  const current = nodes.find(node => node.id === selected)
+  const current = visible.find(node => node.id === selectedInScope)
 
   return (
     <div className={css.dock} data-session-node-dock>
@@ -76,7 +86,7 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
       <input
         className={css.dockTitle}
         value={title}
-        onChange={event => setTitle(event.target.value)}
+        onChange={(event) => { setTitle(event.target.value) }}
         placeholder={t('dock.titlePlaceholder')}
         aria-label={t('dock.titlePlaceholder')}
         disabled={busy}
@@ -87,7 +97,7 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
       <Menu
         open={open && !busy}
         onClose={() => { setOpen(false) }}
-        items={nodes.map(node => ({
+        items={visible.map(node => ({
           id: node.id,
           label: (
             <span className={css.item}>
@@ -96,7 +106,7 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
             </span>
           ),
         }))}
-        selectedId={selected ?? undefined}
+        selectedId={selectedInScope ?? undefined}
         onSelect={(id) => { setSelected(id as SessionNodeId); setOpen(false) }}
         align="end"
         portal
@@ -108,7 +118,7 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
             aria-haspopup="menu"
             aria-expanded={open}
             aria-label={t('dock.nodesLabel')}
-            disabled={busy || nodes.length === 0}
+            disabled={busy || visible.length === 0}
             onClick={() => { setOpen(current => !current) }}
           >
             <span className={css.seatLabel}>
@@ -123,7 +133,7 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
           type="button"
           className={css.action}
           aria-label={t('dock.fork')}
-          disabled={busy || selected === null}
+          disabled={busy || selectedInScope === null}
           onClick={() => { void handleFork() }}
         >
           <IconBranchOutlineRegular />
@@ -134,7 +144,7 @@ export function SessionNodeDock({ save, list, fork, remove, useNodeRevision, t }
           type="button"
           className={`${css.action} ${css.actionDanger}`}
           aria-label={t('dock.delete')}
-          disabled={busy || selected === null}
+          disabled={busy || selectedInScope === null}
           onClick={() => { void handleRemove() }}
         >
           <IconTrashOutlineRegular />

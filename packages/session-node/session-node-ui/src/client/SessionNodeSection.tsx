@@ -4,18 +4,22 @@
  * row toggles the registry list; clicking a row forks a new session from that
  * node, and the row's hover actions rename it (an inline editor, saved on
  * Enter) or delete it. Rail state renders the section glyph as one expand
- * control.
+ * control. The list scopes to the current (main-view) session's workspace:
+ * nodes of other workspaces never appear, and nodes saved without a resolved
+ * workspace appear only while no session is open or a global panel covers
+ * the conversation.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import clsx from 'clsx'
-import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { GlobalStandardProps, InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import {
   IconEditOutlineRegular, IconPinOutlineRegular, IconTrashOutlineRegular,
   IconTriangleRightFillRegular, InlineEditor, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionNode, SessionNodeId } from 'dsh-session-node/client'
 import type { SessionNodeSectionInjected } from './slots.ts'
+import { nodesInWorkspaceScope } from './node-scope.ts'
 import css from './SessionNodes.module.css'
 
 /** Owner share of the `sidebar.sections` hole: the sidebar's column state. */
@@ -30,9 +34,11 @@ interface SectionOwnerProps {
 export type SessionNodeSectionProps = SectionOwnerProps
   & PropsLocale<'sessionNodes'>
   & InjectFace<SessionNodeSectionInjected>
+  & Pick<GlobalStandardProps, 'useSessions' | 'useWorkspaces' | 'usePanelInfo'>
 
 export function SessionNodeSection({
   wide, expandSidebar, list, rename, fork, remove, useNodeRevision, t,
+  useSessions, useWorkspaces, usePanelInfo,
 }: SessionNodeSectionProps) {
   const [nodes, setNodes] = useState<SessionNode[] | null>(null)
   const [expanded, setExpanded] = useState(false)
@@ -41,6 +47,17 @@ export function SessionNodeSection({
   const [error, setError] = useState<string | null>(null)
   // Registry revision: a save, rename, or delete elsewhere in the tree bumps it.
   const revision = useNodeRevision(value => value)
+  // Workspace context: the main-view session's workspace, undefined while a
+  // global panel is open or nothing is retained — which scopes the list to
+  // workspace-less nodes alone.
+  const panelActive = usePanelInfo(info => info.activePanelId !== null)
+  const currentSessionId = useSessions(state => panelActive
+    ? undefined
+    : Object.values(state.byId).find(session => (session.retainedBy.mainView ?? 0) > 0)?.id)
+  const workspaceId = useWorkspaces(state => currentSessionId === undefined
+    ? undefined
+    : state.items.find(workspace => workspace.sessionIds.includes(currentSessionId))?.workspaceId)
+  const visible = nodesInWorkspaceScope(nodes ?? [], workspaceId)
 
   const refresh = useCallback(async () => {
     const result = await list()
@@ -109,10 +126,10 @@ export function SessionNodeSection({
       {expanded && (
         <div className={css.sectionList}>
           {error !== null && <span role="alert" className={css.sectionError}>{error}</span>}
-          {nodes !== null && nodes.length === 0 && error === null && (
+          {nodes !== null && visible.length === 0 && error === null && (
             <div className={css.sectionEmpty}>{t('section.empty')}</div>
           )}
-          {nodes?.map(node => (
+          {visible.map(node => (
             editing?.id === node.id ? (
               <InlineEditor
                 key={node.id}

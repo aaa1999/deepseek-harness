@@ -10,6 +10,7 @@
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 
 /** Identifies one saved session history node. */
 export type SessionNodeId = Branded<'SessionNodeId'>
@@ -26,7 +27,7 @@ export interface SessionNode {
   /** Inclusive event seq boundary of the saved prefix. */
   readonly atSeq: number
   /** Workspace (project) id the source session belongs to, when resolved. */
-  readonly workspaceId?: string
+  readonly workspaceId?: WorkspaceId
   /** Human label. */
   readonly title: string
   /** Optional free-form note. */

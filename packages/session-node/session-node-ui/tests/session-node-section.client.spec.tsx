@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-/** SessionNodeSection behavior: header toggle, row fork, inline rename, delete, empty/error states, and the rail control. */
+/** SessionNodeSection behavior: toggle, fork, rename, delete, workspace scoping, empty/error states, and the rail control. */
 
 import { useSyncExternalStore } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import { makeTranslate, workspaceSnapshot } from '@deepseek-ai/dsh-client-test-runtime'
+import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SessionNode, SessionNodeId } from 'dsh-session-node/client'
@@ -14,6 +16,7 @@ import { SessionNodeSection } from '../src/client/SessionNodeSection.tsx'
 import { en } from '../src/client/locales.ts'
 
 const t = makeTranslate(en)
+const CURRENT = brandString<SessionId>('session-current')
 
 /** A registry-revision observable the section's hook share reads through React's subscription. */
 function revisionSource() {
@@ -34,11 +37,12 @@ function revisionSource() {
   }
 }
 
-function node(id: string, title: string): SessionNode {
+function node(id: string, title: string, workspaceId?: string): SessionNode {
   return {
     id: brandString<SessionNodeId>(id),
     sessionId: brandString<SessionId>('session-one'),
     atSeq: 2,
+    ...(workspaceId === undefined ? {} : { workspaceId: brandString<WorkspaceId>(workspaceId) }),
     title,
     createdAt: 0,
   }
@@ -71,10 +75,65 @@ function registry(initial: SessionNode[]) {
   return { verbs, source }
 }
 
+type SessionsSnapshot = Parameters<Parameters<GlobalStandardProps['useSessions']>[0]>[0]
+type PanelInfoSnapshot = Parameters<Parameters<GlobalStandardProps['usePanelInfo']>[0]>[0]
+
+/**
+ * Root-scope workspace context: the main-view session's workspace, mirroring
+ * the derivation the sidebar's own surfaces use. `currentSessionId` omitted
+ * (or `panelActive`) models no open conversation.
+ */
+function scopeHooks({
+  currentSessionId, panelActive = false, workspaceId,
+}: { currentSessionId?: SessionId; panelActive?: boolean; workspaceId?: string } = {}) {
+  const sessions: SessionsSnapshot = currentSessionId === undefined
+    ? { ids: [], byId: {}, phase: 'ready', projectionsBySession: {} }
+    : {
+      ids: [currentSessionId],
+      byId: {
+        [currentSessionId]: {
+          id: currentSessionId,
+          displayTitle: 'current',
+          running: false,
+          blank: false,
+          updatedAt: 0,
+          retainedBy: { mainView: 1 },
+        },
+      },
+      phase: 'ready',
+      projectionsBySession: {},
+    }
+  const workspaces = {
+    ...workspaceSnapshot(),
+    items: currentSessionId === undefined || workspaceId === undefined
+      ? []
+      : [{
+        workspaceId: brandString<WorkspaceId>(workspaceId),
+        path: '/tmp/current',
+        title: 'Current',
+        sessionIds: [currentSessionId],
+        createdAt: '',
+        updatedAt: '',
+      }],
+  }
+  const panelInfo: PanelInfoSnapshot = {
+    activePanelId: panelActive ? brandString<NonNullable<PanelInfoSnapshot['activePanelId']>>('settings') : null,
+  }
+  const useSessions: GlobalStandardProps['useSessions'] = selector => selector(sessions)
+  const useWorkspaces: GlobalStandardProps['useWorkspaces'] = selector => selector(workspaces)
+  const usePanelInfo: GlobalStandardProps['usePanelInfo'] = selector => selector(panelInfo)
+  return { useSessions, useWorkspaces, usePanelInfo }
+}
+
 function mount(verbs: ReturnType<typeof registry>['verbs'], source: ReturnType<typeof revisionSource>, {
   wide = true,
   expandSidebar = vi.fn(() => {}),
-}: { wide?: boolean; expandSidebar?: () => void } = {}) {
+  scope = scopeHooks(),
+}: {
+  wide?: boolean
+  expandSidebar?: () => void
+  scope?: ReturnType<typeof scopeHooks>
+} = {}) {
   return {
     expandSidebar,
     view: render(
@@ -87,6 +146,9 @@ function mount(verbs: ReturnType<typeof registry>['verbs'], source: ReturnType<t
         remove={verbs.remove}
         rename={verbs.rename}
         useNodeRevision={source.useNodeRevision}
+        useSessions={scope.useSessions}
+        useWorkspaces={scope.useWorkspaces}
+        usePanelInfo={scope.usePanelInfo}
       />,
     ),
   }
@@ -103,6 +165,36 @@ describe('SessionNodeSection', () => {
     expect(screen.getByRole('button', { name: 'Second cut' })).toBeTruthy()
     fireEvent.click(first)
     await waitFor(() => { expect(verbs.fork).toHaveBeenCalledWith(brandString<SessionNodeId>('node-one')) })
+  })
+
+  it('scopes the list to the main-view session\'s workspace', async () => {
+    const { verbs, source } = registry([
+      node('node-other', 'Theirs', 'ws-two'),
+      node('node-mine', 'Mine', 'ws-one'),
+      node('node-loose', 'Loose'),
+    ])
+    mount(verbs, source, { scope: scopeHooks({ currentSessionId: CURRENT, workspaceId: 'ws-one' }) })
+    fireEvent.click(screen.getByRole('button', { name: 'Saved nodes' }))
+    expect(await screen.findByRole('button', { name: 'Mine' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Theirs' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Loose' })).toBeNull()
+  })
+
+  it('shows only workspace-less nodes while no session is open or a panel covers the conversation', async () => {
+    const { verbs, source } = registry([
+      node('node-mine', 'Mine', 'ws-one'),
+      node('node-loose', 'Loose'),
+    ])
+    const noSession = mount(verbs, source, { scope: scopeHooks() })
+    fireEvent.click(screen.getByRole('button', { name: 'Saved nodes' }))
+    expect(await screen.findByRole('button', { name: 'Loose' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull()
+    noSession.view.unmount()
+
+    mount(verbs, source, { scope: scopeHooks({ currentSessionId: CURRENT, workspaceId: 'ws-one', panelActive: true }) })
+    fireEvent.click(screen.getByRole('button', { name: 'Saved nodes' }))
+    expect(await screen.findByRole('button', { name: 'Loose' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull()
   })
 
   it('renames a node through the inline editor', async () => {

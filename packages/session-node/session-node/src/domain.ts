@@ -13,17 +13,21 @@
 import { z } from 'zod'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import type { SessionNodeId } from './types.ts'
 
 const nodeIdSchema = z.string().transform(value => value as SessionNodeId)
 const sessionIdSchema = z.string().transform(value => brandString<SessionId>(value))
 
+/** Workspace id schema at the durable boundary; branding has no runtime representation. */
+const workspaceIdSchema = z.string().transform(value => brandString<WorkspaceId>(value))
+
 /** Durable shape of one saved node record. */
 export const sessionNodeRecord = z.object({
   sessionId: sessionIdSchema,
   atSeq: z.number().int().nonnegative(),
-  workspaceId: z.string().optional(),
+  workspaceId: workspaceIdSchema.optional(),
   title: z.string(),
   note: z.string().optional(),
   createdAt: z.number(),

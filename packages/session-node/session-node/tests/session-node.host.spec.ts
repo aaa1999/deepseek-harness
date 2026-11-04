@@ -1,4 +1,4 @@
-/** SessionNodeService behavior over the durable domain: save, rename, remove, and list. */
+/** SessionNodeService behavior over the durable domain: save, rename, remove, list, and workspace capture. */
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -6,6 +6,7 @@ import Storage from '@deepseek-ai/dsh-storage'
 import { DomainFacility } from '@deepseek-ai/dsh-storage-domain'
 import { SessionId, SessionLogOffset, SessionSeq, SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
+import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import type { SessionObservation } from '@deepseek-ai/dsh-session-query'
 import SessionNodeService from '../src/index.ts'
 import { SessionNodeError } from '../src/runtime.ts'
@@ -47,8 +48,13 @@ function observation(sessionId: SessionId): SessionObservation {
   return cut
 }
 
-/** Mount the service over an in-memory storage domain with stubbed peers. */
-async function harness(): Promise<{ service: import('../src/index.ts').SessionNodeService; ctx: Context }> {
+/**
+ * Mount the service over an in-memory storage domain with stubbed peers.
+ * @param workspaceRegistry - the registry face save consults for the session's workspace; defaults to resolving none.
+ */
+async function harness(
+  workspaceRegistry: object = { list: () => [], resolveByPath: () => undefined },
+): Promise<{ service: import('../src/index.ts').SessionNodeService; ctx: Context }> {
   const ctx = new Context()
   roots.push(ctx)
   await ctx.plugin(Storage)
@@ -58,7 +64,7 @@ async function harness(): Promise<{ service: import('../src/index.ts').SessionNo
   ctx.provide('storageDomain', storageDomain)
   ctx.provide('agents', {} as never)
   ctx.provide('sessionQuery', { observeSession: async (id: SessionId) => observation(id) } as never)
-  ctx.provide('workspaceRegistry', { list: () => [], resolveByPath: () => undefined } as never)
+  ctx.provide('workspaceRegistry', workspaceRegistry as never)
   await ctx.plugin(SessionNodeService)
   return { service: ctx.sessionNodes, ctx }
 }
@@ -71,6 +77,24 @@ async function savedNode(service: Service, title: string) {
 }
 
 describe('SessionNodeService', () => {
+  it('captures the workspace owning the source session and projects it through list', async () => {
+    const workspace = {
+      id: WorkspaceId('ws-one'),
+      sessionIds: [SessionId('session-spec')],
+      attachSession: async () => {},
+    }
+    const { service } = await harness({ list: () => [workspace] })
+    const node = await savedNode(service, 'cut')
+    expect(node.workspaceId).toBe(WorkspaceId('ws-one'))
+    expect(service.list()[0]?.workspaceId).toBe(WorkspaceId('ws-one'))
+  })
+
+  it('saves without a workspace while the registry resolves none', async () => {
+    const { service } = await harness()
+    const node = await savedNode(service, 'loose')
+    expect(node.workspaceId).toBeUndefined()
+  })
+
   it('renames a saved node and serves the new title from the cache', async () => {
     const { service } = await harness()
     const node = await savedNode(service, 'before')
