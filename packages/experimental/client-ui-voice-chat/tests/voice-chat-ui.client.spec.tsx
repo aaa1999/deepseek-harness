@@ -2,7 +2,7 @@
 /** Call toggle and status row rendering and interactions. */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import { bindSnapshotSelector, makeTranslate, sessionSnapshot } from '@deepseek-ai/dsh-client-test-runtime'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
@@ -36,24 +36,27 @@ function usableReadiness(usable = true) {
 
 function toggleFixture(state: VoiceChatState, readiness = usableReadiness()) {
   const begin = vi.fn(async () => {}), end = vi.fn(async () => {}), openSettings = vi.fn()
-  const props: VoiceChatToggleProps = { sessionId, inputActions, begin, end, openSettings,
+  const retry = vi.fn(), noteRunning = vi.fn(), noteEntries = vi.fn(() => () => {}), updateLevel = vi.fn()
+  const props: VoiceChatToggleProps = { sessionId, inputActions, begin, end, openSettings, retry, noteRunning, noteEntries, updateLevel,
     useVoiceChat: bindSnapshotSelector(createSnapshotStore(state)),
     useReadiness: bindSnapshotSelector(readiness),
     t: makeTranslate(zh, commonZh) }
   const view = render(<VoiceChatToggle {...props} />)
-  return { props, begin, end, openSettings, view }
+  return { props, begin, end, openSettings, retry, noteRunning, noteEntries, updateLevel, view }
 }
 
-function statusFixture(state: VoiceChatState) {
-  const end = vi.fn(async () => {}), retry = vi.fn(), noteRunning = vi.fn(), noteEntries = vi.fn(() => () => {}), updateLevel = vi.fn()
-  const session = createSnapshotStore({ running: false, sessionId })
+function statusFixture(state: VoiceChatState, readiness = usableReadiness()) {
+  const begin = vi.fn(async () => {}), end = vi.fn(async () => {}), openSettings = vi.fn()
+  const retry = vi.fn(), noteRunning = vi.fn(), noteEntries = vi.fn(() => () => {}), updateLevel = vi.fn()
+  const session = createSnapshotStore(sessionSnapshot(sessionId))
   const props: VoiceChatStatusProps = { sessionId,
     useSession: bindSnapshotSelector(session),
-    end, retry, noteRunning, noteEntries, updateLevel,
+    useReadiness: bindSnapshotSelector(readiness),
+    begin, end, openSettings, retry, noteRunning, noteEntries, updateLevel,
     useVoiceChat: bindSnapshotSelector(createSnapshotStore(state)),
     t: makeTranslate(zh, commonZh) }
   const view = render(<VoiceChatStatus {...props} />)
-  return { props, end, retry, noteRunning, noteEntries, updateLevel, session, view }
+  return { props, begin, end, openSettings, retry, noteRunning, noteEntries, updateLevel, session, view }
 }
 
 it('starts a call when both providers are prepared', async () => {
@@ -97,7 +100,7 @@ it('shows the failure with a retry control and forwards running changes', async 
   expect(screen.getByRole('status').textContent).toContain('offline synthesizer')
   fireEvent.click(screen.getByRole('button', { name: zh.retry }))
   expect(b.retry).toHaveBeenCalledOnce()
-  b.session.set({ running: true, sessionId })
+  b.session.set({ ...sessionSnapshot(sessionId), running: true })
   await vi.waitFor(() => { expect(b.noteRunning).toHaveBeenLastCalledWith(true) })
   b.view.unmount()
 })
