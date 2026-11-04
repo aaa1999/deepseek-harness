@@ -5,7 +5,8 @@
  *
  * The service is a plain Cordis `Service` exposed as `ctx.sessionNodes`; the
  * accompanying `dsh-session-node/commands` plugin turns it into the
- * `/save-node`, `/nodes`, `/fork-node`, and `/delete-node` human commands.
+ * `/save-node`, `/nodes`, `/fork-node`, `/rename-node`, and `/delete-node`
+ * human commands.
  *
  * @module dsh-session-node
  */
@@ -175,6 +176,25 @@ export class SessionNodeService extends TypertRemoteService {
       this.cache.delete(id)
     }
     return removed
+  }
+
+  /**
+   * Rename one saved node.
+   * @param id - node identity.
+   * @param title - new label; trimmed, and rejected when it empties.
+   * @returns the updated node.
+   */
+  @Remote('rename')
+  async rename(id: SessionNodeId, title: string): Promise<SessionNode> {
+    const label = title.trim()
+    if (label.length === 0) {
+      throw new SessionNodeError('title must be a non-empty string', 'SESSION_NODE_INVALID_INPUT')
+    }
+    const next: SessionNodeRecord = { ...this.requireRecord(id), title: label }
+    await this.requireTable().put(id, next)
+    const node = this.toNode(id, next)
+    this.cache.set(id, node)
+    return node
   }
 
   /**

@@ -12,6 +12,11 @@ export const zh = {
   'dock.none': '暂无节点',
   'dock.fork': '从此节点新建会话',
   'dock.delete': '删除节点',
+  'section.title': '保存的节点',
+  'section.empty': '暂无节点',
+  'section.fork': '从节点新建会话',
+  'section.rename': '重命名节点',
+  'section.delete': '删除节点',
 } satisfies Record<string, string>
 
 /** The sessionNodes namespace key union. */
@@ -19,7 +24,7 @@ export type SessionNodesKey = keyof typeof zh
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** Session-node surfaces: the per-turn pin, the New Session picker, and the composer dock. */
+    /** Session-node surfaces: the sidebar section, the per-turn pin, the New Session picker, and the composer dock. */
     sessionNodes: SessionNodesKey
   }
 }
@@ -36,4 +41,9 @@ export const en: Record<SessionNodesKey, string> = {
   'dock.none': 'No nodes yet',
   'dock.fork': 'Fork a new session from this node',
   'dock.delete': 'Delete node',
+  'section.title': 'Saved nodes',
+  'section.empty': 'No saved nodes yet',
+  'section.fork': 'Fork a new session from this node',
+  'section.rename': 'Rename node',
+  'section.delete': 'Delete node',
 }

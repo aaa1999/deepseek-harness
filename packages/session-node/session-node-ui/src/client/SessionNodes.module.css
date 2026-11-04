@@ -197,3 +197,243 @@
   line-height: 16px;
   color: var(--dsw-alias-state-error-primary);
 }
+
+/* --- Sidebar sections block (the sidebar.sections hole): rows mirror the
+   sidebar's panel and session row geometry so the block reads as first-class
+   sidebar chrome. Var fallbacks are the shell's established values, for
+   stand-alone renders (tests) outside the sidebar column. --- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--dsh-sidebar-label-gap, 6px);
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 0 calc(var(--dsh-sidebar-row-padding, 12px) - var(--dsh-sidebar-paint-inset, 3px));
+  border: none;
+  border-inline: var(--dsh-sidebar-paint-inset, 3px) solid transparent;
+  border-radius: var(--dsw-radius-md);
+  background: transparent;
+  background-clip: padding-box;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .sectionHeader:hover {
+    background-color: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.sectionHeader:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: -2px;
+}
+
+/* Expand arrow (filled triangle): points right closed, rotates to point down open. */
+.sectionArrow {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 150ms var(--ds-ease-in-out);
+}
+
+.sectionArrowOpen {
+  transform: rotate(90deg);
+}
+
+.sectionMark {
+  flex: none;
+  display: inline-flex;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.sectionTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Long registries scroll inside the block so the workspace browser below
+   keeps its flex share of the column. */
+.sectionList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.sectionEmpty {
+  padding: 4px calc(var(--dsh-sidebar-row-padding, 12px) - var(--dsh-sidebar-paint-inset, 3px));
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.sectionError {
+  padding: 0 calc(var(--dsh-sidebar-row-padding, 12px) - var(--dsh-sidebar-paint-inset, 3px));
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+/* Row: one saved node. The open button owns the row's full box so the click
+   target is the whole row; hover actions overlay its trailing edge. */
+.sectionRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border-radius: var(--dsw-radius-md);
+}
+
+@media (hover: hover) {
+  .sectionRow:hover {
+    background-color: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.sectionRowOpen {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-inline-start: calc(var(--dsh-sidebar-row-padding, 12px) - var(--dsh-sidebar-paint-inset, 3px));
+  padding-inline-end: 56px;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sectionRowOpen:disabled {
+  cursor: default;
+  color: var(--dsw-alias-label-quaternary);
+}
+
+.sectionRowOpen:focus-visible {
+  outline: var(--dsh-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: -2px;
+}
+
+.sectionRowTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Trailing hover actions: hidden until the row hovers, and always visible on
+   touch pointers (no hover to reveal them). */
+.sectionRowActions {
+  position: absolute;
+  inset-inline-end: calc(var(--dsh-sidebar-paint-inset, 3px) + 3px);
+  top: 0;
+  display: none;
+  align-items: center;
+  height: 100%;
+}
+
+@media (hover: hover) {
+  .sectionRow:hover .sectionRowActions {
+    display: inline-flex;
+  }
+}
+
+@media (hover: none) {
+  .sectionRowActions {
+    display: inline-flex;
+  }
+}
+
+.sectionAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 5px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.sectionAction svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (hover: hover) {
+  .sectionAction:not(:disabled):hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+    color: var(--dsw-alias-label-secondary);
+  }
+}
+
+.sectionAction:disabled {
+  cursor: default;
+  color: var(--dsw-alias-label-quaternary);
+}
+
+@media (hover: hover) {
+  .sectionActionDanger:not(:disabled):hover {
+    background: var(--dsw-alias-interactive-bg-hover-danger);
+    color: var(--dsw-alias-state-error-primary);
+  }
+}
+
+/* The rename editor rides the row's geometry so the list does not jump. */
+.sectionEditor {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 32px;
+  padding-inline: calc(var(--dsh-sidebar-row-padding, 12px) - var(--dsh-sidebar-paint-inset, 3px));
+  border-radius: var(--dsw-radius-md);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* Rail control: the shell's collapsed 36px circle. */
+.sectionRailButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--dsw-radius-md);
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .sectionRailButton:hover {
+    background-color: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.sectionRailButton:focus-visible {
+  outline: var(--dsh-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: -2px;
+}

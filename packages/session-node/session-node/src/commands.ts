@@ -5,6 +5,7 @@
  *   node under its project.
  * - `/nodes` — list every saved node.
  * - `/fork-node <id-or-title>` — fork a new session from a saved node.
+ * - `/rename-node <id-or-title> <new-title>` — rename a saved node.
  * - `/delete-node <id-or-title>` — delete a saved node.
  *
  * @module dsh-session-node/commands
@@ -91,6 +92,23 @@ function forkNode(ctx: Context, invocation: CommandInvocation): CommandResult | 
   })
 }
 
+/** `/rename-node <id-or-title> <new-title>` — rename a saved node. */
+function renameNode(ctx: Context, invocation: CommandInvocation): CommandResult | Promise<CommandResult> {
+  const [selector, ...titleParts] = invocation.rawInput.trim().split(/\s+/)
+  const title = titleParts.join(' ').trim()
+  const node = selector === undefined ? undefined : findNode(ctx, selector)
+  if (node === undefined) {
+    return { kind: 'error', text: `No saved node matches "${invocation.rawInput.trim()}". Run /nodes to list nodes.` }
+  }
+  if (title.length === 0) {
+    return { kind: 'error', text: 'Usage: /rename-node <id-or-title> <new-title>' }
+  }
+  return execute(async () => {
+    const updated = await ctx.sessionNodes.rename(node.id, title)
+    return { kind: 'success', text: `Renamed node to "${updated.title}" (${updated.id}).` }
+  })
+}
+
 /** `/delete-node <id-or-title>` — delete a saved node. */
 function deleteNode(ctx: Context, invocation: CommandInvocation): CommandResult | Promise<CommandResult> {
   const node = findNode(ctx, invocation.rawInput)
@@ -103,7 +121,7 @@ function deleteNode(ctx: Context, invocation: CommandInvocation): CommandResult 
   })
 }
 
-/** Register the four human commands for every composed command adapter. */
+/** Register the five human commands for every composed command adapter. */
 export function apply(ctx: Context): void {
   ctx.commands.register({
     definitionId: CommandDefinitionId('dsh-session-node/save-node'),
@@ -126,6 +144,14 @@ export function apply(ctx: Context): void {
     description: 'Fork a new session from a saved session history node',
     input: { hint: '<id-or-title>' },
     handler: invocation => forkNode(ctx, invocation),
+  })
+
+  ctx.commands.register({
+    definitionId: CommandDefinitionId('dsh-session-node/rename-node'),
+    name: 'rename-node',
+    description: 'Rename a saved session history node',
+    input: { hint: '<id-or-title> <new-title>' },
+    handler: invocation => renameNode(ctx, invocation),
   })
 
   ctx.commands.register({

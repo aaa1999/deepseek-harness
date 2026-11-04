@@ -160,6 +160,7 @@
 .railIn .iconButton,
 .railIn .newSession,
 .railIn .panelList,
+.railIn .sectionsArea,
 .railIn .regionArea {
   animation: rail-in 150ms var(--ds-ease-in-out) backwards;
 }
@@ -621,6 +622,28 @@
   color: var(--dsw-alias-label-primary);
 }
 
+/* Registered sections strip: the same column rhythm as the panel list, so a
+   section's rows read as first-class sidebar rows. Occupants own their row
+   chrome; the shell owns only the strip's seat and spacing. */
+.sectionsArea {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  min-height: 0;
+}
+
+.collapsed .sectionsArea {
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+:global([data-windows-titlebar]) .collapsed .sectionsArea {
+  display: none;
+}
+
 /* Region seat: always mounted so the foot never moves. Its trailing margin
    cancels the wide shell inset so the nested scrollbar can sit at the sidebar
    edge; the browser restores that inset inside its own rows. */
@@ -678,6 +701,7 @@
   .railIn .iconButton,
   .railIn .newSession,
   .railIn .panelList,
+  .railIn .sectionsArea,
   .railIn .footArea,
   .railIn .regionArea {
     transition: none;

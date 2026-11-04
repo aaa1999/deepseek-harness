@@ -141,6 +141,7 @@ export function SidebarRoot({
   usePanels,
   useEntryPins,
   useEntryActions,
+  useSections,
   useShortcuts,
   usePanelInfo,
   t,
@@ -150,6 +151,7 @@ export function SidebarRoot({
   const unpinned = useEntryPins(ids => ids)
   const activePanelId = usePanelInfo(info => info.activePanelId)
   const hasEntryActions = useEntryActions(registered => registered)
+  const hasSections = useSections(registered => registered)
   const shortcut = useShortcuts(rows => rows.find(row => row.id === 'sidebar.left.toggle'))
   const newShortcut = useShortcuts(rows => rows.find(row => row.id === 'session.new'))
   // A page whose access snapshot excludes starting a Session offers no New Session affordance.
@@ -408,6 +410,19 @@ export function SidebarRoot({
             />
           )}
         </nav>
+      )}
+
+      {/* Registered sections (collapsible blocks) stack between the global
+          panel rows and the browsing region; the strip mounts only while a
+          registration exists, so an empty composition keeps the panel list's
+          own spacing. */}
+      {hasSections && (
+        <div className={css.sectionsArea}>
+          {renderSlot('sidebar.sections', {
+            wide,
+            expandSidebar: () => { if (collapsed) toggleSidebar() },
+          })}
+        </div>
       )}
 
       {/* The browsing region fills the column between the controls and the

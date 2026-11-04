@@ -2,8 +2,9 @@
  * Sidebar slot contract: the registrant-side props composition for the
  * layout-owned `sidebar` slot, plus the holes this shell declares. The shell
  * owns column geometry, the brand row, New Session, and global panel rows;
- * everything between the workspace section header and the list bottom is the
- * `sidebar.workspaces` registrant's (ui-workspace), and the foot is the
+ * `sidebar.sections` blocks sit between the panel list and the workspace
+ * region, everything between the workspace section header and the list bottom
+ * is the `sidebar.workspaces` registrant's (ui-workspace), and the foot is the
  * `sidebar.settings` registrant's (ui-settings), followed by optional footer
  * actions in `sidebar.footer.action`.
  */
@@ -36,6 +37,13 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'sidebar.panellist': { kind: 'list'; scope: 'root'; owner: SidebarPanelIconOwnerProps }
     /** Rows of the panel list's More menu; the sidebar shows More only while this list has registrations. */
     'sidebar.panellist.actions': { kind: 'list'; scope: 'root'; owner: SidebarPanelActionsOwnerProps }
+    /**
+     * Sections stacked between the global panel list and the workspace
+     * browsing region. Declared by this package's 'sidebar' entry; each
+     * registrant renders one collapsible block and receives the same column
+     * state as the workspace browser.
+     */
+    'sidebar.sections': { kind: 'list'; scope: 'root'; owner: SidebarSectionOwnerProps }
     /**
      * The workspace/session browsing region: section header, search, the
      * grouped/flat session list, and every workspace dialog. Declared by this
@@ -175,6 +183,8 @@ export type SidebarRootInjected = {
     entryPins: ObservableSnapshot<readonly string[]>
     /** Whether `sidebar.panellist.actions` has registrations. */
     entryActions: ObservableSnapshot<boolean>
+    /** Whether `sidebar.sections` has registrations; the shell mounts the strip only while one does. */
+    sections: ObservableSnapshot<boolean>
   }
 }
 
@@ -191,6 +201,7 @@ export type SidebarRootComponentProps =
     | 'sidebar.toggle.badge'
     | 'sidebar.panellist'
     | 'sidebar.panellist.actions'
+    | 'sidebar.sections'
     | 'sidebar.workspaces'
     | 'sidebar.settings'
     | 'sidebar.footer.action'

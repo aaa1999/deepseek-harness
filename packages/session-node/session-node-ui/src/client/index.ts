@@ -1,8 +1,9 @@
 /**
- * SessionNode surface plugin, browser half. Three entries over one generated
- * Remote: the per-turn bookmark (`conversation.chat.turnTail`), the composer
- * dock strip (`conversation.input.dock`), and the New Session picker that
- * forks the staged session from a saved node of its workspace
+ * SessionNode surface plugin, browser half. Four entries over one generated
+ * Remote: the sidebar saved-node manager (`sidebar.sections`), the per-turn
+ * bookmark (`conversation.chat.turnTail`), the composer dock strip
+ * (`conversation.input.dock`), and the New Session picker that forks the
+ * staged session from a saved node of its workspace
  * (`conversation.hero.options`). Forking opens the child session through
  * `ctx.uiWorkspace`.
  */
@@ -16,12 +17,14 @@ import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import sessionNodesRemote from 'dsh-session-node/remote'
 import type { SessionNodeId } from 'dsh-session-node/client'
 import { HeroNodePicker } from './HeroNodePicker.tsx'
 import { SaveTurnNodeButton } from './SaveTurnNodeButton.tsx'
 import { SessionNodeDock } from './SessionNodeDock.tsx'
+import { SessionNodeSection } from './SessionNodeSection.tsx'
 import { en, zh } from './locales.ts'
 import type { SessionNodeSave } from './slots.ts'
 
@@ -53,7 +56,7 @@ function createNodeRevision(): HostObservable<number> & { bump: () => void } {
 export const inject = ['remote', 'slots', 'locale', 'uiWorkspace']
 
 /**
- * Register the three surfaces in a scope that resolves the mounted
+ * Register the four surfaces in a scope that resolves the mounted
  * `remote.sessionNodes` namespace.
  * @param scope - scoped Context created after the namespace mounted.
  */
@@ -77,6 +80,32 @@ function registerSurfaces(scope: ClientContext): void {
       if (result.ok) scope.uiWorkspace.openSession(result.value.sessionId)
       return result
     })
+
+  const removeAndBump = (nodeId: SessionNodeId) =>
+    nodes.delete(nodeId).then((result) => {
+      if (result.ok) nodeRevision.bump()
+      return result
+    })
+
+  const renameAndBump = (nodeId: SessionNodeId, title: string) =>
+    nodes.rename(nodeId, title).then((result) => {
+      if (result.ok) nodeRevision.bump()
+      return result
+    })
+
+  scope.slots.inject('sidebar.sections', () => scope.slots.register({
+    name: 'sidebar.sections',
+    id: 'session-nodes-section',
+    order: 10,
+    locale: NS,
+    inject: () => ({
+      list: () => nodes.list(),
+      fork: forkAndOpen,
+      remove: removeAndBump,
+      rename: renameAndBump,
+      hooks: { nodeRevision },
+    }),
+  }, SessionNodeSection))
 
   scope.slots.inject('conversation.chat.assistant-actions', () => scope.slots.register({
     name: 'conversation.chat.assistant-actions',
@@ -105,11 +134,7 @@ function registerSurfaces(scope: ClientContext): void {
       save: saveFor(sessionId),
       list: () => nodes.list(),
       fork: forkAndOpen,
-      remove: (nodeId: SessionNodeId) =>
-        nodes.delete(nodeId).then((result) => {
-          if (result.ok) nodeRevision.bump()
-          return result
-        }),
+      remove: removeAndBump,
       hooks: { nodeRevision },
     }),
   }, SessionNodeDock))
