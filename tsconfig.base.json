@@ -92,6 +92,11 @@
       "@deepseek-ai/dsh-experimental-client-ui-voice-chat": ["./packages/experimental/client-ui-voice-chat/src/index.ts"],
       "@deepseek-ai/dsh-experimental-client-ui-voice-chat/client": ["./packages/experimental/client-ui-voice-chat/src/client/index.ts"],
       "@deepseek-ai/dsh-experimental-voice-chat-bundle": ["./packages/experimental/voice-chat-bundle/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-epub-reader": ["./packages/experimental/epub-reader/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-epub-reader/types": ["./packages/experimental/epub-reader/src/types.ts"],
+      "@deepseek-ai/dsh-experimental-epub-reader-bundle": ["./packages/experimental/epub-reader-bundle/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-client-ui-epub-reader": ["./packages/experimental/client-ui-epub-reader/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-client-ui-epub-reader/client": ["./packages/experimental/client-ui-epub-reader/src/client/index.ts"],
       "@deepseek-ai/dsh-experimental-client-ui-claude-code-mods": ["./packages/experimental/client-ui-claude-code-mods/src/index.ts"],
       "@deepseek-ai/dsh-experimental-client-ui-claude-code-mods/client": ["./packages/experimental/client-ui-claude-code-mods/src/client/index.ts"],
 

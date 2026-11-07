@@ -1,0 +1,403 @@
+/* Reading panel: chrome recedes, prose leads. */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 16px;
+  gap: 12px;
+}
+
+.libraryBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.importButton {
+  font: inherit;
+  color: var(--dsw-alias-label-primary-foreground, inherit);
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.06));
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.importButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.hint {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary, inherit);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.shelf {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  align-content: start;
+  overflow-y: auto;
+  min-height: 0;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.shelfDropping {
+  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.2)) 30%, transparent);
+  outline: 1px dashed var(--dsw-alias-label-secondary, currentColor);
+}
+
+.bookCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bookOpen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font: inherit;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: start;
+}
+
+.bookOpen:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.04));
+}
+
+.cover,
+.coverFallback {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.coverFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-family: 'Songti SC', 'Noto Serif CJK', Georgia, serif;
+  background: var(--dsw-alias-bg-module-platform, rgba(0, 0, 0, 0.08));
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.bookTitle {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bookMeta {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, inherit);
+}
+
+.bookProgress {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.bookActions {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.bookActions button,
+.cardActions button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.bookActions button:hover,
+.cardActions button:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.06));
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.danger {
+  color: var(--dsw-alias-label-destructive, #c0392b) !important;
+}
+
+.reader {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+.readerBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+}
+
+.readerBar > button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.readerBar > button:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.06));
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.readerTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chapterSelect {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  max-width: 200px;
+}
+
+.columns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-areas: 'reading notes';
+}
+
+/* A narrow panel stacks the notes under the prose instead of squeezing both. */
+@container (max-width: 760px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas: 'reading' 'notes';
+  }
+
+  .notes {
+    max-height: 45%;
+    border-left: none;
+    border-top: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+  }
+}
+
+.reading {
+  grid-area: reading;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 32px 24px 96px;
+  scrollbar-width: thin;
+}
+
+.chapterTitle {
+  margin: 0 0 24px;
+  font-size: 20px;
+  font-weight: 600;
+  font-family: 'Songti SC', 'Noto Serif CJK', Georgia, serif;
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.chapter {
+  max-width: 72ch;
+  margin: 0 auto;
+  font-family: 'Songti SC', 'Noto Serif CJK', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.chapter p {
+  margin: 0 0 1.1em;
+}
+
+.chapter img {
+  max-width: 100%;
+  height: auto;
+}
+
+.chapter a {
+  color: inherit;
+}
+
+::highlight(epub-reader-note) {
+  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.25)) 55%, transparent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.readerFooter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.readerFooter > button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.readerFooter > button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.notes {
+  grid-area: notes;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+}
+
+.notesTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-2, transparent);
+}
+
+.cardPast {
+  opacity: 0.7;
+}
+
+.quote {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 20%, transparent);
+  font-family: 'Songti SC', 'Noto Serif CJK', Georgia, serif;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.result,
+.resultLive {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resultLive {
+  position: relative;
+  overflow: hidden;
+}
+
+.resultLive::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--dsw-alias-bg-document-selection, currentColor), transparent);
+  animation: epub-stream 1.6s ease-in-out infinite;
+}
+
+@keyframes epub-stream {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resultLive::before {
+    animation: none;
+  }
+}
+
+.resultKind {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-tertiary, inherit);
+}
+
+.resultText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.resultError {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dsw-alias-label-destructive, #c0392b);
+}
+
+.resultModel {
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary, inherit);
+}
+
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "EPUB 阅读器",
+    "description": "导入 EPUB 书籍阅读，划词翻译与解释，划线笔记保存。",
+    "detail": "docs/DETAIL.zh.md"
+  }
+}

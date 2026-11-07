@@ -295,6 +295,8 @@
     { "path": "./packages/experimental/text-to-speech-sherpaonnx" },
     { "path": "./packages/experimental/api-text-to-speech" },
     { "path": "./packages/experimental/voice-chat-bundle" },
+    { "path": "./packages/experimental/epub-reader" },
+    { "path": "./packages/experimental/epub-reader-bundle" },
     { "path": "./packages/experimental/plugin-market-bundle" },
     { "path": "./packages/client/locale/tsconfig.host.json" },
     { "path": "./packages/client/ui-theme/tsconfig.host.json" },

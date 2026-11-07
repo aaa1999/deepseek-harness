@@ -1,0 +1,12 @@
+# The EPUB reader bundle: the Host library service and the browser panel.
+# Treatments pin the API-key DeepSeek route so a profile without a default
+# agent model still streams; clear both to follow agentDefaultModel.
+- insert:
+    - id: epub-reader
+      name: '@deepseek-ai/dsh-experimental-epub-reader'
+      config:
+        dataRoot: !!js dshHomePath('epub-reader')
+        provider: deepseek-official
+        model: deepseek-chat
+    - id: epub-reader-ui
+      name: '@deepseek-ai/dsh-experimental-client-ui-epub-reader'

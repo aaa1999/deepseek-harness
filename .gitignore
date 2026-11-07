@@ -41,6 +41,7 @@ apps/web/dist/
 .dsh-build/
 .dsh-report/
 .playwright-mcp/
+.zcode/
 .orig
 .worktrees/
 worktrees/
