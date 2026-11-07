@@ -71,6 +71,15 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.sv
 
 const parser = new XMLParser({ preserveOrder: true, removeNSPrefix: true, ignoreAttributes: false, trimValues: false })
 
+/*
+ * Feed-converted EPUBs (calibre's from-json pipeline and friends) sometimes
+ * double-escape one formatting pair — a heading arrives as the literal text
+ * `<span>…</span>` instead of an element. The sanitizer heals exactly that
+ * pair: a fully closed, attribute-free span becomes a real element again and
+ * walks the normal allowlist. Every other literal tag stays visible text.
+ */
+const LITERAL_SPAN_PAIR = /^<span>([\s\S]*?)<\/span>$/u
+
 /** Escapes one text run for HTML output. */
 function escapeHtml(text: string): string {
   return text.replace(/&/gu, '&amp;').replace(/</gu, '&lt;').replace(/>/gu, '&gt;')
@@ -161,6 +170,12 @@ function serializeNodes(nodes: readonly OrderNode[], baseDir: string, resolveRes
   for (const node of nodes) {
     const text = typeof node['#text'] === 'string' ? node['#text'] : undefined
     if (text !== undefined) {
+      const healed = LITERAL_SPAN_PAIR.exec(text.trim())
+      // Group 1 always participates when the pair matches; the guard only narrows the capture typing.
+      if (healed !== null && healed[1] !== undefined) {
+        parts.push(`<span>${escapeHtml(healed[1])}</span>`)
+        continue
+      }
       parts.push(escapeHtml(text))
       continue
     }

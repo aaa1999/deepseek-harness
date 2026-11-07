@@ -8,10 +8,16 @@ import type {
   Annotation, BookRow, ExplainKind, TocEntry,
 } from '@deepseek-ai/dsh-experimental-epub-reader/types'
 import type { EpubSelectionValue } from './contract.ts'
+import { saveNote } from './notes.ts'
 
 /** Copy one record without a key; dynamic `delete` stays out of the codebase. */
 function withoutKey<T>(record: Readonly<Record<string, T>>, key: string): Record<string, T> {
   return Object.fromEntries(Object.entries(record).filter(([name]) => name !== key))
+}
+
+/** The note title one capture carries: the book, and the chapter when one is named. */
+function noteTitle(bookTitle: string, chapterTitle: string): string {
+  return chapterTitle === '' ? bookTitle : `${bookTitle} · ${chapterTitle}`
 }
 
 /** One streamed treatment the notes column renders; keyed by annotation id. */
@@ -51,10 +57,32 @@ export interface EpubReaderState {
   open: ChapterState | null
   annotations: readonly Annotation[]
   streams: Readonly<Record<string, NoteStream>>
+  /** The storage-directory settings panel. */
+  storage: StoragePanelState
+}
+
+/** The storage settings panel the library view swaps in for the shelf. */
+export interface StoragePanelState {
+  open: boolean
+  /** The directory the Host resolved; the input starts from it. */
+  directory: string
+  configurable: boolean
+  busy: boolean
+  error: string
+  saved: boolean
+  /** Every routable treatment model, plus the configured override and the default pair. */
+  models: readonly { provider: string; model: string; name: string }[]
+  modelProvider: string
+  modelId: string
+  defaultProvider: string
+  defaultModel: string
 }
 
 /** Debounce window for one reading-position save. */
 const PROGRESS_DEBOUNCE_MS = 2000
+
+/** Grace for the Host's config re-apply before the shelf reloads. */
+const STORAGE_REFRESH_MS = 900
 
 /** Read one file's bytes as canonical base64 for `importBook`. */
 async function fileBase64(file: File): Promise<string> {
@@ -86,6 +114,10 @@ export class ReaderController {
     open: null,
     annotations: [],
     streams: {},
+    storage: {
+      open: false, directory: '', configurable: false, busy: false, error: '', saved: false,
+      models: [], modelProvider: '', modelId: '', defaultProvider: '', defaultModel: '',
+    },
   })
 
   private readonly aborts = new Set<AbortController>()
@@ -157,20 +189,24 @@ export class ReaderController {
   }
 
   /** Jump to one chapter from the picker. */
-  selectChapter(chapterIndex: number): void {
+  selectChapter(chapterIndex: number, restoreRatio = 0): void {
     const open = this.store.getSnapshot().open
     if (open === null || chapterIndex === open.chapterIndex) return
     this.flushProgress()
-    void this.loadChapter(open.bookId, chapterIndex, 0)
+    void this.loadChapter(open.bookId, chapterIndex, restoreRatio)
   }
 
-  /** Step to the adjacent chapter. */
-  stepChapter(delta: number): void {
+  /**
+   * Step to the adjacent chapter.
+   * @param delta - chapter step, normally `1` or `-1`.
+   * @param restoreRatio - scroll ratio to land at inside the target chapter.
+   */
+  stepChapter(delta: number, restoreRatio = 0): void {
     const open = this.store.getSnapshot().open
     if (open === null) return
     const next = open.chapterIndex + delta
     if (next < 0 || next >= open.chapterCount) return
-    this.selectChapter(next)
+    this.selectChapter(next, restoreRatio)
   }
 
   /** Record the reading column's ratio; the Host save follows the debounce. */
@@ -260,6 +296,109 @@ export class ReaderController {
       annotations: state.annotations.filter(row => row.id !== id),
     })
     void this.ctx.remote.epubReader.deleteAnnotation(bookId, id)
+  }
+
+  /** Carry one captured selection into the Notes panel; the note body is the raw text. */
+  captureSelectionNote(selection: EpubSelectionValue): void {
+    const open = this.store.getSnapshot().open
+    void saveNote({
+      title: open === null ? '' : noteTitle(open.title, open.chapterTitle),
+      body: selection.text,
+    })
+  }
+
+  /** Carry one annotation card — quote plus every treatment — into the Notes panel. */
+  captureAnnotationNote(id: string): void {
+    const state = this.store.getSnapshot()
+    const annotation = state.annotations.find(row => row.id === id)
+    if (annotation === undefined) return
+    const open = state.open
+    const sections = [annotation.quote, ...annotation.results.map(result =>
+      `${result.kind === 'translate' ? '翻译' : '解释'}：${result.text}`)]
+    void saveNote({
+      title: open === null ? '' : noteTitle(open.title, open.chapterTitle),
+      body: sections.join('\n\n'),
+    })
+  }
+
+  /** Open the storage settings panel and load the directory and model catalog. */
+  openStorageSettings(): void {
+    this.setStorage({ open: true, busy: true, error: '', saved: false })
+    const run = (async () => {
+      const [stored, treatments] = await Promise.all([
+        this.ctx.remote.epubReader.storage(),
+        this.ctx.remote.epubReader.treatmentModels(),
+      ])
+      if (!stored.ok) throw stored.error
+      if (!treatments.ok) throw treatments.error
+      this.setStorage({
+        directory: stored.value.directory,
+        configurable: stored.value.configurable,
+        models: treatments.value.models,
+        modelProvider: treatments.value.provider,
+        modelId: treatments.value.model,
+        defaultProvider: treatments.value.defaultProvider,
+        defaultModel: treatments.value.defaultModel,
+        busy: false,
+      })
+    })()
+    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+  }
+
+  /** Close the storage settings panel without changing anything. */
+  closeStorageSettings(): void {
+    this.setStorage({ open: false, error: '', saved: false })
+  }
+
+  /** Point the library at a new directory; empty restores the profile default. */
+  saveStorageSettings(directory: string): void {
+    this.setStorage({ busy: true, error: '', saved: false })
+    const run = (async () => {
+      const result = await this.ctx.remote.epubReader.setStorageDirectory(directory)
+      if (!result.ok) throw result.error
+      this.setStorage({ busy: false, saved: true })
+      // The Host re-applies with the new root; give it a beat, then refresh the shelf.
+      setTimeout(() => {
+        this.setStorage({ open: false, saved: false })
+        void this.loadLibrary()
+      }, STORAGE_REFRESH_MS)
+    })()
+    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+  }
+
+  /** Choose the model treatments use; the empty pair follows the profile default. */
+  saveTreatmentModel(provider: string, model: string): void {
+    this.setStorage({ busy: true, error: '', saved: false })
+    const run = (async () => {
+      const result = await this.ctx.remote.epubReader.setTreatmentModel(provider, model)
+      if (!result.ok) throw result.error
+      this.setStorage({ modelProvider: provider, modelId: model, busy: false, saved: true })
+      // The Host re-applies its config; re-read the catalog once it settles.
+      setTimeout(() => {
+        this.setStorage({ saved: false })
+        void this.refreshTreatmentModels()
+      }, STORAGE_REFRESH_MS)
+    })()
+    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+  }
+
+  /** Re-read the treatment catalog into the open panel. */
+  private async refreshTreatmentModels(): Promise<void> {
+    const result = await this.ctx.remote.epubReader.treatmentModels()
+    if (!result.ok) return
+    this.setStorage({
+      models: result.value.models,
+      modelProvider: result.value.provider,
+      modelId: result.value.model,
+      defaultProvider: result.value.defaultProvider,
+      defaultModel: result.value.defaultModel,
+    })
+  }
+
+  /** Merge one patch into the storage panel slice. */
+  private setStorage(patch: Partial<StoragePanelState>): void {
+    const state = this.store.getSnapshot()
+    this.store.set({ ...state, storage: { ...state.storage, ...patch } })
   }
 
   /** Abort in-flight treatments and the pending progress save; called once at plugin teardown. */

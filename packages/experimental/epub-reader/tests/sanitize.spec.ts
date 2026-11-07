@@ -50,4 +50,20 @@ describe('sanitizeChapter', () => {
     const fragment = sanitizeChapter('<?xml version="1.0"?><p>frag</p>', 'ch.xhtml', route)
     expect(fragment).toBe('<p>frag</p>')
   })
+
+  it('heals one fully-escaped span pair back into a real element', () => {
+    const html = sanitizeChapter(
+      BODY('<h2>&lt;span&gt;After the war.&lt;/span&gt;</h2>'),
+      'ch.xhtml', route,
+    )
+    expect(html).toBe('<h2><span>After the war.</span></h2>')
+  })
+
+  it('keeps literal tags that are not one closed span pair', () => {
+    const html = sanitizeChapter(
+      BODY('<p>&lt;span&gt;unclosed</p><p>&lt;div&gt;not span&lt;/div&gt;</p><p>&lt;span class=&quot;x&quot;&gt;attributed&lt;/span&gt;</p>'),
+      'ch.xhtml', route,
+    )
+    expect(html).toBe('<p>&lt;span&gt;unclosed</p><p>&lt;div&gt;not span&lt;/div&gt;</p><p>&lt;span class="x"&gt;attributed&lt;/span&gt;</p>')
+  })
 })

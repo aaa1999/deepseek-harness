@@ -1,8 +1,10 @@
 /** The reading view: chapter body, chapter navigation, and the notes column. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import DOMPurify from 'dompurify'
+import { IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { EpubReaderInjected, EpubSelectionValue } from './contract.ts'
+import { readPaperPreference, readSansFontPreference, writePaperPreference, writeSansFontPreference } from './preference.ts'
 import { NS } from './locales.ts'
 import { applyHighlights, captureSelection, clearHighlights, mapText, rangeOf, type TextMap } from './anchor.ts'
 import { NotesColumn } from './NotesColumn.tsx'
@@ -24,7 +26,7 @@ const EMPTY_MAP: TextMap = { spans: [], total: 0 }
  */
 export function ReaderView({
   useReader, closeBook, selectChapter, stepChapter, noteScroll, retryAnnotation, deleteAnnotation,
-  copyText, openMenu, t,
+  copyText, captureAnnotationNote, openMenu, t,
 }: ReaderProps) {
   const open = useReader(state => state.open)
   const annotations = useReader(state => state.annotations)
@@ -32,6 +34,24 @@ export function ReaderView({
   const content = useRef<HTMLDivElement>(null)
   const text = useRef<TextMap>(EMPTY_MAP)
   const [ratio, setRatio] = useState(0)
+  const [paper, setPaper] = useState(readPaperPreference)
+  const [sansFont, setSansFont] = useState(readSansFontPreference)
+
+  /** Toggle the paper reading tint and persist the choice. */
+  const togglePaper = (): void => {
+    setPaper((current) => {
+      writePaperPreference(!current)
+      return !current
+    })
+  }
+
+  /** Toggle the reading typeface (PingFang-led sans ↔ serif) and persist the choice. */
+  const toggleFont = (): void => {
+    setSansFont((current) => {
+      writeSansFontPreference(!current)
+      return !current
+    })
+  }
 
   const sanitized = useMemo(() => DOMPurify.sanitize(open?.html ?? ''), [open?.html])
 
@@ -78,6 +98,25 @@ export function ReaderView({
     return { bookId: open.bookId, chapterIndex: open.chapterIndex, ...found }
   }
 
+  /**
+   * Flip one page: a viewport-height step within the chapter, crossing into
+   * the adjacent chapter at the ends. Going back lands at the previous
+   * chapter's end, the way a bound book turns.
+   */
+  const flip = (direction: 1 | -1): void => {
+    const pane = scroller.current
+    if (pane === null) return
+    const extent = pane.scrollHeight - pane.clientHeight
+    if (extent <= 0
+      || (direction === 1 && pane.scrollTop >= extent - 1)
+      || (direction === -1 && pane.scrollTop <= 1)) {
+      stepChapter(direction, direction === -1 ? 1 : 0)
+      return
+    }
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    pane.scrollBy({ top: direction * pane.clientHeight, behavior: reduced ? 'auto' : 'smooth' })
+  }
+
   if (open === null) return <div className={css.reader}><p className={css.hint}>{t('loading')}</p></div>
   return <div className={css.reader}>
     <header className={css.readerBar}>
@@ -91,41 +130,62 @@ export function ReaderView({
         {open.toc.length === 0 ? <option value={open.chapterIndex}>{t('chapterOf', { current: open.chapterIndex + 1, total: open.chapterCount })}</option> : null}
         {open.toc.map(entry => <option key={`${entry.chapterIndex}-${entry.title}`} value={entry.chapterIndex}>{entry.title}</option>)}
       </select>
+      <button type="button" className={css.paperButton} aria-pressed={paper} onClick={togglePaper}>{t('paper')}</button>
+      <button type="button" className={css.fontButton} aria-pressed={sansFont} onClick={toggleFont}>{t('font')}</button>
     </header>
     <div className={css.columns}>
-      <div
-        ref={scroller} className={css.reading} tabIndex={0} data-epub-reading
-        onScroll={(event) => {
-          const pane = event.currentTarget
-          const extent = pane.scrollHeight - pane.clientHeight
-          const next = extent > 0 ? pane.scrollTop / extent : 0
-          setRatio(next)
-          noteScroll(next)
-        }}
-        onContextMenu={(event) => {
-          const target = capture()
-          if (target === undefined) return
-          event.preventDefault()
-          openMenu({ kind: 'epubSelection', value: target }, { x: event.clientX, y: event.clientY })
-        }}
-        onKeyDown={(event) => {
-          if (event.defaultPrevented || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return
-          if (!(event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey))) return
-          const target = capture()
-          if (target === undefined) return
-          event.preventDefault()
-          const rect = event.currentTarget.getBoundingClientRect()
-          openMenu({ kind: 'epubSelection', value: target }, { x: rect.left, y: rect.bottom })
-        }}
-      >
-        {open.loading ? <p className={css.hint}>{t('chapterLoading')}</p> : null}
-        {open.error !== null ? <p className={css.hint}>{t('chapterFailed', { message: open.error })}</p> : null}
-        <h1 className={css.chapterTitle}>{open.chapterTitle}</h1>
-        <div ref={content} className={css.chapter} data-epub-chapter dangerouslySetInnerHTML={{ __html: sanitized }} />
+      <div className={css.readingWrap}>
+        <div
+          ref={scroller} className={css.reading} tabIndex={0} data-epub-reading data-paper={paper ? 'on' : 'off'} data-font={sansFont ? 'sans' : 'serif'}
+          onScroll={(event) => {
+            const pane = event.currentTarget
+            const extent = pane.scrollHeight - pane.clientHeight
+            const next = extent > 0 ? pane.scrollTop / extent : 0
+            setRatio(next)
+            noteScroll(next)
+          }}
+          onContextMenu={(event) => {
+            const target = capture()
+            if (target === undefined) return
+            event.preventDefault()
+            openMenu({ kind: 'epubSelection', value: target }, { x: event.clientX, y: event.clientY })
+          }}
+          onKeyDown={(event) => {
+            if (event.defaultPrevented || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return
+            if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); flip(1); return }
+            if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); flip(-1); return }
+            if (!(event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey))) return
+            const target = capture()
+            if (target === undefined) return
+            event.preventDefault()
+            const rect = event.currentTarget.getBoundingClientRect()
+            openMenu({ kind: 'epubSelection', value: target }, { x: rect.left, y: rect.bottom })
+          }}
+        >
+          {open.loading ? <p className={css.hint}>{t('chapterLoading')}</p> : null}
+          {open.error !== null ? <p className={css.hint}>{t('chapterFailed', { message: open.error })}</p> : null}
+          <h1 className={css.chapterTitle}>{open.chapterTitle}</h1>
+          <div ref={content} className={css.chapter} data-epub-chapter dangerouslySetInnerHTML={{ __html: sanitized }} />
+        </div>
+        <button
+          type="button" className={`${css.pageArrow} ${css.pageArrowLeft}`}
+          aria-label={t('previousPage')} aria-disabled={open.chapterIndex === 0 && open.loading}
+          onClick={() => { flip(-1) }}
+        >
+          <IconChevronLeftOutlineRegular size={18} />
+        </button>
+        <button
+          type="button" className={`${css.pageArrow} ${css.pageArrowRight}`}
+          aria-label={t('nextPage')} aria-disabled={open.chapterIndex + 1 >= open.chapterCount && open.loading}
+          onClick={() => { flip(1) }}
+        >
+          <IconChevronRightOutlineRegular size={18} />
+        </button>
       </div>
       <NotesColumn
         useReader={useReader} chapterIndex={open.chapterIndex} locate={locate}
-        retryAnnotation={retryAnnotation} deleteAnnotation={deleteAnnotation} copyText={copyText} t={t}
+        retryAnnotation={retryAnnotation} deleteAnnotation={deleteAnnotation} copyText={copyText}
+        captureAnnotationNote={captureAnnotationNote} t={t}
       />
     </div>
     <footer className={css.readerFooter}>

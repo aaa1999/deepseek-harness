@@ -87,9 +87,14 @@ function isBlock(element: HTMLElement): boolean {
   return /^(p|div|blockquote|li|h[1-6]|pre|td|dd|dt)$/iu.test(element.tagName)
 }
 
+/** The engine-level `CSS` global, absent in some embedded DOMs (jsdom); never a throw. */
+function cssHighlights(): HighlightRegistry | undefined {
+  return (globalThis as { CSS?: { highlights?: HighlightRegistry } }).CSS?.highlights
+}
+
 /** Paint saved annotation ranges through the CSS Custom Highlight API. */
 export function applyHighlights(ranges: readonly Range[]): void {
-  const highlights = (CSS as { highlights?: HighlightRegistry }).highlights
+  const highlights = cssHighlights()
   const HighlightCtor = (globalThis as { Highlight?: HighlightConstructor }).Highlight
   if (highlights === undefined || HighlightCtor === undefined) return
   if (ranges.length === 0) { highlights.delete(HIGHLIGHT_NAME); return }
@@ -98,5 +103,5 @@ export function applyHighlights(ranges: readonly Range[]): void {
 
 /** Drop every painted annotation highlight. */
 export function clearHighlights(): void {
-  (CSS as { highlights?: HighlightRegistry }).highlights?.delete(HIGHLIGHT_NAME)
+  cssHighlights()?.delete(HIGHLIGHT_NAME)
 }

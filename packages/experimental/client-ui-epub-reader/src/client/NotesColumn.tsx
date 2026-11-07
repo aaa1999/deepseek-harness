@@ -9,7 +9,7 @@ import css from './reader.module.css'
 
 /** Faces the notes column renders with. */
 export type NotesProps = PropsLocale<typeof NS>
-  & InjectFace<Pick<EpubReaderInjected, 'hooks' | 'retryAnnotation' | 'deleteAnnotation' | 'copyText'>>
+  & InjectFace<Pick<EpubReaderInjected, 'hooks' | 'retryAnnotation' | 'deleteAnnotation' | 'copyText' | 'captureAnnotationNote'>>
   & {
     /** Chapter index the reading column shows; other chapters' cards stay dimmed as history. */
     readonly chapterIndex: number
@@ -40,10 +40,13 @@ function kindLabel(kind: ExplainKind, translate: string, explain: string): strin
  * @param props - locale face, state hook, card actions, and the locate callback.
  * @returns the notes column.
  */
-export function NotesColumn({ useReader, chapterIndex, locate, retryAnnotation, deleteAnnotation, copyText, t }: NotesProps) {
+export function NotesColumn({
+  useReader, chapterIndex, locate, retryAnnotation, deleteAnnotation, copyText, captureAnnotationNote, t,
+}: NotesProps) {
   const annotations = useReader(state => state.annotations)
   const streams = useReader(state => state.streams)
   const [copied, setCopied] = useState('')
+  const [noted, setNoted] = useState('')
   const cards = new Map<string, CardFace>()
   for (const annotation of [...annotations].reverse()) cards.set(annotation.id, { annotation })
   for (const [id, stream] of Object.entries(streams)) cards.set(id, { ...cards.get(id), stream })
@@ -62,7 +65,10 @@ export function NotesColumn({ useReader, chapterIndex, locate, retryAnnotation, 
           ? [{ kind: card.stream.kind, text: card.stream.text, model: card.stream.model, live: true, error: card.stream.error }]
           : [...annotation.results.map(result => ({ ...result, live: false, error: null })),
             { kind: card.stream.kind, text: card.stream.text, model: card.stream.model, live: true, error: card.stream.error }]
-      const streamText = card.stream?.text ?? ''
+      // Copy targets the live stream while one runs, else the newest saved result.
+      const copySource = card.stream?.text !== undefined && card.stream.text !== ''
+        ? card.stream.text
+        : annotation?.results.at(-1)?.text ?? ''
       return <article key={id} className={annotation?.chapterIndex === chapterIndex ? css.card : `${css.card} ${css.cardPast}`}>
         <blockquote className={css.quote}>{annotation?.quote ?? ''}</blockquote>
         {rows.map((row, index) => <div key={index} className={row.live ? css.resultLive : css.result}>
@@ -79,12 +85,18 @@ export function NotesColumn({ useReader, chapterIndex, locate, retryAnnotation, 
               <button type="button" onClick={() => { locate(annotation.id) }}>{t('locate')}</button>
               <button type="button" onClick={() => { retryAnnotation(id) }}>{t('regenerate')}</button>
             </> : null}
-          {streamText !== ''
+          {copySource !== ''
             ? <button type="button" onClick={() => {
-              copyText(streamText)
+              copyText(copySource)
               setCopied(id)
               setTimeout(() => { setCopied(current => current === id ? '' : current) }, 1500)
             }}>{copied === id ? t('copied') : t('copy')}</button> : null}
+          {annotation !== undefined
+            ? <button type="button" onClick={() => {
+              captureAnnotationNote(id)
+              setNoted(id)
+              setTimeout(() => { setNoted(current => current === id ? '' : current) }, 1500)
+            }}>{noted === id ? t('noted') : t('saveNote')}</button> : null}
           {annotation !== undefined
             ? <button type="button" className={css.danger} onClick={() => { deleteAnnotation(id) }}>{t('delete')}</button> : null}
         </div>

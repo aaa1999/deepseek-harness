@@ -6,16 +6,17 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { isAbsolute } from 'node:path'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-llm'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { systemPromptFor, userPromptFor, type PromptContext } from './prompts.ts'
 import { RESOURCE_MEDIA_TYPES, sanitizeChapter } from './sanitize.ts'
 import { EpubStore, type StoredBookMeta } from './store.ts'
-import type { Annotation, BookRow, ChapterDoc, ExplainChunk, ExplainRequest, TocEntry } from './types.ts'
+import type { Annotation, BookRow, ChapterDoc, ExplainChunk, ExplainRequest, StorageMeta, TocEntry, TreatmentCatalog, TreatmentModel } from './types.ts'
 import type { BookProgress } from './types.ts'
 
-export type { Annotation, BookProgress, BookRow, ChapterDoc, ExplainChunk, ExplainKind, ExplainRequest, ExplainResult, TocEntry } from './types.ts'
+export type { Annotation, BookProgress, BookRow, ChapterDoc, ExplainChunk, ExplainKind, ExplainRequest, ExplainResult, StorageMeta, TocEntry, TreatmentCatalog, TreatmentModel } from './types.ts'
 export { EpubFormatError } from './epub.ts'
 export { RESOURCE_MEDIA_TYPES } from './sanitize.ts'
 
@@ -69,6 +70,18 @@ function resourceUrl(bookId: string, interiorPath: string): string {
 
 /** Every character class a stored annotation id may use. */
 const ANNOTATION_ID = /^[\da-f-]{1,64}$/iu
+
+/**
+ * The config-editor face, mirrored structurally so this package carries no
+ * dependency on it; profiles without the service answer `undefined`.
+ */
+interface ConfigEditorFace {
+  entries(): ReadonlyArray<{ options: { id: string } }>
+  edit(
+    entry: { options: { id: string } },
+    change: (current: Record<string, unknown>, inherited: Record<string, unknown>) => Record<string, unknown>,
+  ): Promise<void>
+}
 
 /**
  * The browser-facing library service. Books, progress, and annotations live on
@@ -180,6 +193,110 @@ export default class EpubReaderController extends TypertRemoteService {
   async removeBook(bookId: string): Promise<void> {
     await this.metaOf(bookId)
     await this.store.removeBook(bookId)
+  }
+
+  /**
+   * Where the library lives today.
+   * @returns the resolved data root and whether this profile can move it.
+   */
+  @Remote
+  async storage(): Promise<StorageMeta> {
+    return {
+      directory: this.resolveDataRoot(),
+      configurable: this.configEditor() !== undefined,
+    }
+  }
+
+  /**
+   * Move the library to another directory.
+   * @param directory - an absolute path; empty restores the profile default.
+   */
+  @Remote
+  async setStorageDirectory(directory: string): Promise<void> {
+    const editor = this.configEditor()
+    if (editor === undefined) {
+      throw new RemoteError('epub/invalid-request', 'Configuration editing is not available in this profile', { reason: 'config' })
+    }
+    const trimmed = directory.trim()
+    if (trimmed !== '' && !isAbsolute(trimmed)) {
+      throw new RemoteError('epub/invalid-request', 'The storage directory must be an absolute path', { reason: 'path' })
+    }
+    const entry = editor.entries().find(candidate => candidate.options.id === 'epub-reader')
+    if (entry === undefined) {
+      throw new RemoteError('epub/invalid-request', 'The reader entry is not addressable in this profile', { reason: 'entry' })
+    }
+    await editor.edit(entry, (current) => {
+      const next = { ...current }
+      if (trimmed === '') delete next.dataRoot
+      else next.dataRoot = trimmed
+      return next
+    })
+  }
+
+  /** The profile's config editor when one runs here; absent editors block runtime changes. */
+  private configEditor(): ConfigEditorFace | undefined {
+    return this.ctx.get('configEditor') as ConfigEditorFace | undefined
+  }
+
+  /**
+   * The treatment model landscape.
+   * @returns every routable provider/model pair plus the effective selection.
+   */
+  @Remote
+  async treatmentModels(): Promise<TreatmentCatalog> {
+    const models: TreatmentModel[] = []
+    for (const provider of this.ctx.llm.listProviders()) {
+      for (const model of await this.ctx.llm.listModels(provider.id)) {
+        models.push({ provider: provider.id, model: model.id, name: model.name })
+      }
+    }
+    const fallback = this.ctx.get('agentDefaultModel') as { provider?: string; model?: string } | undefined
+    return {
+      provider: this.config.provider,
+      model: this.config.model,
+      defaultProvider: fallback?.provider ?? '',
+      defaultModel: fallback?.model ?? '',
+      models,
+    }
+  }
+
+  /**
+   * Choose the model treatments use.
+   * @param provider - provider route; empty with an empty model follows the default.
+   * @param model - model id under that provider; empty only with an empty provider.
+   */
+  @Remote
+  async setTreatmentModel(provider: string, model: string): Promise<void> {
+    const providerId = provider.trim(), modelId = model.trim()
+    if (providerId === '' !== (modelId === '')) {
+      throw new RemoteError('epub/invalid-request', 'Provider and model must be set or cleared together', { reason: 'pair' })
+    }
+    if (providerId !== '') {
+      const routable = await this.treatmentModels()
+      if (!routable.models.some(entry => entry.provider === providerId && entry.model === modelId)) {
+        throw new RemoteError('epub/invalid-request', `Model "${providerId}/${modelId}" is not routable`, { reason: 'model' })
+      }
+    }
+    const editor = this.configEditor()
+    if (editor === undefined) {
+      throw new RemoteError('epub/invalid-request', 'Configuration editing is not available in this profile', { reason: 'config' })
+    }
+    const entry = editor.entries().find(candidate => candidate.options.id === 'epub-reader')
+    if (entry === undefined) {
+      throw new RemoteError('epub/invalid-request', 'The reader entry is not addressable in this profile', { reason: 'entry' })
+    }
+    await editor.edit(entry, (current) => {
+      const next = { ...current }
+      if (providerId === '') {
+        delete next.provider
+        delete next.model
+      }
+      else {
+        next.provider = providerId
+        next.model = modelId
+      }
+      return next
+    })
   }
 
   /**

@@ -100,4 +100,90 @@ describe('EpubReaderController', () => {
     const wrongType = await service.serveResource(new Request(`http://host/api/epub-reader/resource?book=${row.bookId}&path=OEBPS/content.opf`))
     expect(wrongType.status).toBe(404)
   })
+
+  it('reports the resolved storage root and guards runtime changes', async () => {
+    const service = controller()
+    await expect(service.storage()).resolves.toEqual({ directory: root, configurable: false })
+    await expect(service.setStorageDirectory('/somewhere/else')).rejects.toThrow(/not available/i)
+
+    const ctx = new Context(); roots.push(ctx)
+    const entry = { options: { id: 'epub-reader' } }
+    let applied: ((current: Record<string, unknown>, inherited: Record<string, unknown>) => Record<string, unknown>) | undefined
+    ctx.provide('configEditor', {
+      entries: () => [entry, { options: { id: 'other' } }],
+      edit: async (
+        _entry: unknown,
+        change: (current: Record<string, unknown>, inherited: Record<string, unknown>) => Record<string, unknown>,
+      ) => {
+        applied = change
+      },
+    } as never)
+    const editable = new EpubReaderController(ctx, {
+      dataRoot: root,
+      maxBookBytes: 50 * 1024 * 1024,
+      targetLanguage: '简体中文',
+      provider: '',
+      model: '',
+      maxOutputTokens: 2048,
+    })
+    await expect(editable.storage()).resolves.toMatchObject({ configurable: true })
+    await expect(editable.setStorageDirectory('relative/path')).rejects.toThrow(/absolute/i)
+
+    await editable.setStorageDirectory('/books/here')
+    expect(applied?.({ dataRoot: 'old' }, {})).toEqual({ dataRoot: '/books/here' })
+    await editable.setStorageDirectory('   ')
+    expect(applied?.({ dataRoot: 'old', targetLanguage: 'en' }, {})).toEqual({ targetLanguage: 'en' })
+  })
+
+  it('lists every routable treatment model and switches the pair through the editor', async () => {
+    const ctx = new Context(); roots.push(ctx)
+    ctx.provide('llm', {
+      listProviders: () => [{ id: 'deepseek-official', name: 'DeepSeek' }, { id: 'pi-ai', name: 'Pi' }],
+      listModels: async (provider: string) => provider === 'deepseek-official'
+        ? [
+          { provider, id: 'deepseek-chat', name: 'DeepSeek Chat' },
+          { provider, id: 'deepseek-reasoner', name: 'DeepSeek Reasoner' },
+        ]
+        : [{ provider, id: 'other-model', name: 'Other Model' }],
+    } as never)
+    ctx.provide('agentDefaultModel', { provider: 'deepseek-official', model: 'deepseek-chat' } as never)
+    const entry = { options: { id: 'epub-reader' } }
+    let applied: ((current: Record<string, unknown>, inherited: Record<string, unknown>) => Record<string, unknown>) | undefined
+    ctx.provide('configEditor', {
+      entries: () => [entry],
+      edit: async (
+        _entry: unknown,
+        change: (current: Record<string, unknown>, inherited: Record<string, unknown>) => Record<string, unknown>,
+      ) => {
+        applied = change
+      },
+    } as never)
+    const service = new EpubReaderController(ctx, {
+      dataRoot: root,
+      maxBookBytes: 50 * 1024 * 1024,
+      targetLanguage: '简体中文',
+      provider: '',
+      model: '',
+      maxOutputTokens: 2048,
+    })
+
+    const catalog = await service.treatmentModels()
+    expect(catalog).toMatchObject({
+      provider: '', model: '',
+      defaultProvider: 'deepseek-official', defaultModel: 'deepseek-chat',
+    })
+    expect(catalog.models).toEqual([
+      { provider: 'deepseek-official', model: 'deepseek-chat', name: 'DeepSeek Chat' },
+      { provider: 'deepseek-official', model: 'deepseek-reasoner', name: 'DeepSeek Reasoner' },
+      { provider: 'pi-ai', model: 'other-model', name: 'Other Model' },
+    ])
+
+    await expect(service.setTreatmentModel('nope', 'deepseek-chat')).rejects.toThrow(/not routable/i)
+    await expect(service.setTreatmentModel('', 'deepseek-chat')).rejects.toThrow(/together/i)
+
+    await service.setTreatmentModel('deepseek-official', 'deepseek-reasoner')
+    expect(applied?.({ provider: 'old', model: 'old' }, {})).toEqual({ provider: 'deepseek-official', model: 'deepseek-reasoner' })
+    await service.setTreatmentModel(' ', ' ')
+    expect(applied?.({ provider: 'old', model: 'old', targetLanguage: 'en' }, {})).toEqual({ targetLanguage: 'en' })
+  })
 })

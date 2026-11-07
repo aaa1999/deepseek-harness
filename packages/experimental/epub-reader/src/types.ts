@@ -80,3 +80,31 @@ export interface ExplainRequest {
   /** Plain text of the paragraph containing the selection, for context. */
   readonly context: string
 }
+
+/** Where the library lives and whether this profile can move it at runtime. */
+export interface StorageMeta {
+  /** The resolved directory the library reads and writes today. */
+  readonly directory: string
+  /** Whether a runtime directory change is possible here. */
+  readonly configurable: boolean
+}
+
+/** One routable model the treatment picker lists. */
+export interface TreatmentModel {
+  readonly provider: string
+  readonly model: string
+  /** Human-readable model name for the picker. */
+  readonly name: string
+}
+
+/** The treatment model landscape: every routable pair plus the effective selection. */
+export interface TreatmentCatalog {
+  /** Configured override; empty pair means follow the profile default. */
+  readonly provider: string
+  readonly model: string
+  /** The default pair the profile resolves when no override is set. */
+  readonly defaultProvider: string
+  readonly defaultModel: string
+  /** Every routable provider/model pair, in adapter order. */
+  readonly models: readonly TreatmentModel[]
+}

@@ -59,6 +59,10 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
             id: 'explain', label: t('explain'),
             run: () => { controller.treat(selection, 'explain') },
           },
+          {
+            id: 'note', label: t('sendToNotes'),
+            run: () => { controller.captureSelectionNote(selection) },
+          },
         ],
       }
       yield scope.effect(() => scope.contextMenus.register(selectionMenu), 'client-ui-epub-reader: selection menu')
@@ -72,12 +76,18 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           removeBook: (bookId: string) => { controller.removeBook(bookId) },
           openBook: (bookId: string) => { controller.openBook(bookId) },
           closeBook: () => { controller.closeBook() },
-          selectChapter: (chapterIndex: number) => { controller.selectChapter(chapterIndex) },
-          stepChapter: (delta: number) => { controller.stepChapter(delta) },
+          selectChapter: (chapterIndex: number, restoreRatio?: number) => { controller.selectChapter(chapterIndex, restoreRatio) },
+          stepChapter: (delta: number, restoreRatio?: number) => { controller.stepChapter(delta, restoreRatio) },
           noteScroll: (ratio: number) => { controller.noteScroll(ratio) },
           treat: (selection: EpubSelectionValue, kind: ExplainKind) => { controller.treat(selection, kind) },
           retryAnnotation: (id: string) => { controller.retryAnnotation(id) },
           deleteAnnotation: (id: string) => { controller.deleteAnnotation(id) },
+          captureSelectionNote: (selection: EpubSelectionValue) => { controller.captureSelectionNote(selection) },
+          captureAnnotationNote: (id: string) => { controller.captureAnnotationNote(id) },
+          openStorageSettings: () => { controller.openStorageSettings() },
+          closeStorageSettings: () => { controller.closeStorageSettings() },
+          saveStorageSettings: (directory: string) => { controller.saveStorageSettings(directory) },
+          saveTreatmentModel: (provider: string, model: string) => { controller.saveTreatmentModel(provider, model) },
           openMenu: (target: ContextMenuTarget, point: MenuPoint): void => { scope.contextMenus.open(target, point) },
           copyText: (text: string): void => {
             try { void navigator.clipboard.writeText(text) } catch { /* the browser denied clipboard access */ }
