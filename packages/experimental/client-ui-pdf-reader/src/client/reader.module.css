@@ -1,0 +1,711 @@
+/* PDF reader panel: chrome recedes, the page leads. */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 16px;
+  gap: 12px;
+}
+
+.libraryBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The shelf's two actions (import, save) carry the standard primary fill. */
+.importButton {
+  font: inherit;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary-foreground, #fff);
+  background: var(--dsw-alias-button-primary-fill, var(--dsw-static-deepseek-500, rgb(65, 118, 230)));
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.importButton:hover:not(:disabled) {
+  background: var(--dsw-alias-button-primary-hover, var(--dsw-static-deepseek-600, rgb(72, 104, 178)));
+}
+
+.importButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.importButtonLike {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary-foreground, #fff);
+  background: var(--dsw-alias-button-primary-fill, var(--dsw-static-deepseek-500, rgb(65, 118, 230)));
+  border: none;
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.libraryBarSpace {
+  flex: 1;
+}
+
+.settingsButton {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.settingsButton:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.06));
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.storageSettings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 4px;
+  max-width: 560px;
+}
+
+.storageLabel {
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.storageInput {
+  font: inherit;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.storageInput:focus-visible {
+  outline: 1.5px solid var(--dsw-alias-bg-document-selection, currentColor);
+}
+
+.storageActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* The reading-mode pair: two quiet toggles, the active one carries the accent. */
+.modeActions {
+  display: flex;
+  gap: 8px;
+}
+
+.modeActions > button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: none;
+  border: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 18%, transparent);
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.modeActions > button[aria-pressed='true'] {
+  color: var(--dsw-alias-label-primary, inherit);
+  border-color: color-mix(in srgb, var(--dsw-alias-bg-document-selection, currentColor) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.2)) 14%, transparent);
+}
+
+.hint {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary, inherit);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.shelf {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  align-content: start;
+  overflow-y: auto;
+  min-height: 0;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.shelfDropping {
+  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.2)) 30%, transparent);
+  outline: 1px dashed var(--dsw-alias-label-secondary, currentColor);
+}
+
+.bookCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bookOpen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font: inherit;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: start;
+}
+
+.bookOpen:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.04));
+}
+
+.cover,
+.coverFallback {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.coverFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dsw-alias-bg-module-platform, rgba(0, 0, 0, 0.08));
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.bookTitle {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bookMeta {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, inherit);
+}
+
+.bookSource {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, inherit);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookProgress {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.bookActions {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.bookActions button,
+.cardActions button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.bookActions button:hover,
+.cardActions button:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.06));
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.danger {
+  color: var(--dsw-alias-label-destructive, #c0392b) !important;
+}
+
+.reader {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+.readerBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+}
+
+.readerBar > button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.readerBar > button:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.06));
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.readerTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outlineSelect {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  max-width: 200px;
+}
+
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.zoomControls > button,
+.shotActions > button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.zoomControls > button:hover,
+.shotActions > button:hover {
+  background: var(--dsw-alias-bg-module-hover, rgba(0, 0, 0, 0.06));
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.shotButton[aria-pressed='true'] {
+  color: var(--dsw-alias-label-primary, inherit);
+  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.2)) 18%, transparent);
+}
+
+.columns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-areas: 'reading notes';
+}
+
+/* A narrow panel stacks the notes under the page instead of squeezing both. */
+@container (max-width: 760px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas: 'reading' 'notes';
+  }
+
+  .notes {
+    max-height: 45%;
+    border-left: none;
+    border-top: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+  }
+}
+
+/* The reading cell: the scrolling pane plus the fixed page-flip arrows over it. */
+.readingWrap {
+  grid-area: reading;
+  position: relative;
+  display: flex;
+  min-height: 0;
+}
+
+/* A neutral gray stage makes the white page read as paper. */
+.reading {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 32px 24px 96px;
+  scrollbar-width: thin;
+  background:
+    color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 6%, transparent);
+}
+
+body[data-ds-dark-theme] .reading {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 14%, transparent);
+}
+
+.reading:focus-visible {
+  outline: none;
+}
+
+/* Page-flip arrows: quiet circles floating at the pane's vertical center. */
+.pageArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255, 255, 255, 0.85)) 85%, transparent);
+  opacity: 0.5;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.pageArrow:hover,
+.pageArrow:focus-visible {
+  opacity: 1;
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.pageArrowLeft {
+  left: 10px;
+}
+
+.pageArrowRight {
+  right: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageArrow {
+    transition: none;
+  }
+}
+
+/* The one page: the raster canvas with the transparent text layer above it. */
+.pageBox {
+  position: relative;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), 0 8px 28px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.pageBoxCrosshair {
+  cursor: crosshair;
+}
+
+.pageCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The text layer keeps its base-scale layout and scales with zoom. */
+.textHost {
+  position: absolute;
+  inset: 0 auto auto 0;
+  transform-origin: 0 0;
+  color: transparent;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* The single accent: saved text highlights underline quietly. */
+::highlight(pdf-reader-note) {
+  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.25)) 55%, transparent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+/* The screenshot rubber band shares the accent. */
+.shotOverlay {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  border: 1.5px solid var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.7));
+  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.25)) 12%, transparent);
+  border-radius: 2px;
+}
+
+/* The floating ask box rides the committed region. */
+.shotAsk {
+  position: absolute;
+  z-index: 4;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-2, #fff);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+}
+
+.shotInput {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.shotInput:focus-visible {
+  outline: 1.5px solid var(--dsw-alias-bg-document-selection, currentColor);
+}
+
+/* The per-ask model pick rides the ask box quietly. */
+.shotModelSelect {
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, inherit);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  max-width: 100%;
+}
+
+.shotActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.readerFooter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.readerFooter > button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.readerFooter > button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.jumpForm {
+  display: inline-flex;
+}
+
+.jumpInput {
+  font: inherit;
+  font-size: 13px;
+  width: 72px;
+  color: var(--dsw-alias-label-primary, inherit);
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  text-align: center;
+}
+
+.jumpInput:focus-visible {
+  outline: 1.5px solid var(--dsw-alias-bg-document-selection, currentColor);
+}
+
+.notes {
+  grid-area: notes;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+}
+
+.notesTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-2, transparent);
+}
+
+.cardPast {
+  opacity: 0.7;
+}
+
+.quote {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 20%, transparent);
+  font-family: 'Songti SC', 'Noto Serif CJK', Georgia, serif;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.shotCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shotImage {
+  width: 100%;
+  border-radius: 6px;
+  border: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
+}
+
+.shotPending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 8%, transparent);
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.shotQuestion {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.result,
+.resultLive {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resultLive {
+  position: relative;
+  overflow: hidden;
+}
+
+.resultLive::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--dsw-alias-bg-document-selection, currentColor), transparent);
+  animation: pdf-stream 1.6s ease-in-out infinite;
+}
+
+@keyframes pdf-stream {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resultLive::before {
+    animation: none;
+  }
+}
+
+.resultKind {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-tertiary, inherit);
+}
+
+/* Answer bodies render through the shared Markdown renderer in its compact variant. */
+.resultText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.resultText :first-child {
+  margin-top: 0;
+}
+
+.resultText :last-child {
+  margin-bottom: 0;
+}
+
+.resultError {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dsw-alias-label-destructive, #c0392b);
+}
+
+.resultModel {
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary, inherit);
+}
+
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}

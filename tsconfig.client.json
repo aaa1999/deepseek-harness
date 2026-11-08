@@ -68,6 +68,8 @@
     { "path": "./packages/experimental/client-ui-voice-input" },
     { "path": "./packages/experimental/client-ui-voice-chat" },
     { "path": "./packages/experimental/client-ui-epub-reader" },
+    { "path": "./packages/experimental/client-ui-pdf-reader" },
+    { "path": "./packages/experimental/client-ui-web-capture" },
     { "path": "./packages/experimental/client-ui-claude-code-mods" },
 
     { "path": "./packages/client/ui-sidebar-terminal" },

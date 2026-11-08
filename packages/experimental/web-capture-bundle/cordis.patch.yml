@@ -1,0 +1,16 @@
+# The web-capture bundle: the PDF reader trio plus the browser relay that
+# files companion-extension page snapshots into the PDF shelf. The lines
+# mirror pdf-reader-bundle's ids; install one or the other, never both.
+- insert:
+    - id: pdf-reader
+      name: '@deepseek-ai/dsh-pdf-reader'
+      config:
+        dataRoot: !!js dshHomePath('pdf-reader')
+        provider: deepseek-official
+        model: deepseek-chat
+        shotProvider: deepseek-official
+        shotModel: deepseek-v4-flash-vision-exp
+    - id: pdf-reader-ui
+      name: '@deepseek-ai/dsh-client-ui-pdf-reader'
+    - id: web-capture-ui
+      name: '@deepseek-ai/dsh-client-ui-web-capture'

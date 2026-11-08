@@ -25,6 +25,11 @@ export const EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS: Readonly<Record<string, strin
   'packages/experimental/plugin-recommendations': '@deepseek-ai/dsh-plugin-recommendations',
   'packages/experimental/client-ui-plugin-recommendations': '@deepseek-ai/dsh-client-ui-plugin-recommendations',
   'packages/experimental/personalized-recommendations': '@deepseek-ai/dsh-personalized-recommendations',
+  'packages/experimental/pdf-reader': '@deepseek-ai/dsh-pdf-reader',
+  'packages/experimental/client-ui-pdf-reader': '@deepseek-ai/dsh-client-ui-pdf-reader',
+  'packages/experimental/pdf-reader-bundle': '@deepseek-ai/dsh-pdf-reader-bundle',
+  'packages/experimental/client-ui-web-capture': '@deepseek-ai/dsh-client-ui-web-capture',
+  'packages/experimental/web-capture-bundle': '@deepseek-ai/dsh-web-capture-bundle',
 } satisfies Record<`packages/experimental/${string}`, `@deepseek-ai/dsh-${string}`>
 
 /** Legacy npm namespace, allowed only in `LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES`. */

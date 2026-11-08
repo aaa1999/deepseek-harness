@@ -1,0 +1,15 @@
+# The PDF reader bundle: the Host library service and the browser panel.
+# Text treatments pin the API-key DeepSeek route so a profile without a default
+# agent model still streams; screenshot questions pin a vision-capable route.
+# Clear both pairs to follow agentDefaultModel.
+- insert:
+    - id: pdf-reader
+      name: '@deepseek-ai/dsh-pdf-reader'
+      config:
+        dataRoot: !!js dshHomePath('pdf-reader')
+        provider: deepseek-official
+        model: deepseek-chat
+        shotProvider: deepseek-official
+        shotModel: deepseek-v4-flash-vision-exp
+    - id: pdf-reader-ui
+      name: '@deepseek-ai/dsh-client-ui-pdf-reader'

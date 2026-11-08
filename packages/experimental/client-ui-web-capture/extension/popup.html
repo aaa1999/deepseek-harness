@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSH 网页快照</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 13px/1.5 system-ui, sans-serif; margin: 14px; width: 260px; }
+    fieldset { border: none; margin: 0 0 10px; padding: 0; }
+    legend { font-weight: 600; margin-bottom: 4px; }
+    label { display: block; margin: 2px 0; }
+    select, input[type="text"] { width: 100%; box-sizing: border-box; margin-top: 2px; }
+    button { width: 100%; padding: 7px 0; font-size: 13px; }
+    button:disabled { opacity: 0.6; }
+    #status { margin-top: 10px; white-space: pre-wrap; }
+    #status.error { color: #d9480f; }
+    #status.ok { color: #2f9e44; }
+    .hint { margin-top: 10px; font-size: 11px; opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <fieldset>
+    <legend>页形态</legend>
+    <label><input type="radio" name="mode" value="long"> 长页（整页一张，版式 1:1）</label>
+    <label><input type="radio" name="mode" value="a4"> A4 分页（打印尺寸）</label>
+  </fieldset>
+  <fieldset>
+    <legend>捕获宽度</legend>
+    <select id="width">
+      <option value="0">当前视口宽度</option>
+      <option value="1280">1280（阅读版式）</option>
+      <option value="1024">1024（窄版式）</option>
+    </select>
+  </fieldset>
+  <fieldset>
+    <legend>捕获选项</legend>
+    <label><input type="checkbox" id="deep" checked> 深度捕获（先滚动加载懒加载内容）</label>
+  </fieldset>
+  <fieldset>
+    <legend>DSH GUI 地址</legend>
+    <input type="text" id="guiUrl" aria-label="DSH GUI 地址" spellcheck="false">
+  </fieldset>
+  <button id="capture">捕获并送入 PDF 书架</button>
+  <div id="status" role="status" aria-live="polite"></div>
+  <p class="hint">需要已安装 DSH 的 web-capture 插件；GUI 未打开时会自动开一个后台标签。捕获时浏览器会短暂显示「正在调试此浏览器」横幅，属正常现象。</p>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

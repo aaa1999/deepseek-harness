@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "PDF 阅读器",
+    "description": "导入 PDF 单页阅读，划词翻译解释，截图区域提问，标注持久保存。",
+    "detail": "docs/DETAIL.zh.md"
+  }
+}

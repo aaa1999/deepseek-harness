@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "PDF Reader",
+    "description": "Import PDFs for single-page reading, translate or explain selections, ask about screenshot regions, and keep annotations.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}
