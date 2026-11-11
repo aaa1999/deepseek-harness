@@ -448,9 +448,10 @@ export function ReaderView({
         <div
           ref={scroller} className={css.reading} tabIndex={0} data-pdf-reading
           onContextMenu={(event) => {
+            // The reading pane always owns the right-click: the browser menu never opens here.
+            event.preventDefault()
             const target = capture()
             if (target === undefined) return
-            event.preventDefault()
             openMenu({ kind: 'pdfSelection', value: target }, { x: event.clientX, y: event.clientY })
           }}
           onKeyDown={(event) => {

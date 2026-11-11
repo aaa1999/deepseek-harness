@@ -145,9 +145,10 @@ export function ReaderView({
             noteScroll(next)
           }}
           onContextMenu={(event) => {
+            // The reading pane always owns the right-click: the browser menu never opens here.
+            event.preventDefault()
             const target = capture()
             if (target === undefined) return
-            event.preventDefault()
             openMenu({ kind: 'epubSelection', value: target }, { x: event.clientX, y: event.clientY })
           }}
           onKeyDown={(event) => {
@@ -155,9 +156,9 @@ export function ReaderView({
             if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); flip(1); return }
             if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); flip(-1); return }
             if (!(event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey))) return
+            event.preventDefault()
             const target = capture()
             if (target === undefined) return
-            event.preventDefault()
             const rect = event.currentTarget.getBoundingClientRect()
             openMenu({ kind: 'epubSelection', value: target }, { x: rect.left, y: rect.bottom })
           }}

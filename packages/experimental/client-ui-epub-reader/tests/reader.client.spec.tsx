@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /** Reader panel components: shelf interactions, note cards, chapter rendering, paper toggle. */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, createEvent, fireEvent, render } from '@testing-library/react'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import type { Annotation, BookRow } from '@deepseek-ai/dsh-experimental-epub-reader/types'
@@ -292,4 +292,64 @@ it('flips pages from the arrow keys on the focused reading pane', () => {
   expect(f.actions.stepChapter).toHaveBeenLastCalledWith(-1, 1)
   fireEvent.keyDown(pane, { key: 'ArrowRight', ctrlKey: true })
   expect(f.actions.stepChapter).toHaveBeenCalledTimes(2)
+})
+
+it('claims the right-click in the reading pane even without a capturable selection', () => {
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  const pane = view.container.querySelector('[data-epub-reading]')!
+  const event = createEvent.contextMenu(pane)
+  fireEvent(pane, event)
+  expect(event.defaultPrevented).toBe(true)
+  expect(f.actions.openMenu).not.toHaveBeenCalled()
+})
+
+it('claims the right-click over a selection that crosses outside the chapter body', () => {
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  const pane = view.container.querySelector('[data-epub-reading]')!
+  const title = view.container.querySelector('h1')!.firstChild as Text
+  const prose = view.container.querySelector('[data-epub-chapter] p')!.firstChild as Text
+  const selection = document.getSelection()!
+  const range = document.createRange()
+  range.setStart(title, 0)
+  range.setEnd(prose, 2)
+  selection.removeAllRanges()
+  selection.addRange(range)
+  const event = createEvent.contextMenu(pane)
+  fireEvent(pane, event)
+  expect(event.defaultPrevented).toBe(true)
+  expect(f.actions.openMenu).not.toHaveBeenCalled()
+  selection.removeAllRanges()
+})
+
+it('opens the treatment menu on right-click over a selection inside the chapter body', () => {
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  const pane = view.container.querySelector('[data-epub-reading]')!
+  const prose = view.container.querySelector('[data-epub-chapter] p')!.firstChild as Text
+  const selection = document.getSelection()!
+  const range = document.createRange()
+  range.setStart(prose, 0)
+  range.setEnd(prose, 7)
+  selection.removeAllRanges()
+  selection.addRange(range)
+  fireEvent.contextMenu(pane, { clientX: 10, clientY: 12 })
+  expect(f.actions.openMenu).toHaveBeenCalledOnce()
+  expect(f.actions.openMenu.mock.calls[0]![0]).toEqual({
+    kind: 'epubSelection',
+    value: { bookId: 'b1', chapterIndex: 0, start: 0, end: 7, text: 'It was ', context: 'It was best of times.' },
+  })
+  expect(f.actions.openMenu.mock.calls[0]![1]).toEqual({ x: 10, y: 12 })
+  selection.removeAllRanges()
+})
+
+it('claims the context-menu key even without a capturable selection', () => {
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  const pane = view.container.querySelector('[data-epub-reading]')!
+  const event = createEvent.keyDown(pane, { key: 'ContextMenu' })
+  fireEvent(pane, event)
+  expect(event.defaultPrevented).toBe(true)
+  expect(f.actions.openMenu).not.toHaveBeenCalled()
 })
