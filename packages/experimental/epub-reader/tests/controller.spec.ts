@@ -186,4 +186,44 @@ describe('EpubReaderController', () => {
     await service.setTreatmentModel(' ', ' ')
     expect(applied?.({ provider: 'old', model: 'old', targetLanguage: 'en' }, {})).toEqual({ targetLanguage: 'en' })
   })
+
+  it('streams treatments with the adapter default effort and thinking headroom', async () => {
+    const calls: { model: string; reasoningEffort: string | undefined; maxTokens: number | undefined }[] = []
+    const llm = {
+      listProviders: () => [],
+      listModels: async () => [],
+      resolveModelInfo: async (_provider: string, model: string) => (model === 'deepseek-reasoner'
+        ? { reasoning: { efforts: [{ id: 'low', name: 'Low' }, { id: 'high', name: 'High' }], defaultEffort: 'high' } }
+        : {}),
+      stream: (options: { model: string; reasoningEffort?: string; maxTokens?: number }) => {
+        calls.push({ model: options.model, reasoningEffort: options.reasoningEffort, maxTokens: options.maxTokens })
+        return (async function* () { yield { type: 'text-delta', text: '曾是' } })()
+      },
+    } as never
+    const ctxA = new Context(); roots.push(ctxA); ctxA.provide('llm', llm)
+    const ctxB = new Context(); roots.push(ctxB); ctxB.provide('llm', llm)
+    const thinking = new EpubReaderController(ctxA, {
+      dataRoot: root, maxBookBytes: 50 * 1024 * 1024, targetLanguage: '简体中文',
+      provider: 'deepseek-official', model: 'deepseek-reasoner', maxOutputTokens: 2048,
+    })
+    const row = await thinking.importBook('sample.epub', fixtureBase64(), AbortSignal.timeout(5000))
+
+    const chunks = []
+    for await (const chunk of thinking.explain({ bookId: row.bookId, chapterIndex: 0, kind: 'translate', text: 'best', context: 'It was the best of times.' }, AbortSignal.timeout(5000))) {
+      chunks.push(chunk)
+    }
+    expect(chunks).toEqual([{ type: 'meta', model: 'deepseek-reasoner' }, { type: 'delta', text: '曾是' }, { type: 'done' }])
+    // 2048 answer budget + 8192 thinking headroom: reasoning shares the output
+    // ceiling on zai-style endpoints, so the request must feed both.
+    expect(calls[0]).toEqual({ model: 'deepseek-reasoner', reasoningEffort: 'high', maxTokens: 10240 })
+
+    const plain = new EpubReaderController(ctxB, {
+      dataRoot: root, maxBookBytes: 50 * 1024 * 1024, targetLanguage: '简体中文',
+      provider: 'deepseek-official', model: 'deepseek-chat', maxOutputTokens: 2048,
+    })
+    for await (const chunk of plain.explain({ bookId: row.bookId, chapterIndex: 0, kind: 'translate', text: 'best', context: 'It was the best of times.' }, AbortSignal.timeout(5000))) {
+      void chunk
+    }
+    expect(calls[1]).toEqual({ model: 'deepseek-chat', maxTokens: 2048 })
+  })
 })

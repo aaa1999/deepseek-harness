@@ -8,7 +8,7 @@ import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { isAbsolute } from 'node:path'
 import type {} from '@deepseek-ai/dsh-client-connection'
-import type {} from '@deepseek-ai/dsh-llm'
+import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { systemPromptFor, userPromptFor, type PromptContext } from './prompts.ts'
 import { RESOURCE_MEDIA_TYPES, sanitizeChapter } from './sanitize.ts'
@@ -56,7 +56,7 @@ export interface Config {
   provider: string
   /** Model override for treatments; empty follows the profile default. */
   model: string
-  /** Output token cap for one treatment. */
+  /** Answer token budget for one treatment; thinking models request it plus headroom. */
   maxOutputTokens: number
 }
 
@@ -70,6 +70,18 @@ function resourceUrl(bookId: string, interiorPath: string): string {
 
 /** Every character class a stored annotation id may use. */
 const ANNOTATION_ID = /^[\da-f-]{1,64}$/iu
+
+/** Largest answer budget one profile may configure for a treatment. */
+const MAX_OUTPUT_TOKENS = 131072
+
+/**
+ * Output headroom one thinking model's request adds above the configured
+ * answer budget. Reasoning and the answer share a single output ceiling on
+ * several OpenAI-compatible endpoints (zai GLM included), so an unraised cap
+ * lets the reasoning phase starve the answer — the "model returned no text"
+ * failure this guards against.
+ */
+const THINKING_HEADROOM_TOKENS = 8192
 
 /**
  * The config-editor face, mirrored structurally so this package carries no
@@ -95,7 +107,7 @@ export default class EpubReaderController extends TypertRemoteService {
     targetLanguage: z.string().default('简体中文'),
     provider: z.string().default(''),
     model: z.string().default(''),
-    maxOutputTokens: z.natural().min(64).max(32768).default(2048),
+    maxOutputTokens: z.natural().min(64).max(MAX_OUTPUT_TOKENS).default(2048),
   })
 
   private readonly store: EpubStore
@@ -400,6 +412,7 @@ export default class EpubReaderController extends TypertRemoteService {
     if (text === '') throw new RemoteError('epub/invalid-request', 'Selection text is empty', { reason: 'text' })
     const meta = await this.metaOf(request.bookId)
     const selection = this.resolveSelection()
+    const capabilities = await this.modelCapabilities(selection.provider, selection.model)
     const context: PromptContext = {
       title: meta.title,
       chapterTitle: meta.chapters[request.chapterIndex]?.title ?? '',
@@ -413,7 +426,8 @@ export default class EpubReaderController extends TypertRemoteService {
         model: selection.model,
         system: systemPromptFor(request.kind, context),
         messages: [{ role: 'user', content: [{ type: 'text', text: userPromptFor(request) }] }],
-        maxTokens: this.config.maxOutputTokens,
+        maxTokens: this.treatmentMaxTokens(capabilities.thinking),
+        ...capabilities.effort !== undefined ? { reasoningEffort: capabilities.effort } : {},
       })
       for await (const chunk of stream) {
         signal.throwIfAborted()
@@ -442,6 +456,42 @@ export default class EpubReaderController extends TypertRemoteService {
       return { provider: fallback.provider, model: fallback.model }
     }
     throw new RemoteError('epub/no-model', 'No treatment model configured and no profile default model available', { reason: 'no-selection' })
+  }
+
+  /**
+   * One treatment model's thinking request controls: the reasoning effort a
+   * treatment should request — the adapter's configured default, else the
+   * mildest supported level — with whether that level actually thinks.
+   * Unresolvable metadata answers no controls, leaving the request as before.
+   * @param provider - provider route of the model.
+   * @param model - model id under the provider.
+   * @returns the effort to request, if any, and whether it thinks.
+   */
+  private async modelCapabilities(provider: string, model: string): Promise<{ effort?: ReasoningEffortId; thinking: boolean }> {
+    try {
+      const info = await this.ctx.llm.resolveModelInfo(provider, model)
+      const effort = info.reasoning?.defaultEffort ?? info.reasoning?.efforts[0]?.id
+      return effort === undefined
+        ? { thinking: false }
+        : { effort, thinking: effort !== ReasoningEffortId('off') }
+    } catch {
+      return { thinking: false }
+    }
+  }
+
+  /**
+   * The output ceiling one treatment requests: the configured answer budget,
+   * plus thinking headroom when the requested effort actually thinks, capped
+   * at the configurable maximum. Reasoning shares this ceiling with the answer
+   * on zai-style endpoints, so an unraised budget lets reasoning starve the
+   * answer into the "model returned no text" failure.
+   * @param thinking - whether the request carries a thinking effort.
+   * @returns the maxTokens value for the LLM request.
+   */
+  private treatmentMaxTokens(thinking: boolean): number {
+    return thinking
+      ? Math.min(this.config.maxOutputTokens + THINKING_HEADROOM_TOKENS, MAX_OUTPUT_TOKENS)
+      : this.config.maxOutputTokens
   }
 
   /** Answer `GET ${RESOURCE_PATH}?book=<id>&path=<interior>` with one book resource. */

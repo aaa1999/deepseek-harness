@@ -282,6 +282,73 @@ describe('PdfReaderController', () => {
     await expect(refused[Symbol.asyncIterator]().next()).rejects.toThrow(/no image input/i)
   })
 
+  it('requests the mildest reasoning effort and thinking headroom for thinking shot models', async () => {
+    const ctx = new Context(); roots.push(ctx)
+    const calls: { reasoningEffort: string | undefined; maxTokens: number | undefined }[] = []
+    ctx.provide('attachments', {
+      saveImage: async (input: { data: Uint8Array }) =>
+        ({ attachmentId: 'at1', mediaType: 'image/png', bytes: input.data.byteLength, width: 10, height: 10 }),
+    } as never)
+    ctx.provide('llm', {
+      listProviders: () => [],
+      listModels: async () => [],
+      resolveModelInfo: async (_provider: string, model: string) => ({
+        inputModalities: ['text', 'image'],
+        ...model === 'glm-vision-off'
+          ? { reasoning: { efforts: [{ id: 'off', name: 'Off' }, { id: 'low', name: 'Low' }] } }
+          : { reasoning: { efforts: [{ id: 'low', name: 'Low' }, { id: 'high', name: 'High' }, { id: 'max', name: 'Max' }] } },
+      }),
+      stream: (options: { reasoningEffort?: string; maxTokens?: number }) => {
+        calls.push({ reasoningEffort: options.reasoningEffort, maxTokens: options.maxTokens })
+        return (async function* () { yield { type: 'text-delta', text: '图中是' } })()
+      },
+    } as never)
+    ctx.provide('agentDefaultModel', { provider: 'zai-coding-cn', model: 'glm-5.3-flash' } as never)
+    const service = new PdfReaderController(ctx, config())
+    const row = await service.importBook('paper.pdf', pdfBase64(), null, AbortSignal.timeout(5000))
+    const ask = {
+      bookId: row.bookId, page: 1, rect: { x: 0, y: 0, width: 0.5, height: 0.5 },
+      annotationId: '0192ab00-0000-7000-8000-00000000000f',
+      pngBase64: base64Of(pngFixture()), question: '解释',
+    }
+
+    for await (const chunk of service.askImage(ask, AbortSignal.timeout(5000))) void chunk
+    // 2048 answer budget + 8192 thinking headroom: reasoning shares the output
+    // ceiling on zai-style endpoints, so the mildest effort keeps it short and
+    // the headroom keeps the answer fed.
+    expect(calls[0]).toEqual({ reasoningEffort: 'low', maxTokens: 10240 })
+
+    for await (const chunk of service.askImage({ ...ask, annotationId: '0192ab00-0000-7000-8000-000000000010', provider: 'zai-coding-cn', model: 'glm-vision-off' }, AbortSignal.timeout(5000))) void chunk
+    // A model whose mildest level is "off" neither thinks nor needs headroom.
+    expect(calls[1]).toEqual({ reasoningEffort: 'off', maxTokens: 2048 })
+  })
+
+  it('honors the adapter default effort for text treatments and skips controls without reasoning', async () => {
+    const calls: { model: string; reasoningEffort: string | undefined; maxTokens: number | undefined }[] = []
+    const llm = {
+      listProviders: () => [],
+      listModels: async () => [],
+      resolveModelInfo: async (_provider: string, model: string) => (model === 'deepseek-reasoner'
+        ? { reasoning: { efforts: [{ id: 'low', name: 'Low' }, { id: 'high', name: 'High' }], defaultEffort: 'high' } }
+        : {}),
+      stream: (options: { model: string; reasoningEffort?: string; maxTokens?: number }) => {
+        calls.push({ model: options.model, reasoningEffort: options.reasoningEffort, maxTokens: options.maxTokens })
+        return (async function* () { yield { type: 'text-delta', text: '曾是' } })()
+      },
+    } as never
+    const ctxA = new Context(); roots.push(ctxA); ctxA.provide('llm', llm)
+    const ctxB = new Context(); roots.push(ctxB); ctxB.provide('llm', llm)
+    const thinking = new PdfReaderController(ctxA, config({ provider: 'deepseek-official', model: 'deepseek-reasoner' }))
+    const row = await thinking.importBook('paper.pdf', pdfBase64(), null, AbortSignal.timeout(5000))
+
+    for await (const chunk of thinking.explain({ bookId: row.bookId, page: 2, kind: 'translate', text: 'was', context: 'it was' }, AbortSignal.timeout(5000))) void chunk
+    expect(calls[0]).toEqual({ model: 'deepseek-reasoner', reasoningEffort: 'high', maxTokens: 10240 })
+
+    const plain = new PdfReaderController(ctxB, config({ provider: 'deepseek-official', model: 'deepseek-chat' }))
+    for await (const chunk of plain.explain({ bookId: row.bookId, page: 2, kind: 'translate', text: 'was', context: 'it was' }, AbortSignal.timeout(5000))) void chunk
+    expect(calls[1]).toEqual({ model: 'deepseek-chat', maxTokens: 2048 })
+  })
+
   it('refuses screenshot asks when the resolved model cannot see images', async () => {
     const ctx = new Context(); roots.push(ctx)
     ctx.provide('attachments', { saveImage: async () => { throw new Error('unreachable') } } as never)

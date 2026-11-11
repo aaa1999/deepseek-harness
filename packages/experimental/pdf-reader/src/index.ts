@@ -9,7 +9,7 @@ import z from '@deepseek-ai/schemastery'
 import { isAbsolute } from 'node:path'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-attachment'
-import type {} from '@deepseek-ai/dsh-llm'
+import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { defaultShotQuestion, MAX_QUESTION_CHARS, shotSystemPrompt, shotUserPrompt, systemPromptFor, userPromptFor, type PromptContext } from './prompts.ts'
 import { HIGHLIGHT_COLORS } from './types.ts'
@@ -70,8 +70,16 @@ export interface Config {
   shotProvider: string
   /** Model override for screenshot questions; empty follows the profile default. */
   shotModel: string
-  /** Output token cap for one treatment. */
+  /** Answer token budget for one treatment; thinking models request it plus headroom. */
   maxOutputTokens: number
+}
+
+/** Thinking request controls one resolved treatment model carries. */
+interface ThinkingControls {
+  /** The reasoning effort to request, when the model declares any. */
+  effort?: ReasoningEffortId
+  /** Whether the requested effort actually thinks. */
+  thinking: boolean
 }
 
 /** The Fetch route that serves one cover thumbnail. */
@@ -91,6 +99,18 @@ function shotUrl(bookId: string, annotationId: string): string {
 
 /** Longest source URL the origin record persists. */
 const MAX_SOURCE_URL = 2000
+
+/** Largest answer budget one profile may configure for a treatment. */
+const MAX_OUTPUT_TOKENS = 131072
+
+/**
+ * Output headroom one thinking model's request adds above the configured
+ * answer budget. Reasoning and the answer share a single output ceiling on
+ * several OpenAI-compatible endpoints (zai GLM included), so an unraised cap
+ * lets the reasoning phase starve the answer — the "model returned no text"
+ * failure this guards against.
+ */
+const THINKING_HEADROOM_TOKENS = 8192
 
 /**
  * The origin record one import keeps, or null when the caller's record is
@@ -141,7 +161,7 @@ export default class PdfReaderController extends TypertRemoteService {
     model: z.string().default(''),
     shotProvider: z.string().default(''),
     shotModel: z.string().default(''),
-    maxOutputTokens: z.natural().min(64).max(32768).default(2048),
+    maxOutputTokens: z.natural().min(64).max(MAX_OUTPUT_TOKENS).default(2048),
   })
 
   private readonly store: PdfStore
@@ -398,7 +418,8 @@ export default class PdfReaderController extends TypertRemoteService {
     const models: TreatmentModel[] = []
     for (const provider of this.ctx.llm.listProviders()) {
       for (const model of await this.ctx.llm.listModels(provider.id)) {
-        models.push({ provider: provider.id, model: model.id, name: model.name, vision: await this.acceptsImages(provider.id, model.id) })
+        const { vision } = await this.modelCapabilities(provider.id, model.id)
+        models.push({ provider: provider.id, model: model.id, name: model.name, vision })
       }
     }
     const fallback = this.ctx.get('agentDefaultModel') as { provider?: string; model?: string } | undefined
@@ -446,6 +467,7 @@ export default class PdfReaderController extends TypertRemoteService {
     if (text === '') throw new RemoteError('pdf/invalid-request', 'Selection text is empty', { reason: 'text' })
     const meta = await this.metaOf(request.bookId)
     const selection = this.resolveTextSelection()
+    const capabilities = await this.modelCapabilities(selection.provider, selection.model)
     const context: PromptContext = {
       title: meta.title,
       pageLabel: `第 ${Math.max(1, request.page)} 页`,
@@ -459,7 +481,8 @@ export default class PdfReaderController extends TypertRemoteService {
         model: selection.model,
         system: systemPromptFor(request.kind, context),
         messages: [{ role: 'user', content: [{ type: 'text', text: userPromptFor(request) }] }],
-        maxTokens: this.config.maxOutputTokens,
+        maxTokens: this.treatmentMaxTokens(capabilities.thinking),
+        ...capabilities.effort !== undefined ? { reasoningEffort: capabilities.effort } : {},
       })
       for await (const chunk of stream) {
         signal.throwIfAborted()
@@ -516,7 +539,8 @@ export default class PdfReaderController extends TypertRemoteService {
             { type: 'text', text: shotUserPrompt({ ...request, question }) },
           ],
         }],
-        maxTokens: this.config.maxOutputTokens,
+        maxTokens: this.treatmentMaxTokens(selection.thinking),
+        ...selection.effort !== undefined ? { reasoningEffort: selection.effort } : {},
       })
       for await (const chunk of stream) {
         signal.throwIfAborted()
@@ -542,8 +566,12 @@ export default class PdfReaderController extends TypertRemoteService {
     return this.defaultSelection('pdf/no-model', 'No treatment model configured and no profile default model available')
   }
 
-  /** Provider and model for screenshots: the per-ask pair, the configured pair, or the profile default; must see images. */
-  private async resolveShotSelection(request?: AskImageRequest): Promise<{ provider: string; model: string }> {
+  /**
+   * Provider and model for screenshots, with thinking request controls:
+   * the per-ask pair, the configured pair, or the profile default; must
+   * see images.
+   */
+  private async resolveShotSelection(request?: AskImageRequest): Promise<{ provider: string; model: string } & ThinkingControls> {
     const override = request?.provider !== undefined && request.model !== undefined
       && request.provider !== '' && request.model !== ''
       ? { provider: request.provider, model: request.model }
@@ -551,10 +579,15 @@ export default class PdfReaderController extends TypertRemoteService {
     const selection = override ?? (this.config.shotProvider !== '' && this.config.shotModel !== ''
       ? { provider: this.config.shotProvider, model: this.config.shotModel }
       : this.defaultSelection('pdf/no-vision-model', 'No screenshot model configured and no profile default model available'))
-    if (!await this.acceptsImages(selection.provider, selection.model)) {
+    const capabilities = await this.modelCapabilities(selection.provider, selection.model)
+    if (!capabilities.vision) {
       throw new RemoteError('pdf/no-vision-model', `"${selection.provider}/${selection.model}" accepts no image input`, { reason: 'modality' })
     }
-    return selection
+    return {
+      ...selection,
+      ...capabilities.effort !== undefined ? { effort: capabilities.effort } : {},
+      thinking: capabilities.thinking,
+    }
   }
 
   /** The profile default pair, or the named failure when none resolves. */
@@ -567,14 +600,44 @@ export default class PdfReaderController extends TypertRemoteService {
     throw new RemoteError(code, reason, { reason: 'no-selection' })
   }
 
-  /** Whether one routable model declares image input; unknown metadata answers false. */
-  private async acceptsImages(provider: string, model: string): Promise<boolean> {
+  /**
+   * One treatment model's request-relevant capabilities: image input, and the
+   * reasoning effort a treatment should request — the adapter's configured
+   * default, else the mildest supported level — with whether that level
+   * actually thinks. Unresolvable metadata answers no capabilities, which the
+   * shot path reports as a non-vision model.
+   * @param provider - provider route of the model.
+   * @param model - model id under the provider.
+   * @returns the vision flag and the thinking request controls.
+   */
+  private async modelCapabilities(provider: string, model: string): Promise<{ vision: boolean } & ThinkingControls> {
     try {
       const info = await this.ctx.llm.resolveModelInfo(provider, model)
-      return info.inputModalities?.includes('image') === true
+      const effort = info.reasoning?.defaultEffort ?? info.reasoning?.efforts[0]?.id
+      return {
+        vision: info.inputModalities?.includes('image') === true,
+        ...effort !== undefined
+          ? { effort, thinking: effort !== ReasoningEffortId('off') }
+          : { thinking: false },
+      }
     } catch {
-      return false
+      return { vision: false, thinking: false }
     }
+  }
+
+  /**
+   * The output ceiling one treatment requests: the configured answer budget,
+   * plus thinking headroom when the requested effort actually thinks, capped
+   * at the configurable maximum. Reasoning shares this ceiling with the answer
+   * on zai-style endpoints, so an unraised budget lets reasoning starve the
+   * answer into the "model returned no text" failure.
+   * @param thinking - whether the request carries a thinking effort.
+   * @returns the maxTokens value for the LLM request.
+   */
+  private treatmentMaxTokens(thinking: boolean): number {
+    return thinking
+      ? Math.min(this.config.maxOutputTokens + THINKING_HEADROOM_TOKENS, MAX_OUTPUT_TOKENS)
+      : this.config.maxOutputTokens
   }
 
   /** Decode canonical base64 under one byte cap, answering the typed failure. */
