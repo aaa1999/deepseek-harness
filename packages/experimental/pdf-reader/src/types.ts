@@ -70,6 +70,12 @@ export interface ShotRect {
 }
 
 /** One persisted text highlight with its LLM results. */
+/** The closed marker palette a text highlight paints with. */
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'purple'
+
+/** Every palette member, in toolbar order. */
+export const HIGHLIGHT_COLORS: readonly HighlightColor[] = ['yellow', 'green', 'blue', 'pink', 'purple']
+
 export interface TextAnnotation {
   readonly kind: 'text'
   readonly id: string
@@ -80,6 +86,8 @@ export interface TextAnnotation {
   /** Selection end, exclusive. */
   readonly end: number
   readonly quote: string
+  /** Marker color; absent is the palette's default (yellow). */
+  readonly color?: HighlightColor
   readonly createdAt: number
   readonly results: ExplainResult[]
 }

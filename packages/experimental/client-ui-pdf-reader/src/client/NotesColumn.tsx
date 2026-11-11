@@ -4,13 +4,13 @@ import { MarkdownText, type MarkdownLabels } from '@deepseek-ai/dsh-client-ui-pr
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ExplainKind, PdfAnnotation } from '@deepseek-ai/dsh-pdf-reader/types'
 import type { ShotStream, TextStream } from './controller.ts'
-import type { PdfReaderInjected } from './contract.ts'
+import { COLOR_FILL, HIGHLIGHT_COLORS, type PdfReaderInjected } from './contract.ts'
 import { NS } from './locales.ts'
 import css from './reader.module.css'
 
 /** Faces the notes column renders with. */
 export type NotesProps = PropsLocale<typeof NS>
-  & InjectFace<Pick<PdfReaderInjected, 'hooks' | 'retryTextAnnotation' | 'deleteAnnotation' | 'copyText'>>
+  & InjectFace<Pick<PdfReaderInjected, 'hooks' | 'retryTextAnnotation' | 'deleteAnnotation' | 'setAnnotationColor' | 'copyText'>>
   & {
     /** Page the reading column shows; other pages' cards stay dimmed as history. */
     readonly page: number
@@ -49,7 +49,7 @@ function kindLabel(kind: ResultRow['kind'], translate: string, explain: string, 
  * @returns the notes column.
  */
 export function NotesColumn({
-  useReader, page, locate, retryTextAnnotation, retryShot, deleteAnnotation, copyText, t,
+  useReader, page, locate, retryTextAnnotation, retryShot, deleteAnnotation, setAnnotationColor, copyText, t,
 }: NotesProps) {
   const annotations = useReader(state => state.annotations)
   const streams = useReader(state => state.streams)
@@ -114,6 +114,19 @@ export function NotesColumn({
             {question !== '' ? <p className={css.shotQuestion}>{question}</p> : null}
           </div>
           : <blockquote className={css.quote}>{annotation !== undefined && annotation.kind === 'text' ? annotation.quote : ''}</blockquote>}
+        {!isShot && annotation?.kind === 'text'
+          ? <div className={css.colorRow} role="group" aria-label={t('colorLabel')}>
+            {HIGHLIGHT_COLORS.map(color => <button
+              key={color}
+              type="button"
+              className={`${css.colorDot} ${(annotation.color ?? 'yellow') === color ? css.colorDotActive : ''}`}
+              style={{ background: COLOR_FILL[color] }}
+              aria-label={t('colorLabel')}
+              aria-pressed={(annotation.color ?? 'yellow') === color}
+              onClick={() => { setAnnotationColor(id, color) }}
+            />)}
+          </div>
+          : null}
         {rows.map((row, index) => <div key={index} className={row.live ? css.resultLive : css.result}>
           <span className={css.resultKind}>{kindLabel(row.kind, t('translate'), t('explain'), t('shot'))}</span>
           {row.error !== null

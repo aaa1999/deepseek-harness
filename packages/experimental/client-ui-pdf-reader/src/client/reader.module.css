@@ -447,6 +447,13 @@ body[data-ds-dark-theme] .reading {
 }
 
 /* The text layer keeps its base-scale layout and scales with zoom. */
+.highlightLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
 .textHost {
   position: absolute;
   inset: 0 auto auto 0;
@@ -456,12 +463,25 @@ body[data-ds-dark-theme] .reading {
   -webkit-user-select: text;
 }
 
-/* The single accent: saved text highlights underline quietly. */
-::highlight(pdf-reader-note) {
-  background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.25)) 55%, transparent);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
+/* The marker palette on each text card: five quiet dots, the active one ringed. */
+.colorRow {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+
+.colorDot {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.colorDotActive {
+  outline: 2px solid var(--dsw-alias-accent, #339af0);
+  outline-offset: 1px;
 }
 
 /* The screenshot rubber band shares the accent. */
@@ -528,6 +548,47 @@ body[data-ds-dark-theme] .reading {
   border-top: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 12%, transparent);
   font-size: 13px;
   color: var(--dsw-alias-label-secondary, inherit);
+}
+
+/* The marker pen: a swatch that opens the palette, beside the highlight action. */
+.penGroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.penSwatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 20%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.penSwatchDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.penPalette {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: var(--dsw-alias-bg-layer-2, #fff);
+  border: 0.5px solid color-mix(in srgb, var(--dsw-alias-label-primary, currentColor) 15%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
 .readerFooter > button {

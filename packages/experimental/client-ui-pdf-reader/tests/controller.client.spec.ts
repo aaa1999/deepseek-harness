@@ -183,6 +183,36 @@ describe('ReaderController', () => {
     expect(reader.store.getSnapshot().streams[saved.id]).toBeUndefined()
   })
 
+  it('annotates a selection as a plain marker highlight with the current pen color', async () => {
+    const { reader, remote } = controller()
+    await reader.loadLibrary()
+    reader.openBook('b1')
+    await vi.runAllTimersAsync()
+
+    reader.annotate(selection)
+    await vi.runAllTimersAsync()
+
+    const saved = remote.saveAnnotation.mock.calls[0]?.[1] as Extract<PdfAnnotation, { kind: 'text' }>
+    expect(saved).toMatchObject({ kind: 'text', page: 2, quote: 'was th', color: 'yellow', results: [] })
+    expect(remote.explain).not.toHaveBeenCalled()
+    expect(reader.store.getSnapshot().annotations[0]?.id).toBe(saved.id)
+  })
+
+  it('repaints one annotation in another color and makes that color current', async () => {
+    const { reader, remote } = controller()
+    await reader.loadLibrary()
+    reader.openBook('b1')
+    await vi.runAllTimersAsync()
+    reader.store.set({ ...reader.store.getSnapshot(), annotations: [savedText()] })
+
+    reader.setAnnotationColor(savedText().id, 'blue')
+    await vi.runAllTimersAsync()
+
+    const saved = remote.saveAnnotation.mock.calls[0]?.[1] as Extract<PdfAnnotation, { kind: 'text' }>
+    expect(saved).toMatchObject({ id: savedText().id, color: 'blue' })
+    expect(reader.store.getSnapshot().annotations[0]).toMatchObject({ id: savedText().id, color: 'blue' })
+  })
+
   it('records a stream failure without saving', async () => {
     const { reader, remote } = controller()
     await reader.loadLibrary()

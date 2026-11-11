@@ -8,18 +8,13 @@
  * quote remains the fallback when a page revision moves the text.
  */
 
+import type { HighlightColor } from '@deepseek-ai/dsh-pdf-reader/types'
+
 /** One text node's span in the page's concatenated stream. */
 interface TextSpan { readonly node: Text; readonly start: number; readonly end: number }
 
 /** The concatenated plain-text stream of one rendered page. */
 export interface TextMap { readonly spans: readonly TextSpan[]; readonly total: number }
-
-/** Highlight registry name for saved annotations inside the reading stage. */
-const HIGHLIGHT_NAME = 'pdf-reader-note'
-
-/** Narrow browser faces the CSS Custom Highlight API adds; absent engines skip highlights. */
-interface HighlightConstructor { new (...ranges: Range[]): object }
-type HighlightRegistry = { set(name: string, highlight: object): void; delete(name: string): boolean }
 
 /** Map every text node under `root` into one offset-addressable stream. */
 export function mapText(root: Element): TextMap {
@@ -99,21 +94,46 @@ export function captureSelection(container: HTMLElement, map: TextMap): PageSele
   return { start, end, text: range.toString(), context: contextOf(map, start, end) }
 }
 
-/** The engine-level `CSS` global, absent in some embedded DOMs (jsdom); never a throw. */
-function cssHighlights(): HighlightRegistry | undefined {
-  return (globalThis as { CSS?: { highlights?: HighlightRegistry } }).CSS?.highlights
+/** One saved annotation's paint: its resolved range and marker color. */
+export interface HighlightEntry {
+  readonly range: Range
+  readonly color: HighlightColor
 }
 
-/** Paint saved annotation ranges through the CSS Custom Highlight API. */
-export function applyHighlights(ranges: readonly Range[]): void {
-  const highlights = cssHighlights()
-  const HighlightCtor = (globalThis as { Highlight?: HighlightConstructor }).Highlight
-  if (highlights === undefined || HighlightCtor === undefined) return
-  if (ranges.length === 0) { highlights.delete(HIGHLIGHT_NAME); return }
-  highlights.set(HIGHLIGHT_NAME, new HighlightCtor(...ranges))
+/**
+ * Paint saved annotation ranges as translucent rectangles inside one overlay
+ * layer. `range.getClientRects()` carries the pdf.js text layer's per-span
+ * `transform: scaleX()` — the CSS Custom Highlight API does not, so overlay
+ * geometry is the only rendering that lands on the glyphs the reader sees.
+ * @param layer - the empty overlay element positioned over the rendered page.
+ * @param entries - each saved annotation's range and marker color.
+ * @param fill - the background color each palette marker paints with.
+ */
+export function paintHighlights(
+  layer: HTMLElement,
+  entries: readonly HighlightEntry[],
+  fill: Record<HighlightColor, string>,
+): void {
+  const origin = layer.getBoundingClientRect()
+  layer.replaceChildren()
+  for (const entry of entries) {
+    for (const rect of entry.range.getClientRects()) {
+      if (rect.width <= 0 || rect.height <= 0) continue
+      const box = document.createElement('div')
+      box.style.position = 'absolute'
+      box.style.left = `${rect.left - origin.left}px`
+      box.style.top = `${rect.top - origin.top}px`
+      box.style.width = `${rect.width}px`
+      box.style.height = `${rect.height}px`
+      box.style.backgroundColor = fill[entry.color]
+      box.style.opacity = '0.55'
+      box.style.borderRadius = '2px'
+      layer.appendChild(box)
+    }
+  }
 }
 
 /** Drop every painted annotation highlight. */
-export function clearHighlights(): void {
-  cssHighlights()?.delete(HIGHLIGHT_NAME)
+export function clearHighlights(layer: HTMLElement | null): void {
+  layer?.replaceChildren()
 }

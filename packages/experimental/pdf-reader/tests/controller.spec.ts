@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import PdfReaderController from '../src/index.ts'
+import type { HighlightColor } from '../src/types.ts'
 import { base64Of, pdfFixture, pngFixture } from './fixture.ts'
 
 const roots: Context[] = []
@@ -149,6 +150,18 @@ describe('PdfReaderController', () => {
 
     await service.deleteAnnotation(row.bookId, shot.id)
     await expect(service.annotations(row.bookId)).resolves.toEqual([note])
+  })
+
+  it('accepts palette marker colors and refuses anything else', async () => {
+    const service = controller()
+    const row = await service.importBook('paper.pdf', pdfBase64(), null, AbortSignal.timeout(5000))
+    const note = {
+      kind: 'text' as const, id: '0192ab00-0000-7000-8000-00000000000c', page: 1,
+      start: 1, end: 5, quote: 'hello', createdAt: 1, results: [],
+    }
+    await expect(service.saveAnnotation(row.bookId, { ...note, color: 'purple' })).resolves.toBeUndefined()
+    // The color must cross the Remote boundary as runtime data, so the guard is worth pinning despite the static union.
+    await expect(service.saveAnnotation(row.bookId, { ...note, color: 'chartreuse' as HighlightColor })).rejects.toThrow(/color/i)
   })
 
   it('streams a text treatment through the LLM service', async () => {

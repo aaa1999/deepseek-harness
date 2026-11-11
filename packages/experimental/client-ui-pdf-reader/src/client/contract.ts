@@ -1,8 +1,24 @@
 /** Slot and menu faces shared by the PDF reader client modules. */
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ContextMenuTarget, MenuPoint } from '@deepseek-ai/dsh-client-ui-context-menu/client'
-import type { ExplainKind, ShotRect } from '@deepseek-ai/dsh-pdf-reader/types'
+import type { ExplainKind, HighlightColor, ShotRect } from '@deepseek-ai/dsh-pdf-reader/types'
 import type { PdfReaderState } from './controller.ts'
+
+/**
+ * The marker palette in toolbar order, mirroring the Host's `HIGHLIGHT_COLORS`
+ * validator. Cross-plugin value imports are forbidden in client bundles, so
+ * the tuple lives on both sides of the wire.
+ */
+export const HIGHLIGHT_COLORS = ['yellow', 'green', 'blue', 'pink', 'purple'] as const satisfies readonly HighlightColor[]
+
+/** Marker fill of each palette color, shared by the reading highlights and every palette dot. */
+export const COLOR_FILL: Record<HighlightColor, string> = {
+  yellow: '#ffe066',
+  green: '#8ce99a',
+  blue: '#74c0fc',
+  pink: '#faa2c1',
+  purple: '#d0bfff',
+}
 
 declare module '@deepseek-ai/dsh-client-ui-context-menu/client' {
   interface ContextMenuTargetMap {
@@ -61,7 +77,13 @@ export interface PdfReaderInjected {
   setZoom(zoom: number): void
   /** Choose the reading presentation: `scroll` pans a width-fit page, `flip` steps height-fit pages. */
   setReadingMode(mode: 'scroll' | 'flip'): void
+  /** Choose the marker pen's color; new highlights and recolors paint with it. */
+  setPenColor(color: HighlightColor): void
   treat(selection: PdfSelectionValue, kind: ExplainKind): void
+  /** Persist one selection as a plain marker highlight, with no model treatment. */
+  annotate(selection: PdfSelectionValue): void
+  /** Repaint one saved text annotation in another marker color, and make that color current. */
+  setAnnotationColor(id: string, color: HighlightColor): void
   /** Ask one fresh screenshot question. */
   askShot(ask: ShotAsk): void
   /** Load the vision-capable models the ask popover lists. */

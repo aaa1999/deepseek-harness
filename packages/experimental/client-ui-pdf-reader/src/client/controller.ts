@@ -5,10 +5,10 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-pdf-reader/remote'
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
 import type {
-  BookRow, ExplainKind, MetaReport, PdfAnnotation, ShotRect, TocEntry,
+  BookRow, ExplainKind, HighlightColor, MetaReport, PdfAnnotation, ShotRect, TextAnnotation, TocEntry,
 } from '@deepseek-ai/dsh-pdf-reader/types'
 import type { PdfSelectionValue, ShotAsk } from './contract.ts'
-import { readReadingMode, writeReadingMode, type ReadingMode } from './preference.ts'
+import { readAnnotationColor, readReadingMode, writeAnnotationColor, writeReadingMode, type ReadingMode } from './preference.ts'
 
 /** Copy one record without a key; dynamic `delete` stays out of the codebase. */
 function withoutKey<T>(record: Readonly<Record<string, T>>, key: string): Record<string, T> {
@@ -60,6 +60,8 @@ export interface PdfReaderState {
   view: 'library' | 'reader'
   /** Reading presentation: scroll up and down a width-fit page, or flip height-fit pages. */
   mode: ReadingMode
+  /** The marker pen's current color; new highlights and recolors paint with it. */
+  penColor: HighlightColor
   library: { status: 'loading' | 'ready' | 'failed'; error: string }
   books: readonly BookRow[]
   importing: boolean
@@ -126,6 +128,7 @@ export class ReaderController {
   readonly store: SnapshotStore<PdfReaderState> = createSnapshotStore<PdfReaderState>({
     view: 'library',
     mode: readReadingMode(),
+    penColor: readAnnotationColor(),
     library: { status: 'loading', error: '' },
     books: [],
     importing: false,
@@ -297,6 +300,12 @@ export class ReaderController {
     this.store.set({ ...this.store.getSnapshot(), mode })
   }
 
+  /** Choose the marker pen's color; the choice persists and new highlights paint with it. */
+  setPenColor(color: HighlightColor): void {
+    writeAnnotationColor(color)
+    this.store.set({ ...this.store.getSnapshot(), penColor: color })
+  }
+
   /** Merge the browser's first-open structure report into the open book and shelf. */
   async reportMeta(bookId: string, report: MetaReport): Promise<void> {
     const result = await this.ctx.remote.pdfReader.saveBookMeta(bookId, report)
@@ -388,6 +397,7 @@ export class ReaderController {
           start: selection.start,
           end: selection.end,
           quote: selection.text,
+          color: this.store.getSnapshot().penColor,
           createdAt: Date.now(),
           results: [{ kind, text, model, createdAt: Date.now() }],
         }
@@ -406,6 +416,49 @@ export class ReaderController {
       }
     })()
     void run
+  }
+
+  /** Persist one selection as a plain marker highlight, with no model treatment. */
+  annotate(selection: PdfSelectionValue): void {
+    const annotation: TextAnnotation = {
+      kind: 'text',
+      id: randomUUID(),
+      page: selection.page,
+      start: selection.start,
+      end: selection.end,
+      quote: selection.text,
+      color: this.store.getSnapshot().penColor,
+      createdAt: Date.now(),
+      results: [],
+    }
+    const run = (async () => {
+      const saved = await this.ctx.remote.pdfReader.saveAnnotation(selection.bookId, annotation)
+      if (!saved.ok) throw saved.error
+      const state = this.store.getSnapshot()
+      this.store.set({ ...state, annotations: [annotation, ...state.annotations.filter(row => row.id !== annotation.id)] })
+    })()
+    void run.catch(() => { /* a failed plain highlight simply never lands */ })
+  }
+
+  /** Repaint one saved text annotation in another marker color, and make that color current. */
+  setAnnotationColor(annotationId: string, color: HighlightColor): void {
+    const state = this.store.getSnapshot()
+    const bookId = state.open?.bookId
+    const current = state.annotations.find(row => row.id === annotationId)
+    if (bookId === undefined || current === undefined || current.kind !== 'text') return
+    const next: TextAnnotation = { ...current, color }
+    const run = (async () => {
+      const saved = await this.ctx.remote.pdfReader.saveAnnotation(bookId, next)
+      if (!saved.ok) throw saved.error
+      writeAnnotationColor(color)
+      const fresh = this.store.getSnapshot()
+      this.store.set({
+        ...fresh,
+        penColor: color,
+        annotations: fresh.annotations.map(row => row.id === annotationId ? next : row),
+      })
+    })()
+    void run.catch(() => { /* a failed repaint keeps the previous color */ })
   }
 
   /** Re-run the first treatment of a saved text annotation against its stored quote. */

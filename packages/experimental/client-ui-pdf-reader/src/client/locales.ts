@@ -6,6 +6,8 @@ export const NS = 'pdf.reader'
 /** Simplified Chinese dictionary and key source. */
 export const zh = {
   panel: 'PDF',
+  highlight: '划线',
+  colorLabel: '标注颜色',
   import: '导入 PDF',
   importing: '导入中…',
   empty: '书架还没有文档，导入一份 PDF 开始阅读',
@@ -77,6 +79,8 @@ export type PdfReaderKey = keyof typeof zh
 /** English dictionary checked against the Chinese key set. */
 export const en: Record<PdfReaderKey, string> = {
   panel: 'PDF',
+  highlight: 'Highlight',
+  colorLabel: 'Highlight color',
   import: 'Import PDF',
   importing: 'Importing…',
   empty: 'No documents yet. Import a PDF to start reading.',

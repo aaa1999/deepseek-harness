@@ -7,9 +7,10 @@ import type { PdfDocument } from './pdf/document.ts'
 import { renderPdfPage, renderThumbnail } from './pdf/document.ts'
 import { openPdf, type PdfSession } from './pdf/runtime.ts'
 import { outlinePages, pdfTextRenderer } from './pdf/text.ts'
-import { applyHighlights, captureSelection, clearHighlights, mapText, rangeOf, type TextMap } from './anchor.ts'
+import { paintHighlights, captureSelection, clearHighlights, mapText, rangeOf, type TextMap } from './anchor.ts'
 import { canvasToBase64Png, cropCanvas, rectFromStroke, strokeIsMeaningful, type StrokePoint, type StrokeRect } from './shot.ts'
 import { NotesColumn } from './NotesColumn.tsx'
+import { COLOR_FILL, HIGHLIGHT_COLORS } from './contract.ts'
 import { NS } from './locales.ts'
 import type { PdfReaderInjected, PdfSelectionValue } from './contract.ts'
 import css from './reader.module.css'
@@ -47,11 +48,13 @@ interface BaseSize { readonly width: number; readonly height: number }
  * @returns the reading view.
  */
 export function ReaderView({
-  useReader, documents, closeBook, selectPage, stepPage, setZoom, setReadingMode, askShot, loadShotCatalog,
-  retryTextAnnotation, retryShotAnnotation, deleteAnnotation, copyText, openMenu, t,
+  useReader, documents, closeBook, selectPage, stepPage, setZoom, setReadingMode, setPenColor, annotate, askShot, loadShotCatalog,
+  retryTextAnnotation, retryShotAnnotation, deleteAnnotation, setAnnotationColor, copyText, openMenu, t,
 }: ReaderProps) {
   const open = useReader(state => state.open)
   const annotations = useReader(state => state.annotations)
+  const penColor = useReader(state => state.penColor)
+  const [penPaletteOpen, setPenPaletteOpen] = useState(false)
   const shotCatalog = useReader(state => state.shotCatalog)
   const shotEffective = useReader(state => state.shotEffective)
   const mode = useReader(state => state.mode)
@@ -59,6 +62,9 @@ export function ReaderView({
   const box = useRef<HTMLDivElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const textHost = useRef<HTMLDivElement>(null)
+  const highlightLayer = useRef<HTMLDivElement>(null)
+  /** The selection captured at highlight-button mousedown, before the click collapses it. */
+  const pendingHighlight = useRef<PdfSelectionValue | null>(null)
   const text = useRef<TextMap>(EMPTY_MAP)
   const textPage = useRef(0)
   const pendingRender = useRef(Promise.resolve())
@@ -157,7 +163,7 @@ export function ReaderView({
     const buildText = textPage.current !== page
     let newText: ReturnType<ReturnType<typeof pdfTextRenderer>> | undefined
     if (buildText) {
-      clearHighlights()
+      clearHighlights(highlightLayer.current)
       host.replaceChildren()
       text.current = EMPTY_MAP
     }
@@ -194,21 +200,44 @@ export function ReaderView({
 
   // Release the text layer with the view.
   useEffect(() => () => {
-    clearHighlights()
+    clearHighlights(highlightLayer.current)
     stopPan()
     textPage.current = 0
   }, [])
 
+  /** Repaint saved highlights from the page's current layout; the rectangles are snapshot geometry. */
+  const repaintHighlights = useCallback(() => {
+    if (open === null) return
+    const layer = highlightLayer.current
+    if (layer === null) return
+    const entries = annotations
+      .filter((annotation): annotation is Extract<PdfAnnotation, { kind: 'text' }> =>
+        annotation.kind === 'text' && annotation.page === open.page)
+      .map(annotation => ({
+        range: rangeOf(text.current, annotation.start, annotation.end),
+        color: annotation.color ?? 'yellow',
+      }))
+      .filter((entry): entry is { range: Range; color: 'yellow' | 'green' | 'blue' | 'pink' | 'purple' } => entry.range !== null)
+    paintHighlights(layer, entries, COLOR_FILL)
+  }, [annotations, open])
+
   // Saved highlights repaint whenever annotations, the page, or its text change.
   useEffect(() => {
     if (open === null) return
-    const ranges = annotations
-      .filter((annotation): annotation is Extract<PdfAnnotation, { kind: 'text' }> =>
-        annotation.kind === 'text' && annotation.page === open.page)
-      .map(annotation => rangeOf(text.current, annotation.start, annotation.end))
-      .filter((range): range is Range => range !== null)
-    applyHighlights(ranges)
-  }, [annotations, open?.page, renderTick]) // eslint-disable-line react-hooks/exhaustive-deps
+    repaintHighlights()
+    // The painted rectangles are snapshot geometry: every zoom step and render
+    // must repaint them, or the markers drift off their words.
+  }, [repaintHighlights, renderTick, zoom]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Page-box resizes (pane width changes, fit-mode reflows) also invalidate the
+  // snapshot geometry, even when no render tick follows them.
+  useEffect(() => {
+    const node = box.current
+    if (node === null) return
+    const observer = new ResizeObserver(() => { repaintHighlights() })
+    observer.observe(node)
+    return () => { observer.disconnect() }
+  }, [repaintHighlights])
 
   // Fit mode keeps the page inside the reading column until the reader zooms
   // manually; scroll fits the width, flip fits the height.
@@ -496,6 +525,7 @@ export function ReaderView({
               style={base === null ? undefined : ({ width: `${base.width}px`, height: `${base.height}px`, scale: String(zoom) } as CSSProperties)}
               data-pdf-text
             />
+            <div ref={highlightLayer} className={css.highlightLayer} aria-hidden="true" />
             {overlay !== null && pageSize !== null
               ? <div
                 className={css.shotOverlay} aria-hidden="true"
@@ -564,10 +594,52 @@ export function ReaderView({
       <NotesColumn
         useReader={useReader} page={open.page} locate={locate}
         retryTextAnnotation={retryTextAnnotation} retryShot={retryShot} deleteAnnotation={deleteAnnotation}
+        setAnnotationColor={setAnnotationColor}
         copyText={copyText} t={t}
       />
     </div>
     <footer className={css.readerFooter}>
+      <div className={css.penGroup}>
+        {penPaletteOpen
+          ? <div className={css.penPalette} role="group" aria-label={t('colorLabel')}>
+            {HIGHLIGHT_COLORS.map(color => <button
+              key={color}
+              type="button"
+              className={`${css.colorDot} ${penColor === color ? css.colorDotActive : ''}`}
+              style={{ background: COLOR_FILL[color] }}
+              aria-label={t('colorLabel')}
+              aria-pressed={penColor === color}
+              onClick={() => { setPenColor(color) }}
+            />)}
+          </div>
+          : null}
+        <button
+          type="button"
+          className={css.penSwatch}
+          aria-label={t('colorLabel')}
+          aria-expanded={penPaletteOpen}
+          onClick={() => { setPenPaletteOpen(open => !open) }}
+        >
+          <span className={css.penSwatchDot} style={{ background: COLOR_FILL[penColor] }} aria-hidden="true" />
+          ▾
+        </button>
+        <button
+          type="button"
+          onMouseDown={() => {
+            // Chrome collapses the text selection as the button's mousedown
+            // default; grab it first or the click below would find nothing.
+            pendingHighlight.current = capture() ?? null
+          }}
+          onClick={() => {
+            const target = pendingHighlight.current ?? capture()
+            pendingHighlight.current = null
+            if (target === undefined) return
+            annotate(target)
+            document.getSelection()?.removeAllRanges()
+            setPenPaletteOpen(false)
+          }}
+        >{t('highlight')}</button>
+      </div>
       <button type="button" disabled={open.page <= 1} onClick={() => { stepPage(-1) }}>{t('previousPage')}</button>
       <span>{t('pageOf', { current: open.page, total: Math.max(open.pageCount, 1) })}</span>
       <button type="button" disabled={open.page >= open.pageCount && open.pageCount > 0} onClick={() => { stepPage(1) }}>{t('nextPage')}</button>

@@ -9,7 +9,7 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-api-remote-access/client'
 import type {} from '@deepseek-ai/dsh-pdf-reader/remote'
 import pdfReaderRemote from '@deepseek-ai/dsh-pdf-reader/remote'
-import type { ExplainKind } from '@deepseek-ai/dsh-pdf-reader/types'
+import type { ExplainKind, HighlightColor } from '@deepseek-ai/dsh-pdf-reader/types'
 import type {} from './contract.ts'
 import type { PdfReaderInjected, PdfSelectionValue, ShotAsk } from './contract.ts'
 import { ReaderController } from './controller.ts'
@@ -67,6 +67,10 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
         order: 0,
         resolve: (selection: ContextMenuTargetMap['pdfSelection']) => [
           {
+            id: 'highlight', label: t('highlight'),
+            run: () => { controller.annotate(selection) },
+          },
+          {
             id: 'translate', label: t('translate'),
             run: () => { controller.treat(selection, 'translate' satisfies ExplainKind) },
           },
@@ -97,7 +101,10 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           stepPage: (delta: number) => { controller.stepPage(delta) },
           setZoom: (zoom: number) => { controller.setZoom(zoom) },
           setReadingMode: (mode: 'scroll' | 'flip') => { controller.setReadingMode(mode) },
+          setPenColor: (color: HighlightColor) => { controller.setPenColor(color) },
           treat: (selection: PdfSelectionValue, kind: ExplainKind) => { controller.treat(selection, kind) },
+          annotate: (selection: PdfSelectionValue) => { controller.annotate(selection) },
+          setAnnotationColor: (id: string, color: HighlightColor) => { controller.setAnnotationColor(id, color) },
           askShot: (ask: ShotAsk) => { controller.askShot(ask) },
           loadShotCatalog: () => { void controller.loadShotCatalog() },
           retryTextAnnotation: (id: string) => { controller.retryTextAnnotation(id) },

@@ -12,6 +12,7 @@ import type {} from '@deepseek-ai/dsh-attachment'
 import type {} from '@deepseek-ai/dsh-llm'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { defaultShotQuestion, MAX_QUESTION_CHARS, shotSystemPrompt, shotUserPrompt, systemPromptFor, userPromptFor, type PromptContext } from './prompts.ts'
+import { HIGHLIGHT_COLORS } from './types.ts'
 import { PdfStore, type StoredBookMeta } from './store.ts'
 import type {
   AskImageRequest, BookProgress, BookRow, ExplainRequest, ImportSource,
@@ -20,10 +21,11 @@ import type {
 } from './types.ts'
 
 export type {
-  AskImageRequest, BookProgress, BookRow, ExplainKind, ExplainRequest, ExplainResult, ImportSource,
+  AskImageRequest, BookProgress, BookRow, ExplainKind, ExplainRequest, ExplainResult, HighlightColor, ImportSource,
   MetaReport, PdfAnnotation, PdfBytes, ShotAnnotation, ShotRect, StorageMeta, TextAnnotation,
   TreatChunk, TreatmentCatalog, TreatmentModel,
 } from './types.ts'
+export { HIGHLIGHT_COLORS } from './types.ts'
 export { PdfFormatError } from './store.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -332,6 +334,9 @@ export default class PdfReaderController extends TypertRemoteService {
       }
       if (typeof annotation.quote !== 'string' || annotation.quote.length === 0 || annotation.quote.length > 8000) {
         throw new RemoteError('pdf/invalid-request', 'Annotation quote is empty or too long', { reason: 'quote' })
+      }
+      if (annotation.color !== undefined && !HIGHLIGHT_COLORS.includes(annotation.color)) {
+        throw new RemoteError('pdf/invalid-request', 'Annotation color is outside the palette', { reason: 'color' })
       }
     }
     else {

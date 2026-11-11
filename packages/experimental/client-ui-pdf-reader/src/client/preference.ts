@@ -4,6 +4,8 @@
  * @module @deepseek-ai/dsh-client-ui-pdf-reader/client/preference
  */
 
+import type { HighlightColor } from '@deepseek-ai/dsh-pdf-reader/types'
+
 /** How the reading pane presents one page: vertical scrolling or height-fit page flipping. */
 export type ReadingMode = 'scroll' | 'flip'
 
@@ -13,7 +15,7 @@ const MODE_KEY = 'pdf-reader:mode'
 /** Read the reading-mode preference; scroll unless the reader explicitly chose flip. */
 export function readReadingMode(): ReadingMode {
   try {
-    return globalThis.localStorage?.getItem(MODE_KEY) === 'flip' ? 'flip' : 'scroll'
+    return globalThis.localStorage.getItem(MODE_KEY) === 'flip' ? 'flip' : 'scroll'
   } catch {
     // Blocked storage (private mode, disabled) keeps the in-memory default.
     return 'scroll'
@@ -23,7 +25,30 @@ export function readReadingMode(): ReadingMode {
 /** Persist the reading-mode preference for the next reader session. */
 export function writeReadingMode(mode: ReadingMode): void {
   try {
-    globalThis.localStorage?.setItem(MODE_KEY, mode)
+    globalThis.localStorage.setItem(MODE_KEY, mode)
+  } catch {
+    // Blocked storage only loses the choice across reloads.
+  }
+}
+
+/** localStorage key holding the marker color; absent means the default `yellow`. */
+const COLOR_KEY = 'pdf-reader:color'
+
+/** Read the marker-color preference; yellow unless the reader explicitly chose another. */
+export function readAnnotationColor(): HighlightColor {
+  try {
+    const held = globalThis.localStorage.getItem(COLOR_KEY)
+    return held === 'green' || held === 'blue' || held === 'pink' || held === 'purple' ? held : 'yellow'
+  } catch {
+    // Blocked storage (private mode, disabled) keeps the in-memory default.
+    return 'yellow'
+  }
+}
+
+/** Persist the marker-color preference for the next reader session. */
+export function writeAnnotationColor(color: HighlightColor): void {
+  try {
+    globalThis.localStorage.setItem(COLOR_KEY, color)
   } catch {
     // Blocked storage only loses the choice across reloads.
   }
