@@ -105,6 +105,13 @@ function renderReader(f: ReturnType<typeof faces>) {
   />)
 }
 
+/** The reading pane's live `--epub-zoom` custom property value. */
+function zoomOf(view: ReturnType<typeof renderReader>): string | undefined {
+  const pane = view.container.querySelector('[data-epub-reading]')
+  const style = Reflect.get(pane ?? {}, 'style') as CSSStyleDeclaration | undefined
+  return style?.getPropertyValue('--epub-zoom')
+}
+
 it('renders the shelf with progress and opens a book on card click', () => {
   const f = faces(stateFixture())
   const view = renderLibrary(f)
@@ -271,6 +278,67 @@ it('restores a persisted serif typeface on mount', () => {
   const f = faces(stateFixture({ view: 'reader' }))
   const view = renderReader(f)
   expect(view.container.querySelector('[data-epub-reading]')!.getAttribute('data-font')).toBe('serif')
+})
+
+it('steps the zoom ladder from the bar buttons and persists the stop', () => {
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  expect(zoomOf(view)).toBe('1')
+
+  fireEvent.click(view.getByRole('button', { name: zh.zoomIn }))
+  expect(zoomOf(view)).toBe('1.15')
+  expect(localStorage.getItem('epub-reader:zoom')).toBe('1.15')
+
+  fireEvent.click(view.getByRole('button', { name: zh.zoomOut }))
+  expect(zoomOf(view)).toBe('1')
+  expect(localStorage.getItem('epub-reader:zoom')).toBe('1')
+})
+
+it('restores a persisted zoom on mount', () => {
+  localStorage.setItem('epub-reader:zoom', '1.5')
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  expect(zoomOf(view)).toBe('1.5')
+  expect(view.getByRole('button', { name: '150%' })).toBeTruthy()
+})
+
+it('falls back to 100% when the stored zoom is off the ladder', () => {
+  localStorage.setItem('epub-reader:zoom', '1.42')
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  expect(view.getByRole('button', { name: '100%' })).toBeTruthy()
+})
+
+it('disables the steppers at the ladder ends', () => {
+  localStorage.setItem('epub-reader:zoom', '2')
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  expect((view.getByRole('button', { name: zh.zoomIn }) as HTMLButtonElement).disabled).toBe(true)
+  expect((view.getByRole('button', { name: zh.zoomOut }) as HTMLButtonElement).disabled).toBe(false)
+})
+
+it('resets to 100% from the readout between the steppers', () => {
+  localStorage.setItem('epub-reader:zoom', '0.75')
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  fireEvent.click(view.getByRole('button', { name: '75%' }))
+  expect(view.getByRole('button', { name: '100%' })).toBeTruthy()
+  expect(localStorage.getItem('epub-reader:zoom')).toBe('1')
+})
+
+it('zooms from Ctrl/⌘ +, -, and 0 on the focused reading pane', () => {
+  const f = faces(stateFixture({ view: 'reader' }))
+  const view = renderReader(f)
+  const pane = view.container.querySelector('[data-epub-reading]')!
+  fireEvent.keyDown(pane, { key: '=', ctrlKey: true })
+  expect(zoomOf(view)).toBe('1.15')
+  fireEvent.keyDown(pane, { key: '+', metaKey: true })
+  expect(zoomOf(view)).toBe('1.3')
+  fireEvent.keyDown(pane, { key: '-', ctrlKey: true })
+  expect(zoomOf(view)).toBe('1.15')
+  fireEvent.keyDown(pane, { key: '0', ctrlKey: true })
+  expect(zoomOf(view)).toBe('1')
+  expect(localStorage.getItem('epub-reader:zoom')).toBe('1')
 })
 
 it('flips pages through the edge arrows, crossing chapters at the ends', () => {

@@ -1,10 +1,14 @@
 /** The reading view: chapter body, chapter navigation, and the notes column. */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import DOMPurify from 'dompurify'
 import { IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { EpubReaderInjected, EpubSelectionValue } from './contract.ts'
-import { readPaperPreference, readSansFontPreference, writePaperPreference, writeSansFontPreference } from './preference.ts'
+import {
+  readPaperPreference, readSansFontPreference, readZoomPreference, writePaperPreference, writeSansFontPreference,
+  writeZoomPreference, ZOOM_STEPS,
+} from './preference.ts'
 import { NS } from './locales.ts'
 import { applyHighlights, captureSelection, clearHighlights, mapText, rangeOf, type TextMap } from './anchor.ts'
 import { NotesColumn } from './NotesColumn.tsx'
@@ -36,6 +40,7 @@ export function ReaderView({
   const [ratio, setRatio] = useState(0)
   const [paper, setPaper] = useState(readPaperPreference)
   const [sansFont, setSansFont] = useState(readSansFontPreference)
+  const [zoom, setZoom] = useState(readZoomPreference)
 
   /** Toggle the paper reading tint and persist the choice. */
   const togglePaper = (): void => {
@@ -52,6 +57,25 @@ export function ReaderView({
       return !current
     })
   }
+
+  /** Step the zoom one stop along its ladder and persist the stop. */
+  const stepZoom = (direction: 1 | -1): void => {
+    setZoom((current) => {
+      const index = Math.min(Math.max(ZOOM_STEPS.indexOf(current) + direction, 0), ZOOM_STEPS.length - 1)
+      const next = ZOOM_STEPS[index] ?? 1
+      writeZoomPreference(next)
+      return next
+    })
+  }
+
+  /** Reset the zoom to the default stop and persist it. */
+  const resetZoom = (): void => {
+    setZoom(1)
+    writeZoomPreference(1)
+  }
+
+  /** The zoom factor as a custom property the prose type and its em-based spacing scale by. */
+  const zoomStyle = { '--epub-zoom': String(zoom) } as CSSProperties
 
   const sanitized = useMemo(() => DOMPurify.sanitize(open?.html ?? ''), [open?.html])
 
@@ -132,11 +156,22 @@ export function ReaderView({
       </select>
       <button type="button" className={css.paperButton} aria-pressed={paper} onClick={togglePaper}>{t('paper')}</button>
       <button type="button" className={css.fontButton} aria-pressed={sansFont} onClick={toggleFont}>{t('font')}</button>
+      <button
+        type="button" className={css.zoomStepButton} disabled={zoom === ZOOM_STEPS[0]}
+        aria-label={t('zoomOut')} onClick={() => { stepZoom(-1) }}
+      >−</button>
+      <button
+        type="button" className={css.zoomResetButton} title={t('zoomReset')} onClick={resetZoom}
+      >{Math.round(zoom * 100)}%</button>
+      <button
+        type="button" className={css.zoomStepButton} disabled={zoom === ZOOM_STEPS[ZOOM_STEPS.length - 1]}
+        aria-label={t('zoomIn')} onClick={() => { stepZoom(1) }}
+      >+</button>
     </header>
     <div className={css.columns}>
       <div className={css.readingWrap}>
         <div
-          ref={scroller} className={css.reading} tabIndex={0} data-epub-reading data-paper={paper ? 'on' : 'off'} data-font={sansFont ? 'sans' : 'serif'}
+          ref={scroller} className={css.reading} style={zoomStyle} tabIndex={0} data-epub-reading data-paper={paper ? 'on' : 'off'} data-font={sansFont ? 'sans' : 'serif'}
           onScroll={(event) => {
             const pane = event.currentTarget
             const extent = pane.scrollHeight - pane.clientHeight
@@ -152,6 +187,12 @@ export function ReaderView({
             openMenu({ kind: 'epubSelection', value: target }, { x: event.clientX, y: event.clientY })
           }}
           onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+              // Ctrl/⌘ + −/0 zoom the prose itself instead of the whole page.
+              if (event.key === '+' || event.key === '=') { event.preventDefault(); stepZoom(1); return }
+              if (event.key === '-') { event.preventDefault(); stepZoom(-1); return }
+              if (event.key === '0') { event.preventDefault(); resetZoom(); return }
+            }
             if (event.defaultPrevented || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return
             if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); flip(1); return }
             if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); flip(-1); return }

@@ -46,3 +46,29 @@ export function writeSansFontPreference(sans: boolean): void {
     // Blocked storage only loses the choice across reloads.
   }
 }
+
+/** The zoom stops the bar stepper and keyboard shortcuts walk; 1 (100%) is the default. */
+export const ZOOM_STEPS: readonly number[] = [0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2]
+
+/** localStorage key holding one zoom stop, e.g. `1.25`; absent means the default 1. */
+const ZOOM_KEY = 'epub-reader:zoom'
+
+/** Read the zoom preference; a stored value off the ladder snaps back to the default. */
+export function readZoomPreference(): number {
+  try {
+    const raw = globalThis.localStorage.getItem(ZOOM_KEY)
+    const parsed = raw === null ? Number.NaN : Number(raw)
+    return ZOOM_STEPS.find(stop => stop === parsed) ?? 1
+  } catch {
+    return 1
+  }
+}
+
+/** Persist the zoom preference for the next reader session. */
+export function writeZoomPreference(zoom: number): void {
+  try {
+    globalThis.localStorage.setItem(ZOOM_KEY, String(zoom))
+  } catch {
+    // Blocked storage only loses the choice across reloads.
+  }
+}

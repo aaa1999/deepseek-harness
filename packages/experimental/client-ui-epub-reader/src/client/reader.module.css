@@ -269,6 +269,29 @@
   background: color-mix(in srgb, var(--dsw-alias-bg-document-selection, rgba(0, 0, 255, 0.2)) 18%, transparent);
 }
 
+/* Zoom stepper: − / readout / + over the same chrome; the readout doubles as reset. */
+.zoomStepButton {
+  min-width: 26px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.zoomStepButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.zoomStepButton:disabled:hover {
+  background: none;
+}
+
+.zoomResetButton {
+  min-width: 44px;
+  padding: 4px 6px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .columns {
   flex: 1;
   min-height: 0;
@@ -373,7 +396,7 @@ body[data-ds-dark-theme] .reading[data-paper='on'] {
 
 .chapterTitle {
   margin: 0 0 24px;
-  font-size: 20px;
+  font-size: calc(20px * var(--epub-zoom, 1));
   font-weight: 600;
   font-family: 'Songti SC', 'Noto Serif CJK', Georgia, serif;
   color: var(--dsw-alias-label-primary, inherit);
@@ -383,7 +406,7 @@ body[data-ds-dark-theme] .reading[data-paper='on'] {
   max-width: 72ch;
   margin: 0 auto;
   font-family: 'Songti SC', 'Noto Serif CJK', Georgia, serif;
-  font-size: 17px;
+  font-size: calc(17px * var(--epub-zoom, 1));
   line-height: 1.9;
   color: var(--dsw-alias-label-primary, inherit);
 }
