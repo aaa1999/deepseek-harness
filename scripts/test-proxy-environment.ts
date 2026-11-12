@@ -23,9 +23,16 @@
  * @module
  */
 
-import { globSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { PROXY_ENV_NAMES } from '../packages/util/http-proxy/src/policy.ts'
+
+/**
+ * The fs and path built-ins, reached through `process.getBuiltinModule` instead of static
+ * `node:*` imports: this setup file also runs inside vitest's client-environment transform,
+ * which rewrites a static `node:fs` into a nameless `__vite-browser-external` id that vitest
+ * 4.1.11 then imports as the empty builtin `node:` (ERR_UNKNOWN_BUILTIN_MODULE).
+ */
+const nodeFs = process.getBuiltinModule('node:fs')
+const nodePath = process.getBuiltinModule('node:path')
 
 /** The flag a Node process reads before honoring the names above; ambient in the same way. */
 const NODE_PROXY_FLAG = 'NODE_USE_ENV_PROXY'
@@ -41,7 +48,7 @@ export const TEST_PROXY_SETUP_FILE = './scripts/test-proxy-environment.ts'
  * @returns repository-relative config paths, sorted.
  */
 export function vitestConfigFiles(): string[] {
-  return globSync('vitest*.ts', { cwd: resolve(import.meta.dirname, '..') }).sort()
+  return nodeFs.globSync('vitest*.ts', { cwd: nodePath.resolve(import.meta.dirname, '..') }).sort()
 }
 
 /**
