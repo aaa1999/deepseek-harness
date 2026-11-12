@@ -7,7 +7,7 @@
  * references onto the resource Fetch route. The output is body-inner HTML the
  * browser pane renders with the reader's own typography.
  *
- * @module @deepseek-ai/dsh-experimental-epub-reader/sanitize
+ * @module @deepseek-ai/dsh-epub-reader/sanitize
  */
 
 import { XMLParser } from 'fast-xml-parser'

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "EPUB リーダー",
+    "description": "EPUB 书籍を取り込み、選択範囲の翻訳と解説、ハイライトのメモを残せます。",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-capture-bundle",
   "description": "Web capture composition: the PDF reader trio plus the browser relay that files companion-extension page snapshots into the PDF shelf",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -33,7 +33,10 @@
   "files": [
     "lib/index.js",
     "cordis.patch.yml",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {

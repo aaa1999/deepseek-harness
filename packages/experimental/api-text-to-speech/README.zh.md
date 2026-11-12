@@ -3,7 +3,7 @@ description: "面向浏览器客户端的实验性语音合成认证接口。"
 kind: "package-api"
 ---
 
-# @deepseek-ai/dsh-experimental-api-text-to-speech
+# @deepseek-ai/dsh-api-text-to-speech
 
 [English](README.md) | 中文
 

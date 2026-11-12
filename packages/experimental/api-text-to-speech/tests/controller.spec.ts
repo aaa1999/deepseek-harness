@@ -1,8 +1,8 @@
 /** Authenticated synthesis domain methods validate text before selecting a synthesizer. */
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, expect, it, vi } from 'vitest'
-import TextToSpeech from '@deepseek-ai/dsh-experimental-text-to-speech'
-import type { SynthesisProviderId } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import TextToSpeech from '@deepseek-ai/dsh-text-to-speech'
+import type { SynthesisProviderId } from '@deepseek-ai/dsh-text-to-speech/types'
 import SpeechSynthesisController from '../src/index.ts'
 
 const roots: Context[] = []

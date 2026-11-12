@@ -275,7 +275,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     declaredBy: 'an entry in \'conversation.chat.node\' (client-ui-chat), so it exists while that entry is mounted',
     occupants: [
       'client-ui-message-feedback MessageFeedbackActions id \'feedback\'',
-      'dsh-session-node-ui SaveTurnNodeButton id \'session-node-turn-save\'',
+      '@deepseek-ai/dsh-session-node-ui SaveTurnNodeButton id \'session-node-turn-save\'',
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.chat.assistant-actions\', () => ctx.slots.register(\n      { name: \'conversation.chat.assistant-actions\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
@@ -1242,7 +1242,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     declaredBy: 'factory \'conversation.content\' (client-ui-conversation), so it exists while that definition is registered',
     occupants: [
       'experimental-client-ui-forge WorktreeToggle id \'forge-panel.worktree\'',
-      'dsh-session-node-ui HeroNodePicker id \'session-node-new-from-node\'',
+      '@deepseek-ai/dsh-session-node-ui HeroNodePicker id \'session-node-new-from-node\'',
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.hero.options\', () => ctx.slots.register(\n      { name: \'conversation.hero.options\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
@@ -1473,7 +1473,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-goal GoalDock id \'goal\'',
       'experimental-client-ui-claude-code-mods Band id \'claude-code-mods\'',
       'experimental-client-ui-forge WorktreeProgress id \'forge-panel.worktree\'',
-      'dsh-session-node-ui SessionNodeDock id \'session-nodes\'',
+      '@deepseek-ai/dsh-session-node-ui SessionNodeDock id \'session-nodes\'',
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'conversation.input.dock\', () => ctx.slots.register(\n      { name: \'conversation.input.dock\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',
@@ -5154,7 +5154,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     slotInject: '',
     declaredBy: 'an entry in \'sidebar\' (client-ui-sidebar), so it exists while that entry is mounted',
     occupants: [
-      'dsh-session-node-ui SessionNodeSection id \'session-nodes-section\'',
+      '@deepseek-ai/dsh-session-node-ui SessionNodeSection id \'session-nodes-section\'',
     ],
     replaceRisk: 'none',
     example: 'return {\n  inject: [\'slots\'],\n  apply(ctx) {\n    ctx.slots.inject(\'sidebar.sections\', () => ctx.slots.register(\n      { name: \'sidebar.sections\', id: \'my-entry\', order: 100, label: \'My entry\' },\n      () => React.createElement(\'div\', null, \'hello\'),\n    ))\n  },\n}',

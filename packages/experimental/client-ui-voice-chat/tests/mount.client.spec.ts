@@ -15,7 +15,7 @@ import type { InputActions } from '@deepseek-ai/dsh-client-ui-conversation/clien
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 const REMOTE: TypertRemoteContribution = { package: '@deepseek-ai/dsh-experimental-api-speech-to-text', descriptors: [] }
-const SYNTHESIS: TypertRemoteContribution = { package: '@deepseek-ai/dsh-experimental-api-text-to-speech', descriptors: [] }
+const SYNTHESIS: TypertRemoteContribution = { package: '@deepseek-ai/dsh-api-text-to-speech', descriptors: [] }
 
 vi.mock('../src/client/readiness.ts', () => ({ observeReadiness: () => ({
   state: createSnapshotStore({ speech: null, synthesis: null, connected: true, error: null }), dispose: async () => {},
@@ -32,11 +32,17 @@ function assertVoiceActions(value: Record<string, unknown>): asserts value is Re
   assert(typeof value.hooks === 'object' && value.hooks !== null)
 }
 
-const inputActions = {
-  insertText: (text: string, span: unknown) => { void text; void span; return true },
+const inputActions: InputActions = {
+  insertQuote: () => false,
   captureInsertion: () => ({ start: 0, end: 0, draftRev: 0 }),
+  insertText: (text, span) => { void text; void span; return true },
+  setDraft: () => {},
+  persistDraft: () => {},
+  addAttachments: () => false,
+  removeAttachment: () => {},
+  pruneAttachments: () => {},
   submit: () => {},
-} as unknown as InputActions
+}
 
 async function fixture(fail = false, navigation = true) {
   const ctx = new Context(), unmountSpeech = vi.fn(async () => {}), unmountSynthesis = vi.fn(async () => {})
@@ -77,7 +83,7 @@ it('registers both slots with the shared injected actions', async () => {
     expect(status!.inject!().hooks).toBe(actions.hooks)
     expect(() => { actions.openSettings() }).not.toThrow()
     actions.openSettings()
-    expect(b.openBundle).toHaveBeenCalledWith('@deepseek-ai/dsh-experimental-voice-chat-bundle')
+    expect(b.openBundle).toHaveBeenCalledWith('@deepseek-ai/dsh-voice-chat-bundle')
   } finally { await b.ctx.fiber.dispose() }
 })
 

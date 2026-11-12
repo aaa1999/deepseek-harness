@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "PDF library service",
+    "description": "Imports and stores PDF files, serves pages and thumbnails, persists annotations, and streams LLM text treatments or screenshot answers."
+  }
+}

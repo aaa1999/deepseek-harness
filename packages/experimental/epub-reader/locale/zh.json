@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "EPUB 书库服务",
+    "description": "导入并解析 EPUB 书籍，提供净化章节，保存标注，并通过 LLM 流式翻译或解释。"
+  }
+}

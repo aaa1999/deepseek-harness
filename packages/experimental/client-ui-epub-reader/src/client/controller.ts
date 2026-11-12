@@ -2,17 +2,26 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
-import type {} from '@deepseek-ai/dsh-experimental-epub-reader/remote'
+import type {} from '@deepseek-ai/dsh-epub-reader/remote'
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
 import type {
   Annotation, BookRow, ExplainKind, TocEntry,
-} from '@deepseek-ai/dsh-experimental-epub-reader/types'
+} from '@deepseek-ai/dsh-epub-reader/types'
 import type { EpubSelectionValue } from './contract.ts'
 import { saveNote } from './notes.ts'
 
 /** Copy one record without a key; dynamic `delete` stays out of the codebase. */
 function withoutKey<T>(record: Readonly<Record<string, T>>, key: string): Record<string, T> {
   return Object.fromEntries(Object.entries(record).filter(([name]) => name !== key))
+}
+
+/**
+ * The context slice the controller reads; the full client Context satisfies it.
+ * Tests construct this slice directly instead of a cast from a partial fake.
+ */
+export interface ReaderContext {
+  /** The EPUB reader Remote face. */
+  remote: { epubReader: Context['remote']['epubReader'] }
 }
 
 /** The note title one capture carries: the book, and the chapter when one is named. */
@@ -124,7 +133,7 @@ export class ReaderController {
   private progress: { bookId: string; chapterIndex: number; ratio: number } | null = null
   private progressTimer: ReturnType<typeof setTimeout> | undefined
 
-  constructor(private readonly ctx: Context) {}
+  constructor(private readonly ctx: ReaderContext) {}
 
   /** Reload the shelf; called on access grant and after imports and removals. */
   async loadLibrary(): Promise<void> {

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Lector EPUB",
+    "description": "Importe libros EPUB, traduzca y explique selecciones, y conserve notas de resaltado.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

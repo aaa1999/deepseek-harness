@@ -1,7 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-voice-chat-bundle",
+  "name": "@deepseek-ai/dsh-voice-chat-bundle",
   "description": "Experimental voice chat with local SenseVoice recognition and vits-melo synthesis; downloads its models on first use",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-rc.2",
   "icon": "./icon.svg",
   "publishConfig": {
     "access": "public"
@@ -30,17 +30,20 @@
     "docs",
     "lib/index.js",
     "cordis.patch.yml",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {
     "@deepseek-ai/dsh-experimental-speech-to-text": "workspace:*",
     "@deepseek-ai/dsh-experimental-speech-to-text-sensevoice": "workspace:*",
     "@deepseek-ai/dsh-experimental-api-speech-to-text": "workspace:*",
-    "@deepseek-ai/dsh-experimental-text-to-speech": "workspace:*",
-    "@deepseek-ai/dsh-experimental-text-to-speech-sherpaonnx": "workspace:*",
-    "@deepseek-ai/dsh-experimental-api-text-to-speech": "workspace:*",
-    "@deepseek-ai/dsh-experimental-client-ui-voice-chat": "workspace:*"
+    "@deepseek-ai/dsh-text-to-speech": "workspace:*",
+    "@deepseek-ai/dsh-text-to-speech-sherpaonnx": "workspace:*",
+    "@deepseek-ai/dsh-api-text-to-speech": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-voice-chat": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"

@@ -1,7 +1,7 @@
 /** The notes column: one card per highlight with its streamed or saved treatments. */
 import { useState } from 'react'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { Annotation, ExplainKind } from '@deepseek-ai/dsh-experimental-epub-reader/types'
+import type { Annotation, ExplainKind } from '@deepseek-ai/dsh-epub-reader/types'
 import type { NoteStream } from './controller.ts'
 import type { EpubReaderInjected } from './contract.ts'
 import { NS } from './locales.ts'

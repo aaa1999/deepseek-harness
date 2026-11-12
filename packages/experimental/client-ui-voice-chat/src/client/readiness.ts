@@ -3,9 +3,9 @@ import type { Context } from '@deepseek-ai/cordis'
 import { RemoteStreamCarrierError } from '@deepseek-ai/dsh-api-gateway/client'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { SpeechCatalog } from '@deepseek-ai/dsh-experimental-api-speech-to-text/types'
-import type { SynthesisCatalog } from '@deepseek-ai/dsh-experimental-api-text-to-speech/types'
+import type { SynthesisCatalog } from '@deepseek-ai/dsh-api-text-to-speech/types'
 import type {} from '@deepseek-ai/dsh-experimental-api-speech-to-text/remote'
-import type {} from '@deepseek-ai/dsh-experimental-api-text-to-speech/remote'
+import type {} from '@deepseek-ai/dsh-api-text-to-speech/remote'
 
 /** Complete provider state for both directions, with a separate transport failure. */
 export interface VoiceReadiness {

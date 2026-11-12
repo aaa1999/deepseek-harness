@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "PDF リーダー",
+    "description": "PDF を取り込んで 1 ページずつ読み、選択範囲の翻訳・解説、スクリーンショット領域への質問、注釈保存ができます。",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Lecteur PDF",
+    "description": "Importez des PDF pour une lecture page à page, traduisez ou expliquez des passages, interrogez des régions capturées et gardez vos annotations.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

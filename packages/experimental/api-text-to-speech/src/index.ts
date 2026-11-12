@@ -2,8 +2,8 @@
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import type {} from '@deepseek-ai/dsh-experimental-text-to-speech'
-import type { SynthesisPreparationOptions, SynthesisProviderId, SynthesisSelectionPatch } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import type {} from '@deepseek-ai/dsh-text-to-speech'
+import type { SynthesisPreparationOptions, SynthesisProviderId, SynthesisSelectionPatch } from '@deepseek-ai/dsh-text-to-speech/types'
 import type { SynthesisCatalog, SynthesisRequest, SynthesizedAudio } from './types.ts'
 
 export type * from './types.ts'

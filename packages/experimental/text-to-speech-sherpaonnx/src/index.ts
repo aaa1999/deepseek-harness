@@ -1,9 +1,9 @@
 /** Optional local vits-melo provider; activation performs no downloads or model loading. */
 import { isAbsolute } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-experimental-text-to-speech'
+import type {} from '@deepseek-ai/dsh-text-to-speech'
 import type {} from '@deepseek-ai/dsh-subprocess'
-import type { SynthesisProviderId } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import type { SynthesisProviderId } from '@deepseek-ai/dsh-text-to-speech/types'
 import { Config } from './config.ts'
 import { TtsWorker } from './synthesizer.ts'
 

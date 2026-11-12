@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-web-capture",
   "description": "Browser relay that files companion-extension webpage snapshots into the PDF reader shelf; ships the companion MV3 extension under extension/",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -39,10 +39,13 @@
     "watch": "tsdown --watch"
   },
   "files": [
-    "extension",
     "lib/index.js",
     "lib/client.js",
-    "lib/types/**/*.d.ts"
+    "extension",
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "peerDependencies": {

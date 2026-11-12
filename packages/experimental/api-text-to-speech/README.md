@@ -3,7 +3,7 @@ description: "Authenticated experimental speech synthesis for browser clients."
 kind: "package-api"
 ---
 
-# @deepseek-ai/dsh-experimental-api-text-to-speech
+# @deepseek-ai/dsh-api-text-to-speech
 
 English | [中文](README.zh.md)
 

@@ -102,6 +102,13 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'apps/cli/tests/profiles/web/tests/fixtures/creator-plugin-manager.mjs', upstream: ['cordis'] },
   { file: 'apps/web/tests/agent-preset-authoring.e2e.ts', upstream: ['cordis'] },
   { file: 'packages/preset/agent-preset-registry/tests/session.spec.ts', upstream: ['cordis'] },
+  // The creator persona e2e stages the cordis preset, the cua roster spec
+  // iterates preset ids, and the rc.1 upgrade guide names the affected
+  // presets in prose.
+  { file: 'apps/web/tests/creator-persona.e2e.ts', upstream: ['cordis'] },
+  { file: 'packages/experimental/cua/tests/agent-scopes.spec.ts', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-rc.1/subagent-interrupt-default/guide.md', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-rc.1/subagent-interrupt-default/guide.zh.md', upstream: ['cordis'] },
   { file: 'packages/experimental/creation-recommendations/src/index.ts', upstream: ['cordis'] },
   { file: 'packages/experimental/creation-recommendations/tests/creation.spec.ts', upstream: ['cordis'] },
   { file: 'packages/experimental/creation-recommendations/tests/loader-composition.spec.ts', upstream: ['cordis'] },

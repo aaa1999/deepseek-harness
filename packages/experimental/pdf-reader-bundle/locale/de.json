@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "PDF-Leser",
+    "description": "Importieren Sie PDFs zum seitenweisen Lesen, übersetzen oder erklären Sie Auswahlen, fragen Sie erfasste Bereiche ab und behalten Sie Anmerkungen.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

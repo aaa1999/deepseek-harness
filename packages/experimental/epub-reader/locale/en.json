@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "EPUB library service",
+    "description": "Imports and parses EPUB books, serves sanitized chapters, persists annotations, and streams LLM translations or explanations."
+  }
+}

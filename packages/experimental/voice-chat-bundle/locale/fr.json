@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Voice chat",
-    "description": "Realtime voice conversation with local SenseVoice recognition and vits-melo synthesis; first use downloads the models.",
+    "title": "Conversation vocale",
+    "description": "Conversation vocale en temps réel avec reconnaissance SenseVoice locale et synthèse vits-melo ; la première utilisation télécharge les modèles.",
     "detail": "docs/DETAIL.md"
   }
 }

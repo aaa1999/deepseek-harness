@@ -1,7 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-epub-reader-bundle",
+  "name": "@deepseek-ai/dsh-epub-reader-bundle",
   "description": "EPUB reader composition: library service, browser reader panel, and selection translation",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -33,12 +33,15 @@
     "docs",
     "lib/index.js",
     "cordis.patch.yml",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-experimental-epub-reader": "workspace:*",
-    "@deepseek-ai/dsh-experimental-client-ui-epub-reader": "workspace:*"
+    "@deepseek-ai/dsh-epub-reader": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-epub-reader": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"

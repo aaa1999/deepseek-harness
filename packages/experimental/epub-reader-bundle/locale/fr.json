@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Lecteur EPUB",
+    "description": "Importez des livres EPUB, traduisez et expliquez des passages, et gardez des notes surlignées.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

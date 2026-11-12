@@ -15,6 +15,15 @@ function withoutKey<T>(record: Readonly<Record<string, T>>, key: string): Record
   return Object.fromEntries(Object.entries(record).filter(([name]) => name !== key))
 }
 
+/**
+ * The context slice the controller reads; the full client Context satisfies it.
+ * Tests construct this slice directly instead of a cast from a partial fake.
+ */
+export interface ReaderContext {
+  /** The PDF reader Remote face. */
+  remote: { pdfReader: Context['remote']['pdfReader'] }
+}
+
 /** One streamed text treatment the notes column renders; keyed by annotation id. */
 export interface TextStream {
   readonly kind: ExplainKind
@@ -152,7 +161,7 @@ export class ReaderController {
   private progress: { bookId: string; page: number } | null = null
   private progressTimer: ReturnType<typeof setTimeout> | undefined
 
-  constructor(private readonly ctx: Context) {}
+  constructor(private readonly ctx: ReaderContext) {}
 
   /** Reload the shelf; called on access grant and after imports and removals. */
   async loadLibrary(): Promise<void> {

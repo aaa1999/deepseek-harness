@@ -1,7 +1,7 @@
 /**
  * Pure EPUB structure parsing over an in-memory file map.
  *
- * @module @deepseek-ai/dsh-experimental-epub-reader/epub
+ * @module @deepseek-ai/dsh-epub-reader/epub
  */
 
 import { XMLParser } from 'fast-xml-parser'

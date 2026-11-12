@@ -8,7 +8,7 @@
  * - `progress.json` — the last saved reading position
  * - `annotations.json` — the saved highlights with their results
  *
- * @module @deepseek-ai/dsh-experimental-epub-reader/store
+ * @module @deepseek-ai/dsh-epub-reader/store
  */
 
 import { randomUUID } from 'node:crypto'

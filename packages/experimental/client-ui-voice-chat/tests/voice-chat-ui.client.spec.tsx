@@ -7,7 +7,7 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SpeechProviderId } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
-import type { SynthesisProviderId } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import type { SynthesisProviderId } from '@deepseek-ai/dsh-text-to-speech/types'
 import type { InputActions } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { VoiceChatToggle, type VoiceChatToggleProps } from '../src/client/VoiceChatToggle.tsx'
 import { VoiceChatStatus, type VoiceChatStatusProps } from '../src/client/VoiceChatStatus.tsx'
@@ -21,7 +21,17 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals() })
 const speechId = 'sensevoice-local' as SpeechProviderId
 const synthesisId = 'vits-melo-local' as SynthesisProviderId
 const sessionId = 'one' as SessionId
-const inputActions = { submit: vi.fn() } as unknown as InputActions
+const inputActions: InputActions = {
+  insertQuote: vi.fn(() => false),
+  captureInsertion: vi.fn(() => ({ start: 0, end: 0, draftRev: 0 })),
+  insertText: vi.fn(() => true),
+  setDraft: vi.fn(),
+  persistDraft: vi.fn(),
+  addAttachments: vi.fn(() => false),
+  removeAttachment: vi.fn(),
+  pruneAttachments: vi.fn(),
+  submit: vi.fn(),
+}
 
 function usableReadiness(usable = true) {
   return createSnapshotStore<VoiceReadiness>({ connected: true, error: null,

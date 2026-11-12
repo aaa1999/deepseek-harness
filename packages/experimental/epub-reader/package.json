@@ -1,7 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-epub-reader",
+  "name": "@deepseek-ai/dsh-epub-reader",
   "description": "EPUB library Host service: import and parse books, serve sanitized chapters, persist annotations, and stream translations or explanations through the LLM service",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },

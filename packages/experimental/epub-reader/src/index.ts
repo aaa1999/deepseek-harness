@@ -1,7 +1,7 @@
 /**
  * The EPUB reader Host service: library, chapters, annotations, and LLM treatments.
  *
- * @module @deepseek-ai/dsh-experimental-epub-reader
+ * @module @deepseek-ai/dsh-epub-reader
  */
 
 import { Context } from '@deepseek-ai/cordis'
@@ -18,7 +18,6 @@ import type { BookProgress } from './types.ts'
 
 export type { Annotation, BookProgress, BookRow, ChapterDoc, ExplainChunk, ExplainKind, ExplainRequest, ExplainResult, StorageMeta, TocEntry, TreatmentCatalog, TreatmentModel } from './types.ts'
 export { EpubFormatError } from './epub.ts'
-export { RESOURCE_MEDIA_TYPES } from './sanitize.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

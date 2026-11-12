@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Nœuds d’historique de session",
+    "description": "Enregistre le nœud d’historique d’une session sous un projet puis crée une nouvelle session à partir de celui-ci."
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Servicio de biblioteca PDF",
+    "description": "Importa y almacena archivos PDF, sirve páginas y miniaturas, persiste anotaciones y transmite tratamientos de texto o respuestas de captura del LLM."
+  }
+}

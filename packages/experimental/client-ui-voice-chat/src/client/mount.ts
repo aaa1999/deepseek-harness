@@ -8,7 +8,7 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-experimental-api-speech-to-text/remote'
-import type {} from '@deepseek-ai/dsh-experimental-api-text-to-speech/remote'
+import type {} from '@deepseek-ai/dsh-api-text-to-speech/remote'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -27,7 +27,7 @@ export const inject = ['remote', 'slots', 'locale', 'sessions']
 /** Speak at most this many characters per synthesis call. */
 const MAX_READ_CHARS = 500
 /** Bundle opened from the setup guidance. */
-const VOICE_CHAT_BUNDLE = '@deepseek-ai/dsh-experimental-voice-chat-bundle'
+const VOICE_CHAT_BUNDLE = '@deepseek-ai/dsh-voice-chat-bundle'
 
 /** Actions injected into both voice-chat components. */
 export interface VoiceChatInjected {

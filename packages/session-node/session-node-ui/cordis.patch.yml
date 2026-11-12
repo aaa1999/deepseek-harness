@@ -1,7 +1,0 @@
-# dsh-session-node-ui bundle patch: the browser surface over the host
-# dsh-session-node service. The node half is an empty apply; the browser half
-# ships via the package.json dsh.client declaration and its ./client export.
-
-- insert:
-    - id: session-node-ui
-      name: 'dsh-session-node-ui'

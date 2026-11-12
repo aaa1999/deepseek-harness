@@ -32,6 +32,16 @@ export const EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS: Readonly<Record<string, strin
   'packages/experimental/pdf-reader-bundle': '@deepseek-ai/dsh-pdf-reader-bundle',
   'packages/experimental/client-ui-web-capture': '@deepseek-ai/dsh-client-ui-web-capture',
   'packages/experimental/web-capture-bundle': '@deepseek-ai/dsh-web-capture-bundle',
+  'packages/experimental/api-text-to-speech': '@deepseek-ai/dsh-api-text-to-speech',
+  'packages/experimental/client-ui-epub-reader': '@deepseek-ai/dsh-client-ui-epub-reader',
+  'packages/experimental/client-ui-voice-chat': '@deepseek-ai/dsh-client-ui-voice-chat',
+  'packages/experimental/epub-reader': '@deepseek-ai/dsh-epub-reader',
+  'packages/experimental/epub-reader-bundle': '@deepseek-ai/dsh-epub-reader-bundle',
+  'packages/experimental/text-to-speech': '@deepseek-ai/dsh-text-to-speech',
+  'packages/experimental/text-to-speech-sherpaonnx': '@deepseek-ai/dsh-text-to-speech-sherpaonnx',
+  'packages/experimental/voice-chat-bundle': '@deepseek-ai/dsh-voice-chat-bundle',
+  'packages/experimental/session-node': '@deepseek-ai/dsh-session-node',
+  'packages/experimental/session-node-ui': '@deepseek-ai/dsh-session-node-ui',
 } satisfies Record<`packages/experimental/${string}`, `@deepseek-ai/dsh-${string}`>
 
 /** Legacy npm namespace, allowed only in `LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES`. */

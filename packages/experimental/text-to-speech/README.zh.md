@@ -3,7 +3,7 @@ description: "实验性语音合成服务。"
 kind: "package-service"
 ---
 
-# @deepseek-ai/dsh-experimental-text-to-speech
+# @deepseek-ai/dsh-text-to-speech
 
 [English](README.md) | 中文
 

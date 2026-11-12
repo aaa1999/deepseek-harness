@@ -1,6 +1,6 @@
 /** CPU vits-melo synthesis confined to the synthesis process. */
 import { createRequire } from 'node:module'
-import type { SynthesisOutput } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import type { SynthesisOutput } from '@deepseek-ai/dsh-text-to-speech/types'
 import type { Config } from './config.ts'
 
 /** Verified files and validated synthesis settings sent by the Host. */

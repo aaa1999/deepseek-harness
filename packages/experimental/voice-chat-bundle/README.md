@@ -3,7 +3,7 @@ description: "Enable experimental voice chat from the plugin manager."
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-voice-chat-bundle
+# @deepseek-ai/dsh-voice-chat-bundle
 
 English | [中文](README.zh.md)
 

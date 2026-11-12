@@ -25,7 +25,6 @@ export type {
   MetaReport, PdfAnnotation, PdfBytes, ShotAnnotation, ShotRect, StorageMeta, TextAnnotation,
   TreatChunk, TreatmentCatalog, TreatmentModel,
 } from './types.ts'
-export { HIGHLIGHT_COLORS } from './types.ts'
 export { PdfFormatError } from './store.ts'
 
 declare module '@deepseek-ai/cordis' {

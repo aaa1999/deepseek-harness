@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-pdf-reader",
   "description": "PDF library Host service: import and store files, serve bytes and thumbnails, persist annotations, and stream text treatments or screenshot answers through the LLM service",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },

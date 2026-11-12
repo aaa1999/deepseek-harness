@@ -1,0 +1,7 @@
+# @deepseek-ai/dsh-session-node-ui bundle patch: the browser surface over the host
+# @deepseek-ai/dsh-session-node service. The node half is an empty apply; the browser half
+# ships via the package.json dsh.client declaration and its ./client export.
+
+- insert:
+    - id: session-node-ui
+      name: '@deepseek-ai/dsh-session-node-ui'

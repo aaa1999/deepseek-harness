@@ -1,7 +1,7 @@
 /**
  * Browser-local reader preferences.
  *
- * @module @deepseek-ai/dsh-experimental-client-ui-epub-reader/client/preference
+ * @module @deepseek-ai/dsh-client-ui-epub-reader/client/preference
  */
 
 /** localStorage key holding `on` or `off`; absent means the default `on`. */

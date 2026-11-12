@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-pdf-reader-bundle",
   "description": "PDF reader composition: library service, browser reader panel, selection translation, and screenshot questions",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -33,7 +33,10 @@
     "docs",
     "lib/index.js",
     "cordis.patch.yml",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {

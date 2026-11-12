@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Servicio de biblioteca EPUB",
+    "description": "Importa y analiza libros EPUB, sirve capítulos saneados, persiste anotaciones y transmite traducciones o explicaciones del LLM."
+  }
+}

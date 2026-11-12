@@ -1,7 +1,7 @@
 /** Browser entry for the optional voice-chat Remote pair and composer controls. */
 import type { Context } from '@deepseek-ai/cordis'
 import speechRemote from '@deepseek-ai/dsh-experimental-api-speech-to-text/remote'
-import synthesisRemote from '@deepseek-ai/dsh-experimental-api-text-to-speech/remote'
+import synthesisRemote from '@deepseek-ai/dsh-api-text-to-speech/remote'
 import { mountVoiceChat } from './mount.ts'
 
 export { inject } from './mount.ts'

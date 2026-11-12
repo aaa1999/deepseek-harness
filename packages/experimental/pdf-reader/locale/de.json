@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "PDF-Bibliotheksdienst",
+    "description": "Importiert und speichert PDF-Dateien, stellt Seiten und Vorschaubilder bereit, speichert Anmerkungen und streamt LLM-Textbearbeitungen oder Antworten zu Ausschnitten."
+  }
+}

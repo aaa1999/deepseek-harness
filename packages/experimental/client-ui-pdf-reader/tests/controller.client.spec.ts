@@ -1,14 +1,26 @@
 /** Reader controller flows over a faked Remote face: library, pages, streams, shots, progress. */
-import type { Context } from '@deepseek-ai/cordis'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError, type RemoteResult, type RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
 // Registers the pdf/* RemoteError codes the failure mocks carry.
 import type {} from '@deepseek-ai/dsh-pdf-reader'
 import type {
   AskImageRequest, BookRow, ExplainRequest, MetaReport, PdfAnnotation, PdfBytes, TocEntry, TreatChunk,
 } from '@deepseek-ai/dsh-pdf-reader/types'
-import { ReaderController } from '../src/client/controller.ts'
+import { ReaderController, type ReaderContext } from '../src/client/controller.ts'
 import type { PdfSelectionValue } from '../src/client/contract.ts'
+
+/**
+ * Wrap treatment chunks as the handle face the controller iterates; the
+ * uplink stays unused because the pdf face declares no uplink items.
+ */
+function streamHandle(chunks: AsyncIterable<TreatChunk>): RemoteStreamHandle<TreatChunk, never> {
+  return {
+    [Symbol.asyncIterator]: () => chunks[Symbol.asyncIterator](),
+    send(item) { throw new Error(`unexpected uplink item ${String(item)}`) },
+    end() {},
+    dispose() {},
+  }
+}
 
 /** One shelf row the library tests reuse. */
 function bookRow(overrides: Partial<BookRow> = {}): BookRow {
@@ -25,7 +37,7 @@ const selection: PdfSelectionValue = {
 }
 
 /** The Remote face mock: every method a controller can call. */
-function remoteFace() {
+function remoteFace(): ReaderContext['remote']['pdfReader'] {
   const choice = { text: { provider: '', model: '' }, shot: { provider: '', model: '' } }
   return {
     list: vi.fn(async (): Promise<RemoteResult<BookRow[]>> => ({ ok: true, value: [bookRow()] })),
@@ -76,19 +88,19 @@ function remoteFace() {
       choice.shot = { provider, model }
       return { ok: true, value: undefined }
     }),
-    explain: vi.fn((_request: ExplainRequest, _signal: AbortSignal): AsyncIterable<TreatChunk> => {
+    explain: vi.fn((_request: ExplainRequest, _signal: AbortSignal): RemoteStreamHandle<TreatChunk, never> => {
       throw new Error('each test overrides explain')
     }),
-    askImage: vi.fn((_request: AskImageRequest, _signal: AbortSignal): AsyncIterable<TreatChunk> => {
+    askImage: vi.fn((_request: AskImageRequest, _signal: AbortSignal): RemoteStreamHandle<TreatChunk, never> => {
       throw new Error('each test overrides askImage')
     }),
   }
 }
 
-/** A controller over one fresh Remote mock; the fake Context carries only that face. */
+/** A controller over one fresh Remote mock; the fake context carries only that face. */
 function controller() {
   const remote = remoteFace()
-  const reader = new ReaderController({ remote: { pdfReader: remote } } as unknown as Context)
+  const reader = new ReaderController({ remote: { pdfReader: remote } })
   return { reader, remote }
 }
 
@@ -168,12 +180,12 @@ describe('ReaderController', () => {
     await reader.loadLibrary()
     reader.openBook('b1')
     await vi.runAllTimersAsync()
-    remote.explain.mockImplementationOnce(async function* (): AsyncIterable<TreatChunk> {
+    remote.explain.mockImplementationOnce(() => streamHandle((async function* (): AsyncIterable<TreatChunk> {
       yield { type: 'meta', model: 'm1' }
       yield { type: 'delta', text: '曾是' }
       yield { type: 'delta', text: '这样' }
       yield { type: 'done' }
-    })
+    })()))
     reader.treat(selection, 'translate')
     await vi.runAllTimersAsync()
 
@@ -218,10 +230,10 @@ describe('ReaderController', () => {
     await reader.loadLibrary()
     reader.openBook('b1')
     await vi.runAllTimersAsync()
-    remote.explain.mockImplementationOnce(async function* (): AsyncIterable<TreatChunk> {
+    remote.explain.mockImplementationOnce(() => streamHandle((async function* (): AsyncIterable<TreatChunk> {
       yield { type: 'meta', model: 'm1' }
       throw new Error('model offline')
-    })
+    })()))
     reader.treat(selection, 'explain')
     await vi.runAllTimersAsync()
     expect(remote.saveAnnotation).not.toHaveBeenCalled()
@@ -233,11 +245,11 @@ describe('ReaderController', () => {
     await reader.loadLibrary()
     reader.openBook('b1')
     await vi.runAllTimersAsync()
-    remote.askImage.mockImplementationOnce(async function* (): AsyncIterable<TreatChunk> {
+    remote.askImage.mockImplementationOnce(() => streamHandle((async function* (): AsyncIterable<TreatChunk> {
       yield { type: 'meta', model: 'vision-m' }
       yield { type: 'delta', text: '图中是' }
       yield { type: 'done', imageUrl: '/api/pdf-reader/shot?book=b1&id=s1' }
-    })
+    })()))
     reader.askShot({ bookId: 'b1', page: 2, rect: { x: 0.1, y: 0.1, width: 0.5, height: 0.3 }, pngBase64: 'aGk=', question: '解释这块' })
     await vi.runAllTimersAsync()
 
@@ -257,11 +269,11 @@ describe('ReaderController', () => {
     reader.openBook('b1')
     await vi.runAllTimersAsync()
     reader.store.set({ ...reader.store.getSnapshot(), annotations: [savedText()] })
-    remote.explain.mockImplementationOnce(async function* (): AsyncIterable<TreatChunk> {
+    remote.explain.mockImplementationOnce(() => streamHandle((async function* (): AsyncIterable<TreatChunk> {
       yield { type: 'meta', model: 'm2' }
       yield { type: 'delta', text: '重新' }
       yield { type: 'done' }
-    })
+    })()))
     reader.retryTextAnnotation('a1')
     await vi.runAllTimersAsync()
     const request = remote.explain.mock.calls[0]?.[0] as { text: string; kind: string }
@@ -309,13 +321,13 @@ describe('ReaderController', () => {
     await vi.runAllTimersAsync()
     let observed: AbortSignal | undefined
     let released: (() => void) | undefined
-    remote.explain.mockImplementationOnce((_request: unknown, signal: AbortSignal): AsyncIterable<TreatChunk> => {
+    remote.explain.mockImplementationOnce((_request: ExplainRequest, signal: AbortSignal): RemoteStreamHandle<TreatChunk, never> => {
       observed = signal
-      return (async function* () {
+      return streamHandle((async function* () {
         yield { type: 'meta', model: 'm' }
         await new Promise<void>((resolve) => { released = resolve })
         yield { type: 'done' }
-      })()
+      })())
     })
     reader.treat(selection, 'translate')
     await vi.advanceTimersByTimeAsync(10)

@@ -3,7 +3,7 @@ description: "Local vits-melo ONNX synthesis provider."
 kind: "package-provider"
 ---
 
-# @deepseek-ai/dsh-experimental-text-to-speech-sherpaonnx
+# @deepseek-ai/dsh-text-to-speech-sherpaonnx
 
 English | [中文](README.zh.md)
 

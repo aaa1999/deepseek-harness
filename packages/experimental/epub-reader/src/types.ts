@@ -1,7 +1,7 @@
 /**
  * Wire types shared by the EPUB reader Host service and its browser client.
  *
- * @module @deepseek-ai/dsh-experimental-epub-reader/types
+ * @module @deepseek-ai/dsh-epub-reader/types
  */
 
 /** Which LLM treatment a selection receives. */

@@ -1,7 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-client-ui-epub-reader",
+  "name": "@deepseek-ai/dsh-client-ui-epub-reader",
   "description": "The Reading panel: EPUB bookshelf, two-column reader, selection context menu, and streaming note cards",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -46,12 +46,13 @@
     "locale/*.json",
     "lib/index.js",
     "lib/client.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
-  "dependencies": {
-    "dompurify": "^3.4.16"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"
   },
@@ -69,10 +70,12 @@
     "@deepseek-ai/dsh-client-ui-session": "workspace:*",
     "@deepseek-ai/dsh-client-ui-sidebar": "workspace:*",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:*",
-    "@deepseek-ai/dsh-experimental-epub-reader": "workspace:*",
+    "@deepseek-ai/dsh-epub-reader": "workspace:*",
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
     "@testing-library/react": "^16.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "dompurify": "^3.4.16",
+    "@deepseek-ai/dsh-api-remote-access": "workspace:*"
   }
 }

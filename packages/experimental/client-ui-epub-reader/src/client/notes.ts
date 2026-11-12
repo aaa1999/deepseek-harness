@@ -5,7 +5,7 @@
  * same Host webserver as this client, so plain relative fetches reach it. When
  * the panel is absent every call degrades to `false` and the reader carries on.
  *
- * @module @deepseek-ai/dsh-experimental-client-ui-epub-reader/client/notes
+ * @module @deepseek-ai/dsh-client-ui-epub-reader/client/notes
  */
 
 /** The Notes panel's JSON API root. */

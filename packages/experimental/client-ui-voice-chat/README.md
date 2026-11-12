@@ -3,7 +3,7 @@ description: "Realtime voice conversation UI."
 kind: "package-ui"
 ---
 
-# @deepseek-ai/dsh-experimental-client-ui-voice-chat
+# @deepseek-ai/dsh-client-ui-voice-chat
 
 English | [中文](README.zh.md)
 

@@ -537,6 +537,9 @@ importers:
       '@deepseek-ai/dsh-tool-workspace-dependencies':
         specifier: workspace:*
         version: link:../../packages/skill/tool-workspace-dependencies
+      '@deepseek-ai/dsh-voice-chat-bundle':
+        specifier: workspace:*
+        version: link:../../packages/experimental/voice-chat-bundle
       '@deepseek-ai/dsh-web-app':
         specifier: workspace:*
         version: link:../../packages/bundle/web-app
@@ -1001,9 +1004,6 @@ importers:
       '@deepseek-ai/dsh-experimental-speech-to-text':
         specifier: workspace:*
         version: link:../../packages/experimental/speech-to-text
-      '@deepseek-ai/dsh-experimental-voice-chat-bundle':
-        specifier: workspace:*
-        version: link:../../packages/experimental/voice-chat-bundle
       '@deepseek-ai/dsh-experimental-voice-input-bundle':
         specifier: workspace:*
         version: link:../../packages/experimental/voice-input-bundle
@@ -1040,6 +1040,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../packages/util/values
+      '@deepseek-ai/dsh-voice-chat-bundle':
+        specifier: workspace:*
+        version: link:../../packages/experimental/voice-chat-bundle
       '@deepseek-ai/dsh-workspace-changes':
         specifier: workspace:*
         version: link:../../packages/deliverables/workspace-changes
@@ -8585,7 +8588,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-experimental-text-to-speech':
+      '@deepseek-ai/dsh-text-to-speech':
         specifier: workspace:*
         version: link:../text-to-speech
       '@deepseek-ai/dsh-typert-protocol':
@@ -9288,14 +9291,13 @@ importers:
         version: 4.6.6
 
   packages/experimental/client-ui-epub-reader:
-    dependencies:
-      dompurify:
-        specifier: ^3.4.16
-        version: 3.4.16
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remote-access':
+        specifier: workspace:*
+        version: link:../../api/remote-access
       '@deepseek-ai/dsh-api-remotes':
         specifier: workspace:*
         version: link:../../api/remotes
@@ -9329,7 +9331,7 @@ importers:
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: workspace:*
         version: link:../../client/ui-slots
-      '@deepseek-ai/dsh-experimental-epub-reader':
+      '@deepseek-ai/dsh-epub-reader':
         specifier: workspace:*
         version: link:../epub-reader
       '@deepseek-ai/dsh-typert-protocol':
@@ -9341,6 +9343,9 @@ importers:
       '@testing-library/react':
         specifier: ^16.0.0
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      dompurify:
+        specifier: ^3.4.16
+        version: 3.4.16
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -9503,14 +9508,13 @@ importers:
         version: 18.3.1(react@18.3.1)
 
   packages/experimental/client-ui-pdf-reader:
-    dependencies:
-      pdfjs-dist:
-        specifier: 6.3.289
-        version: 6.3.289
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remote-access':
+        specifier: workspace:*
+        version: link:../../api/remote-access
       '@deepseek-ai/dsh-api-remotes':
         specifier: workspace:*
         version: link:../../api/remotes
@@ -9556,6 +9560,9 @@ importers:
       '@testing-library/react':
         specifier: ^16.0.0
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      pdfjs-dist:
+        specifier: 6.3.289
+        version: 6.3.289
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -9706,6 +9713,9 @@ importers:
       '@deepseek-ai/dsh-api-session-controller':
         specifier: workspace:*
         version: link:../../api/session-controller
+      '@deepseek-ai/dsh-api-text-to-speech':
+        specifier: workspace:*
+        version: link:../api-text-to-speech
       '@deepseek-ai/dsh-client-locale':
         specifier: workspace:*
         version: link:../../client/locale
@@ -9736,18 +9746,15 @@ importers:
       '@deepseek-ai/dsh-experimental-api-speech-to-text':
         specifier: workspace:*
         version: link:../api-speech-to-text
-      '@deepseek-ai/dsh-experimental-api-text-to-speech':
-        specifier: workspace:*
-        version: link:../api-text-to-speech
       '@deepseek-ai/dsh-experimental-speech-to-text':
         specifier: workspace:*
         version: link:../speech-to-text
-      '@deepseek-ai/dsh-experimental-text-to-speech':
-        specifier: workspace:*
-        version: link:../text-to-speech
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../core/session
+      '@deepseek-ai/dsh-text-to-speech':
+        specifier: workspace:*
+        version: link:../text-to-speech
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../../typert/protocol
@@ -10520,10 +10527,10 @@ importers:
 
   packages/experimental/epub-reader-bundle:
     dependencies:
-      '@deepseek-ai/dsh-experimental-client-ui-epub-reader':
+      '@deepseek-ai/dsh-client-ui-epub-reader':
         specifier: workspace:*
         version: link:../client-ui-epub-reader
-      '@deepseek-ai/dsh-experimental-epub-reader':
+      '@deepseek-ai/dsh-epub-reader':
         specifier: workspace:*
         version: link:../epub-reader
     devDependencies:
@@ -11457,6 +11464,109 @@ importers:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
 
+  packages/experimental/session-node:
+    dependencies:
+      zod:
+        specifier: 4.6.6
+        version: 4.6.6
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-agent':
+        specifier: workspace:*
+        version: link:../../core/agent
+      '@deepseek-ai/dsh-agent-default-model':
+        specifier: workspace:*
+        version: link:../../core/agent-default-model
+      '@deepseek-ai/dsh-agent-preset-registry':
+        specifier: workspace:*
+        version: link:../../preset/agent-preset-registry
+      '@deepseek-ai/dsh-brand':
+        specifier: workspace:*
+        version: link:../../util/brand
+      '@deepseek-ai/dsh-commands':
+        specifier: workspace:*
+        version: link:../../interaction/commands
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../core/session
+      '@deepseek-ai/dsh-session-query':
+        specifier: workspace:*
+        version: link:../../session-query/session-query
+      '@deepseek-ai/dsh-storage':
+        specifier: workspace:*
+        version: link:../../storage/storage
+      '@deepseek-ai/dsh-storage-domain':
+        specifier: workspace:*
+        version: link:../../storage/storage-domain
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:*
+        version: link:../../typert/protocol
+      '@deepseek-ai/dsh-workspace':
+        specifier: workspace:*
+        version: link:../../workspace/workspace
+
+  packages/experimental/session-node-ui:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: workspace:*
+        version: link:../../api/remotes
+      '@deepseek-ai/dsh-client-locale':
+        specifier: workspace:*
+        version: link:../../client/locale
+      '@deepseek-ai/dsh-client-test-runtime':
+        specifier: workspace:*
+        version: link:../../test-support/client-runtime
+      '@deepseek-ai/dsh-client-ui-chat':
+        specifier: workspace:*
+        version: link:../../client/ui-chat
+      '@deepseek-ai/dsh-client-ui-conversation':
+        specifier: workspace:*
+        version: link:../../client/ui-conversation
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: workspace:*
+        version: link:../../client/ui-primitives
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: workspace:*
+        version: link:../../client/ui-renderer
+      '@deepseek-ai/dsh-client-ui-session':
+        specifier: workspace:*
+        version: link:../../client/ui-session
+      '@deepseek-ai/dsh-client-ui-sidebar':
+        specifier: workspace:*
+        version: link:../../client/ui-sidebar
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: workspace:*
+        version: link:../../client/ui-slots
+      '@deepseek-ai/dsh-client-ui-workspace':
+        specifier: workspace:*
+        version: link:../../client/ui-workspace
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../core/session
+      '@deepseek-ai/dsh-session-node':
+        specifier: workspace:*
+        version: link:../session-node
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:*
+        version: link:../../typert/protocol
+      '@deepseek-ai/dsh-workspace':
+        specifier: workspace:*
+        version: link:../../workspace/workspace
+      clsx:
+        specifier: ^2.0.0
+        version: 2.1.1
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
+
   packages/experimental/session-search:
     dependencies:
       '@deepseek-ai/dsh-session-query-sqlite':
@@ -11775,15 +11885,15 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-experimental-text-to-speech':
-        specifier: workspace:*
-        version: link:../text-to-speech
       '@deepseek-ai/dsh-subprocess':
         specifier: workspace:*
         version: link:../../subprocess/subprocess
       '@deepseek-ai/dsh-subprocess-local':
         specifier: workspace:*
         version: link:../../subprocess/subprocess-local
+      '@deepseek-ai/dsh-text-to-speech':
+        specifier: workspace:*
+        version: link:../text-to-speech
       tsx:
         specifier: ^4.23.13
         version: 4.23.13
@@ -12141,25 +12251,25 @@ importers:
 
   packages/experimental/voice-chat-bundle:
     dependencies:
+      '@deepseek-ai/dsh-api-text-to-speech':
+        specifier: workspace:*
+        version: link:../api-text-to-speech
+      '@deepseek-ai/dsh-client-ui-voice-chat':
+        specifier: workspace:*
+        version: link:../client-ui-voice-chat
       '@deepseek-ai/dsh-experimental-api-speech-to-text':
         specifier: workspace:*
         version: link:../api-speech-to-text
-      '@deepseek-ai/dsh-experimental-api-text-to-speech':
-        specifier: workspace:*
-        version: link:../api-text-to-speech
-      '@deepseek-ai/dsh-experimental-client-ui-voice-chat':
-        specifier: workspace:*
-        version: link:../client-ui-voice-chat
       '@deepseek-ai/dsh-experimental-speech-to-text':
         specifier: workspace:*
         version: link:../speech-to-text
       '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice':
         specifier: workspace:*
         version: link:../speech-to-text-sensevoice
-      '@deepseek-ai/dsh-experimental-text-to-speech':
+      '@deepseek-ai/dsh-text-to-speech':
         specifier: workspace:*
         version: link:../text-to-speech
-      '@deepseek-ai/dsh-experimental-text-to-speech-sherpaonnx':
+      '@deepseek-ai/dsh-text-to-speech-sherpaonnx':
         specifier: workspace:*
         version: link:../text-to-speech-sherpaonnx
     devDependencies:
@@ -15149,97 +15259,6 @@ importers:
       '@deepseek-ai/dsh-working-directory':
         specifier: workspace:*
         version: link:../../session/working-directory
-
-  packages/session-node/session-node:
-    dependencies:
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-agent':
-        specifier: workspace:*
-        version: link:../../core/agent
-      '@deepseek-ai/dsh-agent-default-model':
-        specifier: workspace:*
-        version: link:../../core/agent-default-model
-      '@deepseek-ai/dsh-agent-preset-registry':
-        specifier: workspace:*
-        version: link:../../preset/agent-preset-registry
-      '@deepseek-ai/dsh-brand':
-        specifier: workspace:*
-        version: link:../../util/brand
-      '@deepseek-ai/dsh-commands':
-        specifier: workspace:*
-        version: link:../../interaction/commands
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:*
-        version: link:../../core/session
-      '@deepseek-ai/dsh-session-query':
-        specifier: workspace:*
-        version: link:../../session-query/session-query
-      '@deepseek-ai/dsh-storage':
-        specifier: workspace:*
-        version: link:../../storage/storage
-      '@deepseek-ai/dsh-storage-domain':
-        specifier: workspace:*
-        version: link:../../storage/storage-domain
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: workspace:*
-        version: link:../../typert/protocol
-      '@deepseek-ai/dsh-workspace':
-        specifier: workspace:*
-        version: link:../../workspace/workspace
-
-  packages/session-node/session-node-ui:
-    devDependencies:
-      '@deepseek-ai/dsh-api-remotes':
-        specifier: workspace:*
-        version: link:../../api/remotes
-      '@deepseek-ai/dsh-client-test-runtime':
-        specifier: workspace:*
-        version: link:../../test-support/client-runtime
-      '@deepseek-ai/dsh-client-ui-conversation':
-        specifier: workspace:*
-        version: link:../../client/ui-conversation
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: workspace:*
-        version: link:../../client/ui-primitives
-      '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: workspace:*
-        version: link:../../client/ui-renderer
-      '@deepseek-ai/dsh-client-ui-session':
-        specifier: workspace:*
-        version: link:../../client/ui-session
-      '@deepseek-ai/dsh-client-ui-sidebar':
-        specifier: workspace:*
-        version: link:../../client/ui-sidebar
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: workspace:*
-        version: link:../../client/ui-slots
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:*
-        version: link:../../core/session
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: workspace:*
-        version: link:../../typert/protocol
-      '@deepseek-ai/dsh-workspace':
-        specifier: workspace:*
-        version: link:../../workspace/workspace
-      clsx:
-        specifier: ^2.0.0
-        version: 2.1.1
-      dsh-session-node:
-        specifier: workspace:*
-        version: link:../session-node
-      react:
-        specifier: ^18.2.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.3.1(react@18.3.1)
 
   packages/session-query/session-log-export:
     dependencies:

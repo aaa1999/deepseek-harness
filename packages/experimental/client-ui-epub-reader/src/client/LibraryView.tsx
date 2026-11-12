@@ -1,7 +1,7 @@
 /** The bookshelf view: import, shelf grid, per-book continue and remove, and storage settings. */
 import { useEffect, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { BookRow } from '@deepseek-ai/dsh-experimental-epub-reader/types'
+import type { BookRow } from '@deepseek-ai/dsh-epub-reader/types'
 import type { EpubReaderInjected } from './contract.ts'
 import { NS } from './locales.ts'
 import css from './reader.module.css'

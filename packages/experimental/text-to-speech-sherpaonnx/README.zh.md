@@ -3,7 +3,7 @@ description: "本地 vits-melo ONNX 语音合成 provider。"
 kind: "package-provider"
 ---
 
-# @deepseek-ai/dsh-experimental-text-to-speech-sherpaonnx
+# @deepseek-ai/dsh-text-to-speech-sherpaonnx
 
 [English](README.md) | 中文
 

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Leitor PDF",
+    "description": "Importe PDFs para leitura página a página, traduza ou explique seleções, pergunte sobre regiões capturadas e mantenha anotações.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

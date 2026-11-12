@@ -3,7 +3,7 @@ description: "从插件管理器启用实验性语音通话。"
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-voice-chat-bundle
+# @deepseek-ai/dsh-voice-chat-bundle
 
 [English](README.md) | 中文
 

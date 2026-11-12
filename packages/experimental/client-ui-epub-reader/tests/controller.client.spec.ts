@@ -1,12 +1,24 @@
 /** Reader controller flows over a faked Remote face: library, streaming treatments, progress. */
-import type { Context } from '@deepseek-ai/cordis'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError, type RemoteResult, type RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
 // Registers the epub/* RemoteError codes the failure mocks carry.
-import type {} from '@deepseek-ai/dsh-experimental-epub-reader'
-import type { Annotation, BookRow, ChapterDoc, ExplainChunk, ExplainRequest, TocEntry } from '@deepseek-ai/dsh-experimental-epub-reader/types'
-import { ReaderController } from '../src/client/controller.ts'
+import type {} from '@deepseek-ai/dsh-epub-reader'
+import type { Annotation, BookRow, ChapterDoc, ExplainChunk, ExplainRequest, TocEntry } from '@deepseek-ai/dsh-epub-reader/types'
+import { ReaderController, type ReaderContext } from '../src/client/controller.ts'
 import type { EpubSelectionValue } from '../src/client/contract.ts'
+
+/**
+ * Wrap treatment chunks as the handle face the controller iterates; the
+ * uplink stays unused because the epub face declares no uplink items.
+ */
+function streamHandle(chunks: AsyncIterable<ExplainChunk>): RemoteStreamHandle<ExplainChunk, never> {
+  return {
+    [Symbol.asyncIterator]: () => chunks[Symbol.asyncIterator](),
+    send(item) { throw new Error(`unexpected uplink item ${String(item)}`) },
+    end() {},
+    dispose() {},
+  }
+}
 
 /** One shelf row the library tests reuse. */
 function bookRow(overrides: Partial<BookRow> = {}): BookRow {
@@ -23,7 +35,7 @@ const selection: EpubSelectionValue = {
 }
 
 /** The Remote face mock: every method a controller can call. */
-function remoteFace() {
+function remoteFace(): ReaderContext['remote']['epubReader'] {
   return {
     list: vi.fn(async (): Promise<RemoteResult<BookRow[]>> => ({ ok: true, value: [bookRow()] })),
     importBook: vi.fn(async (name: string): Promise<RemoteResult<BookRow>> => ({ ok: true, value: bookRow({ title: name }) })),
@@ -58,16 +70,16 @@ function remoteFace() {
       },
     })),
     setTreatmentModel: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    explain: vi.fn((_request: ExplainRequest, _signal: AbortSignal): AsyncIterable<ExplainChunk> => {
+    explain: vi.fn((_request: ExplainRequest, _signal: AbortSignal): RemoteStreamHandle<ExplainChunk, never> => {
       throw new Error('each test overrides explain')
     }),
   }
 }
 
-/** A controller over one fresh Remote mock; the fake Context carries only that face. */
+/** A controller over one fresh Remote mock; the fake context carries only that face. */
 function controller() {
   const remote = remoteFace()
-  const reader = new ReaderController({ remote: { epubReader: remote } } as unknown as Context)
+  const reader = new ReaderController({ remote: { epubReader: remote } })
   return { reader, remote }
 }
 
@@ -179,12 +191,12 @@ describe('stepChapter', () => {
 describe('treat', () => {
   it('streams deltas and persists the finished annotation', async () => {
     const { reader, remote } = controller()
-    remote.explain.mockImplementationOnce((_request, _signal) => (async function* () {
+    remote.explain.mockImplementationOnce((_request: ExplainRequest, _signal: AbortSignal) => streamHandle((async function* () {
       yield { type: 'meta', model: 'test-model' }
       yield { type: 'delta', text: '曾' }
       yield { type: 'delta', text: '是' }
       yield { type: 'done' }
-    })())
+    })()))
     reader.treat(selection, 'translate', 'note-1')
     await vi.waitFor(() => {
       expect(reader.store.getSnapshot().streams['note-1']).toBeUndefined()
@@ -200,11 +212,11 @@ describe('treat', () => {
 
   it('keeps the failed stream on the card with its error', async () => {
     const { reader, remote } = controller()
-    remote.explain.mockImplementationOnce((_request, _signal) => (async function* () {
+    remote.explain.mockImplementationOnce((_request: ExplainRequest, _signal: AbortSignal) => streamHandle((async function* () {
       yield { type: 'meta', model: 'test-model' }
       yield { type: 'delta', text: 'partial' }
       throw new Error('provider unavailable')
-    })())
+    })()))
     reader.treat(selection, 'explain', 'note-2')
     await vi.waitFor(() => {
       expect(reader.store.getSnapshot().streams['note-2']?.error).toBe('provider unavailable')
@@ -222,11 +234,11 @@ describe('treat', () => {
       open: { bookId: 'b1', title: 'Sample Book', chapterCount: 2, chapterIndex: 0, chapterTitle: 'One', html: '<p>x</p>', toc: [], loading: false, error: null, restoreRatio: 0 },
       annotations: [existing],
     })
-    remote.explain.mockImplementationOnce(() => (async function* () {
+    remote.explain.mockImplementationOnce(() => streamHandle((async function* () {
       yield { type: 'meta', model: 'test-model' }
       yield { type: 'delta', text: 'revised' }
       yield { type: 'done' }
-    })())
+    })()))
     reader.retryAnnotation('note-3')
     await vi.waitFor(() => {
       expect(reader.store.getSnapshot().streams['note-3']).toBeUndefined()
@@ -237,12 +249,12 @@ describe('treat', () => {
   it('aborts an in-flight stream at disposal without marking it failed', async () => {
     const { reader, remote } = controller()
     let observed: AbortSignal | undefined
-    remote.explain.mockImplementationOnce((_request, signal) => {
+    remote.explain.mockImplementationOnce((_request: ExplainRequest, signal: AbortSignal) => {
       observed = signal
-      return (async function* () {
+      return streamHandle((async function* () {
         yield { type: 'meta', model: 'test-model' }
         await new Promise((_resolve, reject) => { signal.addEventListener('abort', () => { reject(new Error('cancelled')) }) })
-      })()
+      })())
     })
     reader.treat(selection, 'translate', 'note-4')
     await vi.waitFor(() => {

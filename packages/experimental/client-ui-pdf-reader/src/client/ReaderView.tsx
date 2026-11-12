@@ -476,7 +476,7 @@ export function ReaderView({
           {failure !== null ? <p className={css.hint} role="alert">{t('pageFailed', { message: failure })}</p> : null}
           {document$ === null && open.error === null && failure === null ? <p className={css.hint} role="status">{t('pageLoading')}</p> : null}
           {noTextLayer && document$ !== null ? <p className={css.hint}>{t('noTextHint')}</p> : null}
-          {shotMode === 'armed' ? <p className={css.hint} role="status">{t('shotHint')} · Esc {t('shotCancel')}</p> : null}
+          {shotMode === 'armed' ? <p className={css.hint} role="status">{t('shotArmedHint', { hint: t('shotHint') })}</p> : null}
           <div
             ref={box}
             className={`${css.pageBox} ${shotMode === 'armed' || shotMode === 'dragging' ? css.pageBoxCrosshair : ''}`}

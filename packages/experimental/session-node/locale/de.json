@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Sitzungs-Historienknoten",
+    "description": "Speichert den Historienknoten einer Sitzung unter einem Projekt und verzweigt später eine neue Sitzung daraus."
+  }
+}

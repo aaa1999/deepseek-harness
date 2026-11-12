@@ -1,7 +1,7 @@
 /** Authenticated loopback transport for one serial native synthesizer. */
 import { createServer, type Server } from 'node:http'
 import { timingSafeEqual } from 'node:crypto'
-import type { SynthesisOutput } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import type { SynthesisOutput } from '@deepseek-ai/dsh-text-to-speech/types'
 
 /**
  * Bind an ephemeral loopback listener; model loading completes before readiness is published.

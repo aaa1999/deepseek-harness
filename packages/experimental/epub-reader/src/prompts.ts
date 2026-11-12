@@ -1,7 +1,7 @@
 /**
  * Prompt templates for selection translation and explanation.
  *
- * @module @deepseek-ai/dsh-experimental-epub-reader/prompts
+ * @module @deepseek-ai/dsh-epub-reader/prompts
  */
 
 import type { ExplainRequest } from './types.ts'

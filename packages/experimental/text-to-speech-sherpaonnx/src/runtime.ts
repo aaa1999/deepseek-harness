@@ -10,7 +10,7 @@ import { createWriteStream } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Config } from './config.ts'
-import type { SynthesisPreparationState } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import type { SynthesisPreparationState } from '@deepseek-ai/dsh-text-to-speech/types'
 import { timeoutOf } from '@deepseek-ai/dsh-timeout'
 import { classifyDownloadFailure, SynthesisDownloadError } from './download-error.ts'
 

@@ -1,7 +1,7 @@
 /** Slot and menu faces shared by the EPUB reader client modules. */
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ContextMenuTarget, MenuPoint } from '@deepseek-ai/dsh-client-ui-context-menu/client'
-import type { ExplainKind } from '@deepseek-ai/dsh-experimental-epub-reader/types'
+import type { ExplainKind } from '@deepseek-ai/dsh-epub-reader/types'
 import type { EpubReaderState } from './controller.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-context-menu/client' {

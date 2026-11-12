@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Nós de histórico de sessão",
+    "description": "Guarda o nó de histórico de uma sessão sob um projeto e depois cria uma nova sessão a partir dele."
+  }
+}

@@ -222,7 +222,7 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // The CPython side ships as source .py files, published as-is rather than built.
   '@deepseek-ai/dsh-experimental-ptc-runtime-python': ['py/**/*.py'],
   '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice': ['runtime/assets.json'],
-  '@deepseek-ai/dsh-experimental-text-to-speech-sherpaonnx': ['runtime/assets.json'],
+  '@deepseek-ai/dsh-text-to-speech-sherpaonnx': ['runtime/assets.json'],
   // Node profile configuration and process bootstraps have separate bundles.
   '@deepseek-ai/dsh-ptc-runtime-node': ['lib/configuration.js', 'lib/process.js', 'lib/persistent-process.js'],
   // The Inspector owns a Worker and a mirrored frontend outside package export paths.

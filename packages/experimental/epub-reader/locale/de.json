@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "EPUB-Bibliotheksdienst",
+    "description": "Importiert und analysiert EPUB-Bücher, stellt bereinigte Kapitel bereit, speichert Anmerkungen und streamt LLM-Übersetzungen oder -Erklärungen."
+  }
+}

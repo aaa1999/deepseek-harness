@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session history nodes",
+    "description": "Saves a session’s history node under a project and forks a new session from it later."
+  }
+}

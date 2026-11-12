@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Nodos de historial de sesión",
+    "description": "Guarda el nodo de historial de una sesión bajo un proyecto y crea después una nueva sesión a partir de él."
+  }
+}

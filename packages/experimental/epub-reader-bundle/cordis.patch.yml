@@ -3,10 +3,10 @@
 # agent model still streams; clear both to follow agentDefaultModel.
 - insert:
     - id: epub-reader
-      name: '@deepseek-ai/dsh-experimental-epub-reader'
+      name: '@deepseek-ai/dsh-epub-reader'
       config:
         dataRoot: !!js dshHomePath('epub-reader')
         provider: deepseek-official
         model: deepseek-chat
     - id: epub-reader-ui
-      name: '@deepseek-ai/dsh-experimental-client-ui-epub-reader'
+      name: '@deepseek-ai/dsh-client-ui-epub-reader'

@@ -6,14 +6,21 @@ import { fileURLToPath } from 'node:url'
 import { chromium, type Browser } from 'playwright'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import type { SpeechInput, SpeechProviderId } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
-import type { SynthesisInput, SynthesisProviderId } from '@deepseek-ai/dsh-experimental-text-to-speech/types'
+import type { SynthesisInput, SynthesisProviderId } from '@deepseek-ai/dsh-text-to-speech/types'
 import type {} from '@deepseek-ai/dsh-experimental-speech-to-text'
-import type {} from '@deepseek-ai/dsh-experimental-text-to-speech'
+import type {} from '@deepseek-ai/dsh-text-to-speech'
 import { fixtureUserPrompts, launchWebScaffold, watchConsole, type WebScaffold } from './scaffold.ts'
 import { connectFreshWorkspace, newEnglishPage } from './support.ts'
 
 const fixture = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip/session.v3.jsonl', import.meta.url))
 const bundle = fileURLToPath(new URL('../../../packages/experimental/voice-chat-bundle', import.meta.url))
+
+/** MediaRecorder instances the page init script captures for stream driving. */
+declare global {
+  interface Window {
+    __voiceChatRecorders?: MediaRecorder[]
+  }
+}
 
 /** Encode mono float samples as a 48 kHz PCM16 WAV blob payload. */
 function wave48k(level: number, seconds: number): string {
@@ -76,13 +83,12 @@ it('listens continuously, auto-submits the transcript, and reads the reply aloud
   resources.browser = browser
   const page = await newEnglishPage(browser), tripwire = watchConsole(page)
   await page.addInitScript(() => {
-    const holder = window as Window & { __voiceChatRecorders?: unknown[] }
-    holder.__voiceChatRecorders = []
+    window.__voiceChatRecorders = []
     const Native = window.MediaRecorder
     window.MediaRecorder = class extends Native {
       constructor(stream: MediaStream, options?: MediaRecorderOptions) {
         super(stream, options)
-        holder.__voiceChatRecorders!.push(this)
+        window.__voiceChatRecorders!.push(this)
       }
       override start(): void { Object.assign(this, { state: 'recording' }) }
       override stop(): void { Object.assign(this, { state: 'inactive' }) }
@@ -96,20 +102,18 @@ it('listens continuously, auto-submits the transcript, and reads the reply aloud
   await call.click()
   // The blank-session hero has no composer dock, so the status row appears only
   // after the first auto-submit creates the Session; the recorder must exist first.
-  const recorderCount = (): Promise<number> => page.evaluate(() => (
-    window as unknown as { __voiceChatRecorders?: unknown[] }).__voiceChatRecorders?.length ?? 0)
+  const recorderCount = (): Promise<number> => page.evaluate(() => window.__voiceChatRecorders?.length ?? 0)
   await expect.poll(recorderCount, { timeout: 15_000 }).toBe(1)
   const status = page.locator('[data-voice-chat-phase]')
   const drive = async (payload: string, times: number): Promise<void> => {
     await page.evaluate(({ payload, times }) => {
-      const holder = window as unknown as { __voiceChatRecorders: Array<{ ondataavailable?: (event: { data: Blob }) => void }> }
-      const recorder = holder.__voiceChatRecorders.at(-1)
+      const recorder = window.__voiceChatRecorders?.at(-1)
       if (recorder === undefined) throw new Error('voice chat recorder is not active')
       const binary = atob(payload)
       const bytes = new Uint8Array(binary.length)
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
       for (let i = 0; i < times; i++) {
-        recorder.ondataavailable?.({ data: new Blob([bytes], { type: 'audio/wav' }) })
+        recorder.ondataavailable?.(new BlobEvent('dataavailable', { data: new Blob([bytes], { type: 'audio/wav' }) }))
       }
     }, { payload, times })
   }

@@ -1,0 +1,16 @@
+# @deepseek-ai/dsh-session-node bundle patch.
+#
+# A "global" plugin layer: these rows are loaded in every profile that installs
+# this bundle, so the /save-node, /nodes, /fork-node and /delete-node commands
+# and the ctx.sessionNodes service are available in every session and project.
+#
+# Row order carries no load semantics (activation is service-availability
+# driven); the service waits for its dependencies, exactly like the workspace
+# registry waits for sessionPersistence.
+
+- insert:
+    - id: session-node
+      name: '@deepseek-ai/dsh-session-node'
+
+    - id: session-node-commands
+      name: '@deepseek-ai/dsh-session-node/commands'

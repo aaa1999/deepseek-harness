@@ -10,14 +10,14 @@
     - id: api-speech-to-text
       name: '@deepseek-ai/dsh-experimental-api-speech-to-text'
     - id: text-to-speech
-      name: '@deepseek-ai/dsh-experimental-text-to-speech'
+      name: '@deepseek-ai/dsh-text-to-speech'
       config:
         defaultProvider: vits-melo-local
     - id: text-to-speech-sherpaonnx
-      name: '@deepseek-ai/dsh-experimental-text-to-speech-sherpaonnx'
+      name: '@deepseek-ai/dsh-text-to-speech-sherpaonnx'
       config:
         dataRoot: !!js dshHomePath('text-to-speech', 'vits-melo')
     - id: api-text-to-speech
-      name: '@deepseek-ai/dsh-experimental-api-text-to-speech'
+      name: '@deepseek-ai/dsh-api-text-to-speech'
     - id: ui-voice-chat
-      name: '@deepseek-ai/dsh-experimental-client-ui-voice-chat'
+      name: '@deepseek-ai/dsh-client-ui-voice-chat'

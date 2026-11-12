@@ -164,7 +164,7 @@ export function LibraryView({
                 : <img className={css.cover} src={book.coverUrl} alt="" loading="lazy" />}
               <span className={css.bookTitle}>{book.title}</span>
               <span className={css.bookMeta}>
-                {book.pageCount > 0 ? t('pages', { count: book.pageCount }) : 'PDF'}
+                {book.pageCount > 0 ? t('pages', { count: book.pageCount }) : t('pdfMeta')}
               </span>
               {book.source != null
                 ? <span className={css.bookSource} title={book.source.url}>
