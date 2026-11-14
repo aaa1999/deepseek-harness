@@ -84,6 +84,13 @@ function MessageItem({ node, t: translate, referenceLabels, skillNames }: Messag
   const props: Partial<Omit<ChatNodeViewProps, 'node'>> & { node: ChatConversationViewNode } = {
     node: viewNode, t: translate, loadImage: unusedImageLoader, renderFactorySlot: renderUserFactory,
     openFile: vi.fn(), useChat: useDetachedChat,
+    amendAt: vi.fn(),
+    sendAsTurn: vi.fn(),
+    useAccess: () => false,
+    useSession: bindSnapshotSelector({
+      subscribe: () => () => {},
+      getSnapshot: () => ({ running: false }),
+    } as never),
   }
   switch (node.kind) {
     case 'user':

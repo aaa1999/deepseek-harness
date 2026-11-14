@@ -12,6 +12,12 @@ export interface ChatConversationViewNode extends ConversationViewNode {
   readonly location: ConversationLocation
   readonly visibility: 'visible' | 'hidden'
   /**
+   * Present when an amendment's surface replacement shadowed this Node. The
+   * rows stay loaded as history; renderers present them as superseded. Never
+   * set on the amended message's own bubble, which shows the live revision.
+   */
+  readonly superseded?: true
+  /**
    * Group-tree position, visible or hidden; absence joins the surrounding step
    * run. An `exchange` Node's Turn and every later Turn before the next opening
    * Turn form one exchange; the latest loaded exchange starts at the last loaded

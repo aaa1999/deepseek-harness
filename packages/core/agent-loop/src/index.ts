@@ -35,6 +35,7 @@ import type { SessionHandle, SessionPersistence } from '@deepseek-ai/dsh-session
 import { ReactLoopAgent } from './agent.ts'
 import { inboxProjectionDefinition } from './inbox.ts'
 import { DEFAULT_MAX_PARALLEL_TOOL_CALLS } from './constants.ts'
+export type { AmendMessageSource } from './amend.ts'
 import type {} from './runtime-context.ts'
 
 /** Fiber states that cannot own or serve a new lifecycle. */

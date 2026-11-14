@@ -8,6 +8,7 @@
  * invisible out here.
  */
 import type { FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type { TextBlock } from '@deepseek-ai/dsh-llm'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
@@ -116,6 +117,20 @@ export interface ISession {
    * @returns acceptance, or a business/transport error.
    */
   updateQueue(itemId: MessageId, action: QueueAction): Promise<RemoteResult<{ accepted: true }>>
+  /**
+   * Revise one already-sent user message. An idle Session re-runs from the
+   * amended message; a Session paused for human input applies the revision in
+   * place for the next model request without interrupting in-flight work.
+   * @param revises - identity of the sent surface message the text revises.
+   * @param content - non-whitespace text-only replacement content.
+   * @param requestId - client-minted identity for admission reconciliation on retries.
+   * @returns acceptance, or a business error (also mirrored into snapshot.promptError).
+   */
+  amend(
+    revises: MessageId,
+    content: readonly TextBlock[],
+    requestId?: SessionRequestId,
+  ): Promise<RemoteResult<{ accepted: true }>>
   /**
    * Cancel the running turn. Pending queued work remains and resumes in FIFO
    * order after the Host reaches cancellation quiescence.

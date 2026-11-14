@@ -6,7 +6,7 @@ import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
 import type { FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { SubagentAddress } from '@deepseek-ai/dsh-subagent/client'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
-import type { UserMessage } from '@deepseek-ai/dsh-llm/types'
+import type { TextBlock, UserMessage } from '@deepseek-ai/dsh-llm/types'
 import { SessionLogOffset, SessionSeq, type SessionId } from '@deepseek-ai/dsh-session/types'
 import { SessionEventStream } from '../transport.ts'
 import type { SessionJournalChange } from '../transport.ts'
@@ -365,6 +365,35 @@ export class Session implements SessionFace {
   /** Apply one operation to a still-pending queue occurrence. */
   async updateQueue(itemId: MessageId, action: QueueAction): Promise<RemoteResult<{ accepted: true }>> {
     return this.remote.session.updateQueue({ sessionId: this.sessionId, itemId, action })
+  }
+
+  /**
+   * Revise one already-sent user message; failures land in promptError (same
+   * error-strip display slot as a failed prompt).
+   * @param revises - identity of the sent surface message the text revises.
+   * @param content - non-whitespace text-only replacement content.
+   * @param requestId - client-minted identity for admission reconciliation on retries.
+   * @returns the amend result.
+   */
+  async amend(
+    revises: MessageId,
+    content: readonly TextBlock[],
+    requestId?: SessionRequestId,
+  ): Promise<RemoteResult<{ accepted: true }>> {
+    this.promptError = null
+    this.lastAgentError = null
+    const result = await this.remote.session.amend({
+      sessionId: this.sessionId,
+      requestId: requestId ?? randomUUID() as SessionRequestId,
+      revises,
+      content,
+      clientTimeZone: resolvedClientTimeZone(),
+    })
+    if (!result.ok) {
+      this.promptError = { op: 'send', error: result.error }
+      this.notifier.markDirty()
+    }
+    return result
   }
 
   /**

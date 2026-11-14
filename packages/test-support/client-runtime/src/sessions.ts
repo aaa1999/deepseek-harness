@@ -139,6 +139,14 @@ export class FixtureSession implements SessionFace {
   }
 
   /**
+   * Fail-loud stub; supply `amend` on the fixture's session face to exercise it.
+   * @returns never — always throws.
+   */
+  amend(): never {
+    throw new Error(`test session "${this.sessionId}": amend is not stubbed — supply it on the fixture's session face`)
+  }
+
+  /**
    * Fail-loud stub; supply `cancel` on the fixture's session face to exercise it.
    * @returns never — always throws.
    */

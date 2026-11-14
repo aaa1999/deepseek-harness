@@ -49,7 +49,7 @@ function turnOf(node: ChatNode | undefined): number | undefined {
  */
 export const ChatNodeSeat = memo(function ChatNodeSeat({
   nodeKey, groupPart, useChatNode, useChatNodeProcess, usePresentation,
-  cwd, openFile, inspectCall, forkAt,
+  cwd, openFile, inspectCall, forkAt, amendAt, sendAsTurn,
   loadImage, useStore, actions, renderSlot, t, useChatNodeBottom, deferCollapse, useGroupAction,
 }: ChatNodeSeatProps) {
   const bottom = useChatNodeBottom(nodeKey)
@@ -137,10 +137,12 @@ export const ChatNodeSeat = memo(function ChatNodeSeat({
       openFile,
       inspectCall,
       forkAt,
+      amendAt,
+      sendAsTurn,
       loadImage,
       turnProcess,
     }, [
-    node, groupPart, cwd, openFile, inspectCall, forkAt,
+    node, groupPart, cwd, openFile, inspectCall, forkAt, amendAt, sendAsTurn,
     loadImage, turnProcess,
   ])
   if (routedNode === undefined || owner === null) return null
@@ -159,6 +161,7 @@ export const ChatNodeSeat = memo(function ChatNodeSeat({
       data-chat-node-key={routedNode.key}
       data-chat-group-part={groupPart}
       data-chat-flow-kind={routedNode.kind}
+      data-superseded={routedNode.superseded || undefined}
       data-chat-turn={turn}
       data-turn-process-member={processMember || undefined}
       data-turn-process-hidden={processHidden || undefined}

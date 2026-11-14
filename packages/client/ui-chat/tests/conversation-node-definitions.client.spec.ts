@@ -3153,3 +3153,87 @@ it('keeps user cancellations and forked endings free of a failure row', () => {
     expect(node(snapshot(value), 'turn-error')).toBeUndefined()
   }
 })
+
+/** One completed exchange whose user message a later turn amends and re-runs. */
+function amendedTurnEntries(): SessionLiveEventEntry[] {
+  return [
+    at(0, 'turn/start', { turn: 1 }),
+    at(1, 'user/message', textMessage('user-1', 'original'), { surfaceOp: 'append' }),
+    at(2, 'step/start', { turn: 1, step: 1 }),
+    at(3, 'assistant/message', { turn: 1, step: 1, message: assistantMessage('assistant-1', 'first reply') }, { surfaceOp: 'append' }),
+    at(4, 'step/end', { turn: 1, step: 1 }),
+    at(5, 'turn/end', { turn: 1, reason: { kind: 'completed' } }),
+    at(6, 'turn/start', { turn: 2 }),
+    at(7, 'user/message', {
+      ...textMessage('amend-1', 'revised'),
+      source: { kind: 'amend', revises: 'user-1', startSeq: 1, endSeq: 3 },
+    }, { surfaceOp: { op: 'replace', startSeq: 1, endSeq: 3 }, sourceEventSeqs: [1, 3] }),
+    at(8, 'step/start', { turn: 2, step: 1 }),
+    at(9, 'assistant/message', { turn: 2, step: 1, message: assistantMessage('assistant-2', 'second reply') }, { surfaceOp: 'append' }),
+    at(10, 'step/end', { turn: 2, step: 1 }),
+    at(11, 'turn/end', { turn: 2, reason: { kind: 'completed' } }),
+  ]
+}
+
+describe('message amendment', () => {
+  it('replaces the bubble content in place and marks the shadowed rows superseded', () => {
+    const current = snapshot(assembler(amendedTurnEntries()))
+    const users = [...current.nodes.values()].filter(candidate => candidate.kind === 'user')
+    expect(users).toHaveLength(1)
+    expect(users[0]?.data).toMatchObject({
+      content: [{ type: 'text', text: 'revised' }],
+      edited: true,
+      amendRange: { startSeq: 1, endSeq: 3 },
+    })
+    // The revised bubble itself stays live; the reply it replaced dims.
+    expect(users[0]?.superseded).toBeUndefined()
+    expect([...current.nodes.values()].find(candidate => candidate.anchorSeq === 3)?.superseded).toBe(true)
+    const tails = [...current.nodes.values()].filter(candidate => candidate.kind === 'turn-tail')
+    expect(tails.find(tail => (tail.data as TurnTailChatData).turn === 1)?.superseded).toBe(true)
+    expect(tails.find(tail => (tail.data as TurnTailChatData).turn === 2)?.superseded).toBeUndefined()
+    expect([...current.nodes.values()].find(candidate => candidate.anchorSeq === 9)?.superseded).toBeUndefined()
+  })
+
+  it('chains a second amendment onto the same bubble', () => {
+    const value = assembler(amendedTurnEntries())
+    value.append(at(12, 'turn/start', { turn: 3 }))
+    value.append(at(13, 'user/message', {
+      ...textMessage('amend-2', 'revised again'),
+      // The Host reports the chain root, so this update joins the same bubble.
+      source: { kind: 'amend', revises: 'user-1', startSeq: 7, endSeq: 9 },
+    }, { surfaceOp: { op: 'replace', startSeq: 7, endSeq: 9 }, sourceEventSeqs: [7, 9] }))
+    value.flush()
+    const current = snapshot(value)
+    const users = [...current.nodes.values()].filter(candidate => candidate.kind === 'user')
+    expect(users).toHaveLength(1)
+    expect(users[0]?.data).toMatchObject({
+      content: [{ type: 'text', text: 'revised again' }],
+      edited: true,
+      amendRange: { startSeq: 7, endSeq: 9 },
+    })
+    // The first re-run's rows joined the superseded set.
+    expect([...current.nodes.values()].find(candidate => candidate.anchorSeq === 9)?.superseded).toBe(true)
+  })
+
+  it('keeps a paused single-node amendment free of superseded rows', () => {
+    const value = assembler([
+      at(0, 'turn/start', { turn: 1 }),
+      at(1, 'user/message', textMessage('user-1', 'original'), { surfaceOp: 'append' }),
+      at(2, 'step/start', { turn: 1, step: 1 }),
+      at(3, 'assistant/message', { turn: 1, step: 1, message: assistantMessage('assistant-1', 'partial work') }, { surfaceOp: 'append' }),
+      at(4, 'user/message', {
+        ...textMessage('amend-1', 'clarified'),
+        source: { kind: 'amend', revises: 'user-1', startSeq: 1, endSeq: 1 },
+      }, { surfaceOp: { op: 'replace', startSeq: 1, endSeq: 1 }, sourceEventSeqs: [1] }),
+    ])
+    const current = snapshot(value)
+    const users = [...current.nodes.values()].filter(candidate => candidate.kind === 'user')
+    expect(users).toHaveLength(1)
+    expect(users[0]?.data).toMatchObject({
+      content: [{ type: 'text', text: 'clarified' }],
+      edited: true,
+      amendRange: { startSeq: 1, endSeq: 1 },
+    })
+    expect([...current.nodes.values()].every(candidate => candidate.superseded === undefined)).toBe(true)
+  })
+})

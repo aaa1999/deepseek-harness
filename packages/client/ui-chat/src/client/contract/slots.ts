@@ -1,5 +1,6 @@
 /** Chat-owned Slot declarations and composed component props. */
 import type { RefObject } from 'react'
+import type { TextBlock } from '@deepseek-ai/dsh-llm'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { PendingSubmission } from '@deepseek-ai/dsh-api-session-controller/client'
@@ -242,6 +243,10 @@ export interface ChatNodeOwnerProps {
   openFile: (path: string, options?: OpenFileOptions) => void
   inspectCall: ((callId: ToolCallId) => void) | undefined
   forkAt: (seq: number) => void
+  /** Revise one already-sent message; an idle Session re-runs from the revised text. */
+  amendAt: (revises: MessageId, content: readonly TextBlock[]) => void
+  /** Queue one edited draft as an ordinary new prompt without revising its source. */
+  sendAsTurn: (text: string) => void
   /** Session-authorized image loader supplied by the Chat view. */
   loadImage: MessageImageLoader
   /** Turn-process state when this Node belongs to a projected Turn. */
@@ -359,6 +364,10 @@ export interface ChatViewInjected {
     read: () => ChatScrollPosition | null
   }
   forkAt: (seq: number) => void
+  /** Revise one already-sent message; an idle Session re-runs from the revised text. */
+  amendAt: (revises: MessageId, content: readonly TextBlock[]) => void
+  /** Queue one edited draft as an ordinary new prompt without revising its source. */
+  sendAsTurn: (text: string) => void
 }
 
 /** Session-owned node sources shared with the view, plus the flow's connection state. */
@@ -371,7 +380,7 @@ export type ChatFlowDataInjected = Pick<ChatViewInjected, 'keyedHooks'> & {
 
 /** Ordered rows and reconciled local echoes rendered inside one Chat viewport. */
 export interface ChatFlowOwnerProps extends Pick<ChatNodeOwnerProps,
-  'cwd' | 'openFile' | 'inspectCall' | 'forkAt' | 'loadImage'> {
+  'cwd' | 'openFile' | 'inspectCall' | 'forkAt' | 'amendAt' | 'sendAsTurn' | 'loadImage'> {
   readonly entries: readonly RenderEntry[]
   readonly pendingInputs: readonly (PendingSubmission | InboxState['next-step'][number])[]
   readonly lastInputTurn: number | undefined

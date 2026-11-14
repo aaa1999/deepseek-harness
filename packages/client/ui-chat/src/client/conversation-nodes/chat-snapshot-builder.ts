@@ -835,6 +835,107 @@ export class SkillNameProjector {
   }
 }
 
+/** One amendment's shadowed surface range, reported by the amended message Node. */
+interface SupersedeRange {
+  readonly startSeq: number
+  readonly endSeq: number
+}
+
+/**
+ * Attaches `superseded` to the Nodes an amendment shadowed: every Node whose
+ * anchorSeq falls inside an amended message's replacement range, plus the
+ * turn-tail of each Turn that owns such a Node (its own anchorSeq is a
+ * turn/end seq the surface range never contains). The amended message's own
+ * bubble carries `amendRange` and stays live. Annotations are monotone — the
+ * log never un-shadows — so apply only adds; a chained amendment widens its
+ * bubble's range, which re-reads the resident set it newly shadows.
+ */
+export class SupersedeProjector {
+  private readonly ranges = new Map<string, SupersedeRange>()
+  private ordered: readonly SupersedeRange[] = EMPTY_LIST
+
+  /**
+   * Rebuild the range index from a whole Node set and annotate it.
+   * @param nodes - every materialized Chat Node, in any order.
+   * @returns the same Nodes, shadowed ones carrying `superseded`.
+   */
+  replace(nodes: readonly ChatConversationViewNode[]): readonly ChatConversationViewNode[] {
+    this.ranges.clear()
+    this.ordered = EMPTY_LIST
+    for (const node of nodes) this.track(node)
+    const marked = this.annotate(nodes)
+    if (marked.length === 0) return nodes
+    const byKey = new Map(marked.map(node => [node.key, node]))
+    return nodes.map(node => byKey.get(node.key) ?? node)
+  }
+
+  /**
+   * Fold one incremental upsert set: annotate upserts that fall inside a
+   * known range, and when a new range arrives, re-read the resident set it
+   * may have flipped. An amend is a rare user action, so the full re-read is
+   * the simple correct cost.
+   * @param upserts - the changed Nodes.
+   * @param store - the resident Nodes.
+   * @returns the upserts plus any resident Node whose marking changed.
+   */
+  apply(
+    upserts: readonly ChatConversationViewNode[],
+    store: ChatNodeStore,
+  ): readonly ChatConversationViewNode[] {
+    let rangesChanged = false
+    for (const node of upserts) rangesChanged = this.track(node) || rangesChanged
+    const annotated = this.annotate(rangesChanged ? [...upserts, ...store.values()] : upserts)
+    if (annotated.length === 0) return upserts
+    const byKey = new Map(upserts.map(node => [node.key, node]))
+    for (const node of annotated) byKey.set(node.key, node)
+    return [...byKey.values()]
+  }
+
+  /** Record the range an amended message Node reports; true when new or widened. */
+  private track(node: ChatConversationViewNode): boolean {
+    const candidate = node as ChatNode
+    if (candidate.kind !== 'user' && candidate.kind !== 'steering') return false
+    const range = candidate.data.amendRange
+    if (range === undefined) return false
+    const existing = this.ranges.get(node.key)
+    if (existing !== undefined && existing.startSeq === range.startSeq && existing.endSeq === range.endSeq) {
+      return false
+    }
+    this.ranges.set(node.key, range)
+    this.ordered = [...this.ranges.values()].sort((left, right) => left.startSeq - right.startSeq)
+    return true
+  }
+
+  /** Whether one seq falls inside any tracked range. */
+  private shadowed(seq: number): boolean {
+    return this.ordered.some(range => seq >= range.startSeq && seq <= range.endSeq)
+  }
+
+  /** Mark the in-range Nodes of one set plus their Turns' tails. */
+  private annotate(nodes: readonly ChatConversationViewNode[]): readonly ChatConversationViewNode[] {
+    const supersededTurns = new Set<number | undefined>()
+    const next = new Map<string, ChatConversationViewNode>()
+    for (const node of nodes) {
+      const candidate = node as ChatNode
+      // The amended bubble reports the range; it presents the live revision.
+      if ((candidate.kind === 'user' || candidate.kind === 'steering') && candidate.data.amendRange !== undefined) continue
+      if (!this.shadowed(node.anchorSeq)) continue
+      supersededTurns.add(node.location.kind === 'turn' || node.location.kind === 'step'
+        ? node.location.turn.turn
+        : undefined)
+      if (node.superseded !== true) next.set(node.key, { ...node, superseded: true })
+    }
+    for (const node of nodes) {
+      if ((node as ChatNode).kind !== 'turn-tail' || node.superseded === true) continue
+      const turn = node.location.kind === 'turn' || node.location.kind === 'step'
+        ? node.location.turn.turn
+        : undefined
+      if (turn !== undefined && supersededTurns.has(turn)) next.set(node.key, { ...node, superseded: true })
+    }
+    return [...next.values()]
+  }
+}
+
 interface LegacyContribution {
   readonly anchorSeq: number
   readonly nodes: readonly ConversationNode[]
@@ -1086,6 +1187,7 @@ export class ChatSnapshotBuilder implements ConversationViewBuilder<ChatConversa
   private readonly legacy = new LegacySliceBuilder()
   private readonly referenceLabels = new ReferenceLabelProjector()
   private readonly skillNames = new SkillNameProjector()
+  private readonly supersedes = new SupersedeProjector()
   private order: readonly string[] = EMPTY_KEYS
   private latestGroupInput: ConversationGroupInput<ChatConversationViewNode>
   private readonly readGroupNode = (key: NodeKey): ChatConversationViewNode | undefined => this.store.get(key)
@@ -1111,7 +1213,7 @@ export class ChatSnapshotBuilder implements ConversationViewBuilder<ChatConversa
     readonly nodes: readonly ChatConversationViewNode[]
     readonly timeline: ConversationTimelineSnapshot
   }): ChatSnapshot {
-    const nodes = this.skillNames.replace(this.referenceLabels.replace(input.nodes))
+    const nodes = this.supersedes.replace(this.skillNames.replace(this.referenceLabels.replace(input.nodes)))
     this.store.replace(nodes)
     this.order = orderedVisibleChatNodes(nodes).map(node => node.key)
     this.locations.rebuild(this.order, this.store)
@@ -1136,7 +1238,10 @@ export class ChatSnapshotBuilder implements ConversationViewBuilder<ChatConversa
     readonly timeline: ConversationTimelineSnapshot
     readonly changedTurns?: readonly number[]
   }): ChatSnapshot {
-    const upserts = this.skillNames.apply(this.referenceLabels.apply(input.upserts, this.store), this.store)
+    const upserts = this.supersedes.apply(
+      this.skillNames.apply(this.referenceLabels.apply(input.upserts, this.store), this.store),
+      this.store,
+    )
     const processTurns = new Set<number>()
     let structural = false
     const contentOnly: ChatConversationViewNode[] = []

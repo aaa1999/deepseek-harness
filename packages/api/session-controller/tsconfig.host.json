@@ -26,6 +26,7 @@
     "src/media-references.ts",
     "src/archived-session-gate.ts",
     "src/skill-catalog.ts",
+    "src/amend-targets.ts",
     "src/continuation.ts"
   ],
   "references": [

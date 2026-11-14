@@ -204,6 +204,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'session/attachment-invalid': { readonly reason: string }
     'session/queue-item-not-found': { readonly itemId: MessageId }
     'session/steer-unavailable': { readonly itemId: MessageId }
+    'session/amend-unavailable': { readonly sessionId: SessionId; readonly revises: MessageId }
     'session/title-invalid': { readonly sessionId: SessionId }
     'session/fork-unavailable': { readonly sessionId: SessionId }
     'session/migration-required': { readonly sessionId: SessionId }
@@ -336,6 +337,30 @@ export interface SessionPromptValue {
   readonly accepted: true
 }
 
+/** Session amend request: revise one already-sent user message after its turn ended or paused. */
+export interface SessionAmendRequest {
+  readonly sessionId: SessionId
+  /** Client-minted identity persisted on the accepted amendment. */
+  readonly requestId: SessionRequestId
+  /** Identity of the sent surface message the amended text revises. */
+  readonly revises: MessageId
+  /** Non-whitespace text-only replacement content. */
+  readonly content: readonly TextBlock[]
+  readonly clientTimeZone?: string
+}
+
+/** Receipt after one amendment is admitted or lands on the surface. */
+export interface SessionAmendValue {
+  readonly accepted: true
+}
+
+/** Caller correlation the Remote records on one admitted amendment. */
+export interface SessionAmendCorrelation {
+  readonly rpcId: SessionRequestId
+  readonly clientTimeZone?: string
+  readonly principal?: Principal
+}
+
 /** Durable image read request. */
 export interface SessionAttachmentRequest {
   /** Gateway permission scope only; neither Session existence nor its image references are checked. */
@@ -400,6 +425,21 @@ declare module '@deepseek-ai/dsh-llm' {
     'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; principal?: Principal }
     /** Empty retry user message with browser prompt correlation and caller metadata. */
     'retry-rpc': { kind: 'retry'; rpcId: SessionRequestId; clientTimeZone?: string; principal?: Principal }
+    /**
+     * Replacement of one sent user message's surface range with browser prompt
+     * correlation and caller metadata. The range mirrors the loop-owned
+     * `amend` source; an idle Session re-runs from the revised message, a
+     * paused Session applies it in place for the next model request.
+     */
+    'amend-rpc': {
+      kind: 'amend'
+      revises: MessageId
+      startSeq: SessionSeq
+      endSeq: SessionSeq
+      rpcId: SessionRequestId
+      clientTimeZone?: string
+      principal?: Principal
+    }
   }
 }
 

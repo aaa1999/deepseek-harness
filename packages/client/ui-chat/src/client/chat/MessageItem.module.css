@@ -358,3 +358,45 @@
   font-size: 12px;
   line-height: 15px;
 }
+
+.editedMark {
+  align-self: flex-end;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.amendEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.amendHintRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.amendHint {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.amendSendAs {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.amendSendAs:hover {
+  color: var(--dsw-alias-label-primary);
+  text-decoration: underline;
+}

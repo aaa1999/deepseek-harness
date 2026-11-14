@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-14-amend-source.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-11-14-amend-source.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-11-14-amend-source:
+  en: d4a06276a88a31a6
+  zh: 8707e23e738bcd91
+/2026-11-14-amend-source/summary:
+  en: 0cc094e3e98fc765
+  zh: 02f762bb25d9ecc8
+/2026-11-14-amend-source/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-11-14-amend-source/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-11-14-amend-source/compatibility:
+  en: e402ec1125333df0
+  zh: 398aa69d5a5ff407
+/2026-11-14-amend-source/verification:
+  en: c71b47b197c0a0e3
+  zh: a6463080d1ae1fa6
+/2026-11-14-amend-source/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

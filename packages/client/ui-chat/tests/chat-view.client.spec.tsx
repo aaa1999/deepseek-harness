@@ -451,6 +451,8 @@ function makeHarness(
     read: () => savedScroll,
   }
   const forkAt = vi.fn()
+  const amendAt = vi.fn()
+  const sendAsTurn = vi.fn()
   // Rows and the harness must observe the same chat-store instance.
   const chat = createChatStore().create()
   const transcriptView = createSnapshotStore<TranscriptViewMode>('compact')
@@ -578,6 +580,8 @@ function makeHarness(
     loadImage: vi.fn(() => Promise.reject(new Error('not used'))),
     chatScroll,
     forkAt,
+    amendAt,
+    sendAsTurn,
     // Absent-service default; mention tests override with a real resolver.
     fileMentions: () => undefined,
     t,
@@ -605,7 +609,7 @@ function makeHarness(
     setConnection: (state: ConnectionState) => { connection.set(state) },
     openFile, openUserFile, loadOlder, consumeOlder, prepareOlder, loadThrough, openView,
     setOutline: (value: unknown) => { outlineValue = value },
-    chatScroll, forkAt, toolOwners, fenceCalls,
+    chatScroll, forkAt, amendAt, sendAsTurn, toolOwners, fenceCalls,
     setPerformanceUsage: (mode: 'compact' | 'detailed') => { performanceUsage.set(mode) },
     setGrouped: (value: ConversationGroupedView<ProcessGroupData> | undefined) => {
       grouped = value
@@ -1984,6 +1988,50 @@ describe('ChatView', () => {
         'fixture:user:1', 'fixture:turn-process:1', 'fixture:assistant:2',
         'fixture:tool:a', 'call:a', 'fixture:tool:b', 'call:b',
       ])
+  })
+
+  it('edits a sent user message inline and submits the revision through amendAt', () => {
+    const h = makeHarness({ nodes: [{ ...user(1, 'do the thing'), messageId: 'msg-1' as never }, assistant(2, 'done')] })
+    const view = render(<h.ChatView {...h.props} />)
+    const userRow = view.container.querySelector<HTMLElement>('[data-chat-flow-kind="user"]')!
+    expect(userRow).not.toBeNull()
+    expect(within(userRow).queryByRole('button', { name: '编辑消息' })).not.toBeNull()
+
+    fireEvent.click(within(userRow).getByRole('button', { name: '编辑消息' }))
+    const editor = within(userRow).getByRole('textbox', { name: '编辑消息内容' }) as HTMLTextAreaElement
+    expect(editor.value).toBe('do the thing')
+    expect(within(userRow).getByText('Enter 保存，Esc 取消')).toBeTruthy()
+
+    fireEvent.change(editor, { target: { value: 'do the revised thing' } })
+    fireEvent.keyDown(editor, { key: 'Enter' })
+    expect(h.amendAt).toHaveBeenCalledExactlyOnceWith('msg-1', [{ type: 'text', text: 'do the revised thing' }])
+    // The editor closed after the commit.
+    expect(within(userRow).queryByRole('textbox')).toBeNull()
+  })
+
+  it('re-sends an edited draft as its own turn without amending the source', () => {
+    const h = makeHarness({ nodes: [{ ...user(1, 'do the thing'), messageId: 'msg-1' as never }] })
+    const view = render(<h.ChatView {...h.props} />)
+    const userRow = view.container.querySelector<HTMLElement>('[data-chat-flow-kind="user"]')!
+    fireEvent.click(within(userRow).getByRole('button', { name: '编辑消息' }))
+    const editor = within(userRow).getByRole('textbox', { name: '编辑消息内容' }) as HTMLTextAreaElement
+    fireEvent.change(editor, { target: { value: 'a fresh instruction' } })
+    fireEvent.click(within(userRow).getByRole('button', { name: '作为新消息发送' }))
+    expect(h.sendAsTurn).toHaveBeenCalledExactlyOnceWith('a fresh instruction')
+    expect(h.amendAt).not.toHaveBeenCalled()
+    // The editor closed after the dispatch.
+    expect(within(userRow).queryByRole('textbox')).toBeNull()
+  })
+
+  it('keeps an empty inline edit from submitting an amendment', () => {
+    const h = makeHarness({ nodes: [{ ...user(1, 'do the thing'), messageId: 'msg-1' as never }] })
+    const view = render(<h.ChatView {...h.props} />)
+    const userRow = view.container.querySelector<HTMLElement>('[data-chat-flow-kind="user"]')!
+    fireEvent.click(within(userRow).getByRole('button', { name: '编辑消息' }))
+    const editor = within(userRow).getByRole('textbox', { name: '编辑消息内容' }) as HTMLTextAreaElement
+    fireEvent.change(editor, { target: { value: '   ' } })
+    fireEvent.keyDown(editor, { key: 'Enter' })
+    expect(h.amendAt).not.toHaveBeenCalled()
   })
 
   it('updates the user-before chain without remounting message content or decorating steering', () => {

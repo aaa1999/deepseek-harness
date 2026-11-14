@@ -38,6 +38,7 @@ import { ToolActivationError, ToolBatchExecutionError } from '@deepseek-ai/dsh-t
 import type { ResolvedToolSet } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import { ReactLoopInbox } from './inbox.ts'
+import { admittedSurfaceIntent } from './amend.ts'
 import { RuntimeContextProjection } from './runtime-context.ts'
 import { AssistantStreamAttempt } from './assistant-stream.ts'
 import { SystemPromptProjection } from './runtime-context.ts'
@@ -474,7 +475,7 @@ export class ReactLoopAgent implements Agent {
               contextAdmitted = true
             }
           } else {
-            this.session.append('user/message', message, { surfaceOp: 'append' })
+            this.session.append('user/message', message, admittedSurfaceIntent(this.session, message))
           }
         }
       }

@@ -7,7 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
 import type {
@@ -55,6 +55,13 @@ function viewProps(data: UserMessageNode | SteeringMessageNode): ChatNodeViewPro
   } as ChatConversationViewNode
   const props: Partial<Omit<ChatNodeViewProps, 'node'>> & { node: ChatConversationViewNode } = {
     node, t, loadImage: unusedImageLoader, renderFactorySlot: renderUserFactory, openFile: vi.fn(),
+    amendAt: vi.fn(),
+    sendAsTurn: vi.fn(),
+    useAccess: () => false,
+    useSession: bindSnapshotSelector({
+      subscribe: () => () => {},
+      getSnapshot: () => ({ running: false }),
+    } as never),
   }
   return props as ChatNodeViewProps<'user' | 'steering'>
 }

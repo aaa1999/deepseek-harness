@@ -2,6 +2,7 @@
 
 import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { continuationProjectionDefinition, type ContinuationState } from './continuation.ts'
+import { amendTargetsProjectionDefinition, type AmendTargetsState } from './amend-targets.ts'
 
 import { modelAvailable } from './catalog.ts'
 import { randomUUID } from 'node:crypto'
@@ -12,6 +13,7 @@ import { AttachmentError } from '@deepseek-ai/dsh-attachment'
 import type {
   AttachmentAdmissionPart,
 } from '@deepseek-ai/dsh-attachment'
+import type {} from '@deepseek-ai/dsh-api-gateway'
 import type { FileUploadReceiptId, StagedAttachment } from '@deepseek-ai/dsh-client-file-upload/types'
 import type {} from '@deepseek-ai/dsh-client-file-upload'
 import {
@@ -36,6 +38,9 @@ import {
   type ApiSessionCreated,
 } from './agent.ts'
 import type {
+  SessionAmendCorrelation,
+  SessionAmendRequest,
+  SessionAmendValue,
   SessionAttachmentRequest,
   SessionAttachmentValue,
   SessionCancelRequest,
@@ -54,6 +59,7 @@ import type {
   SessionUpdateQueueValue,
   SessionRequestId,
 } from './types.ts'
+import { pendingRemoteInputs } from './state/controller.ts'
 
 type PromptContentCandidate =
   | SessionPromptRequest['content'][number]
@@ -66,6 +72,31 @@ type PromptContentCandidate =
  */
 export function hasPromptContent(content: readonly PromptContentCandidate[]): boolean {
   return content.some(part => part.type !== 'text' || part.text.trim().length > 0)
+}
+
+/**
+ * Build the durable source of one admitted amendment over its resolved range.
+ * @param correlation - caller metadata recorded on the accepted amendment.
+ * @param revises - chain-root identity the amendment reports to clients.
+ * @param startSeq - first shadowed surface node seq.
+ * @param endSeq - last shadowed surface node seq.
+ * @returns the amend message source.
+ */
+function amendSource(
+  correlation: SessionAmendCorrelation,
+  revises: MessageId,
+  startSeq: SessionSeq,
+  endSeq: SessionSeq,
+): MessageSource {
+  return {
+    kind: 'amend',
+    revises,
+    startSeq,
+    endSeq,
+    rpcId: correlation.rpcId,
+    ...(correlation.clientTimeZone === undefined ? {} : { clientTimeZone: correlation.clientTimeZone }),
+    ...(correlation.principal === undefined ? {} : { principal: correlation.principal }),
+  }
 }
 
 /**
@@ -95,9 +126,12 @@ export class SessionCommandController {
 
   private continuation!: ProjectionHandle<ContinuationState>
 
-  /** Register complete-history empty-prompt eligibility. @returns when command admission is ready. */
+  private amendTargets!: ProjectionHandle<AmendTargetsState>
+
+  /** Register complete-history empty-prompt eligibility and amend-target resolution. @returns when command admission is ready. */
   async initialize(): Promise<void> {
     this.continuation = await this.ctx.sessionProjections.register(continuationProjectionDefinition)
+    this.amendTargets = await this.ctx.sessionProjections.register(amendTargetsProjectionDefinition)
   }
 
   /**
@@ -386,6 +420,83 @@ export class SessionCommandController {
     return hasImage ? this.agents.serializeImageAdmission(agent, admit) : admit()
   }
 
+  /**
+   * Revise one already-sent user message. An idle Session re-runs from the
+   * amended message: the claim lands a replacement shadowing the surface range
+   * from the target node through the tail, and the amended text re-enters as
+   * queued input. A Session paused for human input lands the revision on the
+   * target node in place, so the resumed turn's next model request sees it
+   * without interrupting in-flight work.
+   * @param request - Session identity, revised text, and correlation.
+   * @param correlation - caller metadata recorded on the accepted amendment.
+   * @returns acknowledgement that the amendment was admitted.
+   */
+  async amend(request: SessionAmendRequest, correlation: SessionAmendCorrelation): Promise<SessionAmendValue> {
+    const agent = await this.resolveAgent(request.sessionId)
+    if (this.hasPromptRequest(agent.session, request.requestId)) return { accepted: true }
+    if (hasApiSessionSubagentOwner(agent.session)) {
+      throw apiSessionSubagentOwnershipError(request.sessionId)
+    }
+    if (agent.status === 'running') {
+      if (pendingRemoteInputs(this.ctx, agent.session.id).length === 0) {
+        throw new RemoteError('session/agent-busy', 'amendment requires an idle or paused Session', { reason: 'AGENT_RUNNING' })
+      }
+      const target = this.amendResolve(agent.session, request.revises)
+      if (target === undefined) this.rejectAmendTarget(request)
+      agent.session.append('user/message', createUserMessage({
+        content: [...request.content],
+        source: amendSource(correlation, target.root, target.seq, target.seq),
+      }), {
+        surfaceOp: { op: 'replace', startSeq: target.seq, endSeq: target.seq },
+        sourceEventSeqs: [target.seq],
+      })
+      return { accepted: true }
+    }
+    try {
+      return await agent.runMaintenance(() => {
+        const inbox = agent.inbox
+        if (inbox.nextTurn.length > 0 || inbox.nextStep.length > 0) {
+          throw new RemoteError('session/agent-busy', 'amendment re-run requires an empty queue', { reason: 'PENDING_QUEUE_INPUT' })
+        }
+        const target = this.amendResolve(agent.session, request.revises)
+        if (target === undefined) this.rejectAmendTarget(request)
+        agent.followup(createUserMessage({
+          content: [...request.content],
+          source: amendSource(correlation, target.root, target.seq, target.tail),
+        }))
+        return Promise.resolve({ accepted: true as const })
+      })
+    } catch (error: unknown) {
+      if (remoteErrorOf(error) !== undefined) throw error
+      throw new RemoteError('session/agent-busy', 'amendment was not accepted', { reason: String(error) })
+    }
+  }
+
+  /**
+   * Resolve one amendment against the amend-target projection: the target's
+   * current surface node, its chain-root identity, and the surface tail an
+   * idle re-run shadows through.
+   * @param session - session whose folded amend targets are read.
+   * @param revises - identity of the sent message to revise.
+   * @returns the resolved target facts, or undefined when no current
+   * human-authored message carries the identity.
+   */
+  private amendResolve(session: Session, revises: MessageId): { seq: SessionSeq; root: MessageId; tail: SessionSeq } | undefined {
+    const state = this.amendTargets.stateOf(session)
+    const target = state.targets[revises]
+    if (target === undefined || !state.nodes.includes(target.seq)) return undefined
+    return { seq: target.seq, root: target.root, tail: state.nodes.at(-1) ?? target.seq }
+  }
+
+  /** Reject one amendment whose target is not a current human-authored message. */
+  private rejectAmendTarget(request: SessionAmendRequest): never {
+    throw new RemoteError(
+      'session/amend-unavailable',
+      `message "${request.revises}" is not a current human-authored surface message in session "${request.sessionId}"`,
+      { sessionId: request.sessionId, revises: request.revises },
+    )
+  }
+
   /** Recover first input acceptance, including claimed or removed messages, from unseen log entries. */
   private hasPromptRequest(session: Session, requestId: SessionRequestId): boolean {
     let receipts = this.promptReceipts.get(session)
@@ -404,7 +515,9 @@ export class SessionCommandController {
           // A copied input is not a new request in the child, even if later reinserted there.
           if (event.seq < session.inheritedEventCount) continue
           const source = message.source
-          if ((source.kind === 'user' || source.kind === 'retry') && 'rpcId' in source) receipts.requests.add(source.rpcId)
+          if ((source.kind === 'user' || source.kind === 'retry' || source.kind === 'amend') && 'rpcId' in source) {
+            receipts.requests.add(source.rpcId)
+          }
         }
       }
       receipts.offset = session.seq

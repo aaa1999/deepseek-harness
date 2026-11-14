@@ -60,6 +60,7 @@ export const TurnTailNodeView = memo(function TurnTailNodeView({
       data-turn-tail={data.turn}
       data-actions-reveal={endsWithResponse ? 'always' : 'hover'}
     >
+      {node.superseded === true && <span className={css.superseded}>{t('message.amend.superseded')}</span>}
       {tail}
       <MessageIconActions
         text={assistantText(closing.blocks)}

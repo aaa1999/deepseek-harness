@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { PendingSubmission } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { PropsRenderFactories, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { UserTextFacts } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { JsonBlock, StateDot, TextShimmer } from '@deepseek-ai/dsh-client-ui-primitives'
+import { InlineEditor, JsonBlock, StateDot, TextShimmer } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {
   ChatNodeOwnerProps, ChatNodeViewProps, ChatViewSlotProps, UserContentAttachment, UserContentData, UserContentInput,
 } from '../contract/slots.ts'
@@ -180,6 +180,7 @@ function UserStyleBubble({
   node, renderSlotChain, content, loadImage, renderFactorySlot, actions,
   pending = false, echo = false, batchStart = false,
   referenceLabels, skillNames, previewAttachments, facts: inputFacts = EMPTY_TEXT_FACTS, interactive = false,
+  editedMark, children,
 }: {
   content: readonly unknown[]
   renderFactorySlot: PropsRenderFactories['renderFactorySlot']
@@ -203,6 +204,10 @@ function UserStyleBubble({
   previewAttachments?: readonly UserContentAttachment[]
   /** Inputs used by text transforms, separate from row and rendering props. */
   facts?: Readonly<Partial<UserTextFacts>>
+  /** Edited marker shown while an amendment replaced this message's content. */
+  editedMark?: ReactNode
+  /** Inline replacement for the bubble content while the message is being edited. */
+  children?: ReactNode
 } & Pick<ChatNodeOwnerProps, 'loadImage'> & Pick<UserContentInput, 'interactive'>): ReactNode {
   const parts = useMemo(() => contentParts(content), [content])
   const prepared = useMemo<UserContentData>(() => ({
@@ -224,7 +229,8 @@ function UserStyleBubble({
       data-chat-steering-batch={batchStart ? 'start' : undefined}
     >
       {renderSlotChain('conversation.chat.user.before', { source: node.data.source, kind: node.kind }, { fallback: null })}
-      {renderFactorySlot('conversation.chat.user.content', {
+      {editedMark}
+      {children ?? renderFactorySlot('conversation.chat.user.content', {
         content: prepared,
         loadImage,
         facts,
@@ -330,12 +336,29 @@ export function PendingSubmissionBubble({ submission, loadImage, renderFactorySl
  * bubble without asking for it.
  */
 export const UserMessageNodeView = memo(function UserMessageNodeView({
-  node, renderFactorySlot, loadImage, renderSlotChain, t,
+  node, renderFactorySlot, loadImage, renderSlotChain, t, amendAt, sendAsTurn, useSession, useAccess,
 }: ChatNodeViewProps<'user' | 'steering'> & {
   /** Bound by the `user` keyed registration, the only entry that declares the seat. */
   renderSlotChain: PropsRenderSlots<'conversation.chat.user.before'>['renderSlotChain']
 }) {
   const data = node.data
+  const [draft, setDraft] = useState<string | null>(null)
+  const amendAllowed = useAccess('session/amend')
+  // Editing re-runs from the revised text, so the action waits for the idle
+  // turn boundary; the Host stays authoritative over paused-Session cases.
+  const running = useSession(session => session.running)
+  const editable = amendAllowed && !running && data.messageId !== undefined
+  const commit = (): void => {
+    const revises = data.messageId
+    const text = draft?.trim() ?? ''
+    setDraft(null)
+    if (revises !== undefined && text !== '') amendAt(revises, [{ type: 'text', text }])
+  }
+  const sendAsNew = (): void => {
+    const text = draft?.trim() ?? ''
+    setDraft(null)
+    if (text !== '') sendAsTurn(text)
+  }
   return (
     <UserStyleBubble
       node={node}
@@ -347,6 +370,26 @@ export const UserMessageNodeView = memo(function UserMessageNodeView({
       batchStart={node.kind === 'steering' && node.data.batchStart === true}
       {...data.referenceLabels === undefined ? {} : { referenceLabels: data.referenceLabels }}
       {...data.skillNames === undefined ? {} : { skillNames: data.skillNames }}
+      {...data.edited === undefined ? {} : { editedMark: <span className={css.editedMark}>{t('message.amend.edited')}</span> }}
+      {...draft === null ? {} : {
+        children: (
+          <div className={css.amendEditor}>
+            <InlineEditor
+              value={draft}
+              label={t('message.amend.editor')}
+              onChange={setDraft}
+              onSave={commit}
+              onCancel={() => { setDraft(null) }}
+            />
+            <div className={css.amendHintRow}>
+              <span className={css.amendHint}>{t('message.amend.hint')}</span>
+              <button type="button" className={css.amendSendAs} onClick={sendAsNew}>
+                {t('message.amend.sendAsNew')}
+              </button>
+            </div>
+          </div>
+        ),
+      }}
       actions={text => (
         <MessageIconActions
           text={text}
@@ -354,6 +397,8 @@ export const UserMessageNodeView = memo(function UserMessageNodeView({
           clock="start"
           className={css.actions}
           t={t}
+          onEdit={amendAllowed ? () => { setDraft(contentParts(data.content).text) } : undefined}
+          editUnavailable={amendAllowed && !editable}
         />
       )}
     />

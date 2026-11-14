@@ -424,3 +424,8 @@
   margin: 0;
   width: max-content;
 }
+
+/* A superseded row stays readable as history while its replacement runs. */
+.flowItem[data-superseded] {
+  opacity: 0.55;
+}

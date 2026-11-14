@@ -312,6 +312,16 @@ export function apply(ctx: Context): void {
                 // Fork or child-title failure leaves the source view unchanged.
               })
           },
+          // Amend failures surface through the Session's promptError strip;
+          // acceptance replaces the bubble through the durable amend event.
+          amendAt: (revises, content) => {
+            void session.amend(revises, content)
+          },
+          // An edited draft re-sent as its own turn is an ordinary queued
+          // prompt; the source message keeps its original text.
+          sendAsTurn: (text) => {
+            void session.prompt([{ type: 'text', text }], 'queue')
+          },
         }
       },
     }, ChatView)

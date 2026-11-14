@@ -162,13 +162,24 @@ export class StateController {
   }
 
   private pendingInput(sessionId: SessionId): readonly SessionPendingInput[] {
-    const kinds = new Set<SessionPendingInput>()
-    for (const { event, agentId } of this.ctx.typertGateway.getPendingRemoteEvents()) {
-      if (String(agentId) !== sessionId) continue
-      kinds.add(event === 'approval/request' ? 'approval' : event === 'user-questions/request' ? 'question' : 'other')
-    }
-    return [...kinds]
+    return pendingRemoteInputs(this.ctx, sessionId)
   }
+}
+
+/**
+ * Classify the human-input requests a Session's live Remote events still hold
+ * open. An empty result means the Session is not paused for a human.
+ * @param ctx - live context carrying the typert gateway.
+ * @param sessionId - Session whose pending Remote events are classified.
+ * @returns the distinct pending-input kinds.
+ */
+export function pendingRemoteInputs(ctx: Context, sessionId: SessionId): readonly SessionPendingInput[] {
+  const kinds = new Set<SessionPendingInput>()
+  for (const { event, agentId } of ctx.typertGateway.getPendingRemoteEvents()) {
+    if (String(agentId) !== sessionId) continue
+    kinds.add(event === 'approval/request' ? 'approval' : event === 'user-questions/request' ? 'question' : 'other')
+  }
+  return [...kinds]
 }
 
 /**

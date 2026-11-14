@@ -54,6 +54,8 @@ import type {
   SessionProjectionFrame, SessionStateRequest, SessionState, SessionWaitRequest, SessionWaitValue,
   SessionPromptRequest,
   SessionPromptValue,
+  SessionAmendRequest,
+  SessionAmendValue,
   SessionRenameRequest,
   SessionRenameValue,
   SessionSearchRequest,
@@ -489,6 +491,45 @@ export class SessionController extends TypertRemoteService {
       ...(principal === undefined ? {} : { principal }),
     }
     return this.commands.prompt(request, source)
+  }
+
+  /**
+   * Revise one already-sent user message: an idle Session re-runs from the
+   * amended message; a Session paused for human input applies the revision in
+   * place for the next model request.
+   * @param request - Session identity, revised text, target message identity, and correlation.
+   * @returns acknowledgement that the Agent accepted the amendment.
+   */
+  @Remote('amend')
+  async amend(request: SessionAmendRequest): Promise<SessionAmendValue> {
+    // oxlint-disable-next-line typescript/no-unnecessary-condition -- Remote callers can submit untyped JSON.
+    if (request.content.some(block => block.type !== 'text')) {
+      throw new RemoteError(
+        'session/attachment-invalid',
+        'amendments accept text content only',
+        { reason: 'AMEND_NON_TEXT' },
+      )
+    }
+    if (!hasPromptContent(request.content)) {
+      throw new RemoteError('gateway/bad-request', 'amendment content must include non-whitespace text', {})
+    }
+    const clientTimeZone = request.clientTimeZone === undefined
+      ? undefined
+      : canonicalClientTimeZone(request.clientTimeZone)
+    if (request.clientTimeZone !== undefined && clientTimeZone === undefined) {
+      throw new RemoteError(
+        'session/invalid-time-zone',
+        'clientTimeZone must be UTC or a valid IANA Area/Location name',
+        { value: request.clientTimeZone },
+      )
+    }
+    // The caller is recorded only when it is not the owner, so owner messages keep their exact source.
+    const principal = principalOf(this.ctx.invocation)
+    return this.commands.amend(request, {
+      rpcId: request.requestId,
+      ...(clientTimeZone === undefined ? {} : { clientTimeZone }),
+      ...(principal === undefined ? {} : { principal }),
+    })
   }
 
   /**

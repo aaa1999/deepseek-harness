@@ -14,6 +14,10 @@ interface ReferencedUserMessageNode extends UserMessageNode {
   readonly referenceLabels?: readonly string[]
   /** Skill names the same step's `skill-invocation` injections loaded. */
   readonly skillNames?: readonly string[]
+  /** Present when a later amendment replaced this message's content in place. */
+  readonly edited?: true
+  /** Surface range shadowed by the latest amendment of this message. */
+  readonly amendRange?: { readonly startSeq: number; readonly endSeq: number }
 }
 
 interface ReferencedSteeringMessageNode extends SteeringMessageNode {
@@ -26,6 +30,10 @@ interface ReferencedSteeringMessageNode extends SteeringMessageNode {
    * the row keeps the Turn tail slot above it.
    */
   readonly batchStart?: true
+  /** Present when a later amendment replaced this message's content in place. */
+  readonly edited?: true
+  /** Surface range shadowed by the latest amendment of this message. */
+  readonly amendRange?: { readonly startSeq: number; readonly endSeq: number }
 }
 
 type MessageNode = ReferencedUserMessageNode | ReferencedSteeringMessageNode | (ContextMessageNode & { readonly waking?: boolean })
@@ -47,6 +55,35 @@ function isCompactionCheckpoint(event: Parameters<ConversationNodeDefinition['ma
   if (event.type !== 'user/message' || !isReplacementSurfaceEvent(event)) return false
   const source = event.data.source as { kind?: unknown }
   return source.kind === 'compact-checkpoint'
+}
+
+/** One amendment read from its replacement `user/message` event. */
+interface MessageAmendment {
+  /** Identity of the root human message the chain revises; joins that bubble's Context. */
+  readonly revises: string
+  /** Replacement content the bubble now shows. */
+  readonly content: UserMessageNode['content']
+  /** First shadowed surface node seq. */
+  readonly startSeq: number
+  /** Last shadowed surface node seq; equals `startSeq` while the turn paused in place. */
+  readonly endSeq: number
+}
+
+/**
+ * Read the amendment a replacement `user/message` carries, when it revises a
+ * sent message. `revises` names the chain's root human message, so a second
+ * amendment joins the same bubble Context as the first.
+ */
+function amendmentOf(event: Parameters<ConversationNodeDefinition['match']>[0]): MessageAmendment | undefined {
+  if (event.type !== 'user/message' || !isReplacementSurfaceEvent(event)) return undefined
+  if (event.data.source.kind !== 'amend') return undefined
+  const { startSeq, endSeq } = event.surfaceOp
+  return {
+    revises: String(event.data.source.revises),
+    content: event.data.content,
+    startSeq,
+    endSeq,
+  }
 }
 
 /** Context presentation shared by user-role injections and developer messages. */
@@ -84,6 +121,8 @@ export const messageDefinition: ConversationNodeDefinition<MessageNode> = {
   target: 'chat',
   match: (event) => {
     if (event.type === 'user/message') {
+      const amendment = amendmentOf(event)
+      if (amendment !== undefined) return { id: amendment.revises, role: 'update' }
       return isAppendSurfaceEvent(event) && !isCompactionCheckpoint(event)
         ? { id: String(event.data.id), role: 'start' }
         : null
@@ -133,7 +172,17 @@ export const messageDefinition: ConversationNodeDefinition<MessageNode> = {
         source: event.data.source,
       }
   },
-  update: context => context.state,
+  update: (context, match) => {
+    const amendment = amendmentOf(match.event)
+    const state = context.state
+    if (amendment === undefined || state.kind !== 'user' && state.kind !== 'steering') return state
+    return {
+      ...state,
+      content: amendment.content,
+      edited: true,
+      amendRange: { startSeq: amendment.startSeq, endSeq: amendment.endSeq },
+    }
+  },
   buildViewNode: (context) => {
     if (context.state === undefined) return null
     const location = contextLocation(context)
