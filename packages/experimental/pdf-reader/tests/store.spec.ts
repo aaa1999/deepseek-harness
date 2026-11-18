@@ -101,6 +101,6 @@ describe('PdfStore', () => {
     await expect(store.readPdf('../escape')).resolves.toBeNull()
     await expect(store.loadProgress('UPPER-CASE-ID')).resolves.toBeNull()
     await expect(store.loadAnnotations('bad/id')).resolves.toBeNull()
-    await expect(base64Of(pngFixture())).not.toBe('')
+    expect(base64Of(pngFixture())).not.toBe('')
   })
 })

@@ -1,0 +1,13 @@
+# Bilingual-pair consistency record for epub-reader.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/epub-reader.md
+/epub-reader:
+  en: 10e2a8caf471bf9b
+  zh: 5729952c010cac13
+/epub-reader/library-and-chapters:
+  en: f86b13e3d6c87145
+  zh: be5d77de28f8bee6
+/epub-reader/highlights-and-treatments:
+  en: 551f917db0f8aca5
+  zh: 25a01acbd9f2a8ce

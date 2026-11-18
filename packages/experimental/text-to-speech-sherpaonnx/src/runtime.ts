@@ -29,6 +29,7 @@ export interface InnerAsset {
   readonly bytes: number
 }
 
+/** Pinned release contents the local synthesizer loads: the archive and its extracted model files. */
 export interface RuntimeLock {
   /** The upstream release archive containing every model file. */
   archive: Asset
@@ -210,7 +211,7 @@ export async function downloadArchive(lock: RuntimeLock, modelRoot: string, conf
 
 /**
  * Download the pinned release archive and publish its model files atomically.
- * @param ctx - Host context owning the preparation task.
+ * @param _ctx - Host context owning the preparation task; unused by the local download itself.
  * @param config - model paths and download source policy.
  * @param signal - preparation cancellation or deadline.
  * @param report - Host-owned progress publisher.

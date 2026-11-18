@@ -87,7 +87,7 @@ export function NotesColumn({
             : [{ kind: liveText.kind, text: liveText.text, model: liveText.model, live: true, error: liveText.error }])
           : annotation !== undefined && annotation.kind === 'text'
             ? annotation.results.map(result => ({ ...result, live: false, error: null }))
-            : annotation !== undefined && annotation.kind === 'shot' && annotation.answer !== null
+            : annotation !== undefined && annotation.answer !== null
               ? [{ kind: 'shot', text: annotation.answer.text, model: annotation.answer.model, live: false, error: null }]
               : []
       // Copy targets the live stream while one runs, else the newest saved answer.
@@ -97,7 +97,7 @@ export function NotesColumn({
           ? card.textStream.text
           : annotation !== undefined && annotation.kind === 'text'
             ? annotation.results.at(-1)?.text ?? ''
-            : annotation !== undefined && annotation.kind === 'shot'
+            : annotation !== undefined
               ? annotation.answer?.text ?? ''
               : ''
       const thumbnail = card.shotStream?.imageUrl
@@ -113,7 +113,7 @@ export function NotesColumn({
               : <span className={css.shotPending} aria-hidden="true">✂</span>}
             {question !== '' ? <p className={css.shotQuestion}>{question}</p> : null}
           </div>
-          : <blockquote className={css.quote}>{annotation !== undefined && annotation.kind === 'text' ? annotation.quote : ''}</blockquote>}
+          : <blockquote className={css.quote}>{annotation !== undefined ? annotation.quote : ''}</blockquote>}
         {!isShot && annotation?.kind === 'text'
           ? <div className={css.colorRow} role="group" aria-label={t('colorLabel')}>
             {HIGHLIGHT_COLORS.map(color => <button

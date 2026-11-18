@@ -46,6 +46,7 @@ export interface VoiceCapture {
  * speech onset interrupts playback and the active turn.
  */
 export class VoiceChatSession {
+  /** The snapshot store the call controls and status row subscribe to. */
   readonly state: SnapshotStore<VoiceChatState>
   private readonly lifetime = new AbortController()
   private readonly deps: VoiceChatDeps
@@ -63,7 +64,10 @@ export class VoiceChatSession {
     this.state = state
   }
 
-  /** Current phase. */
+  /**
+   * Current phase.
+   * @returns the display phase the status row renders.
+   */
   phase(): VoiceChatPhase { return this.state.getSnapshot().phase }
 
   private patch(patch: Partial<VoiceChatState>): void {
@@ -109,7 +113,10 @@ export class VoiceChatSession {
     this.patch({ phase: 'off', level: 0, lastTranscript: '', failure: '' })
   }
 
-  /** Read the live microphone level for the waveform. */
+  /**
+   * Read the live microphone level for the waveform.
+   * @returns the capture's current amplitude, or 0 while no capture runs.
+   */
   readLevel(): number { return this.capture?.amplitude() ?? 0 }
 
   /**
@@ -128,7 +135,10 @@ export class VoiceChatSession {
     this.patch({ phase: 'listening' })
   }
 
-  /** One completed speech segment: transcribe it, then auto-submit the text. */
+  /**
+   * One completed speech segment: transcribe it, then auto-submit the text.
+   * @param wav - the segment's 16 kHz PCM16 WAV bytes.
+   */
   segment(wav: Uint8Array): void {
     if (!this.active) return
     if (this.phase() === 'transcribing') return
@@ -149,7 +159,10 @@ export class VoiceChatSession {
     })
   }
 
-  /** Mirror the Session running flag so barge-in can cancel the active turn. */
+  /**
+   * Mirror the Session running flag so barge-in can cancel the active turn.
+   * @param running - whether the Session's Agent turn is currently running.
+   */
   noteRunning(running: boolean): void {
     const wasRunning = this.lastRunning
     this.lastRunning = running
@@ -169,7 +182,11 @@ export class VoiceChatSession {
     }
   }
 
-  /** Accept the newest assistant message from the Session event window. */
+  /**
+   * Accept the newest assistant message from the Session event window.
+   * @param text - the message text read aloud when the turn ends.
+   * @param seq - the message's event seq; only a newer seq replaces the held text.
+   */
   noteAssistantText(text: string, seq: number): void {
     if (this.latest === undefined || seq > this.latest.seq) this.latest = { seq, text }
   }

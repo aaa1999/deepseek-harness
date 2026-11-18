@@ -211,6 +211,7 @@ export default class EpubReaderController extends TypertRemoteService {
    * @returns the resolved data root and whether this profile can move it.
    */
   @Remote
+  // oxlint-disable-next-line typescript/require-await -- the Remote face requires a Promise return; the metadata resolves without awaiting
   async storage(): Promise<StorageMeta> {
     return {
       directory: this.resolveDataRoot(),
@@ -402,6 +403,7 @@ export default class EpubReaderController extends TypertRemoteService {
    * Treat one selection with the LLM service, streaming text deltas.
    * @param request - the selection, its kind, and its paragraph context.
    * @param signal - Client cancellation for the whole stream.
+   * @returns an async iterator over the explain chunks.
    * @yields one meta chunk, text deltas, then a done chunk.
    */
   @Remote({ mode: 'stream' })
@@ -493,7 +495,11 @@ export default class EpubReaderController extends TypertRemoteService {
       : this.config.maxOutputTokens
   }
 
-  /** Answer `GET ${RESOURCE_PATH}?book=<id>&path=<interior>` with one book resource. */
+  /**
+   * Answer `GET ${RESOURCE_PATH}?book=<id>&path=<interior>` with one book resource.
+   * @param request - the incoming GET request.
+   * @returns the resource response, or a 400/404 error response.
+   */
   async serveResource(request: Request): Promise<Response> {
     const params = new URL(request.url).searchParams
     const bookId = params.get('book') ?? ''

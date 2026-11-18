@@ -3,8 +3,35 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/api-text-to-speech/README.md
 /:
-  en: 96a68fa760f67f1e
-  zh: 110dc1d58feb5845
-/deepseek-ai-dsh-experimental-api-text-to-speech:
-  en: cc8dc01345976e20
-  zh: d40537d02b44ab22
+  en: 78cadec8650b5aad
+  zh: 93b5d49f8139def2
+/deepseek-ai-dsh-api-text-to-speech:
+  en: b16e7f88001c36e3
+  zh: f6e07be68660311a
+/deepseek-ai-dsh-api-text-to-speech/summary:
+  en: fbce04f28e850f9c
+  zh: 936471d302606741
+/deepseek-ai-dsh-api-text-to-speech/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-api-text-to-speech/use-this-package:
+  en: f95174d19ff2bf20
+  zh: 54e89df336c452ba
+/deepseek-ai-dsh-api-text-to-speech/understand-the-implementation:
+  en: 3a250eea7994fdb3
+  zh: fc677199218e3b88
+/deepseek-ai-dsh-api-text-to-speech/further-exploration:
+  en: 701162d6de15f520
+  zh: 08c1e3867d0d0582
+/deepseek-ai-dsh-api-text-to-speech/model-experience:
+  en: 31eb1f79524956c3
+  zh: 5f7c0ae13a7c15a0
+/deepseek-ai-dsh-api-text-to-speech/model-experience/kv-cache-effect:
+  en: c0da9820c8140696
+  zh: 9f26261b6237ca3d
+/deepseek-ai-dsh-api-text-to-speech/known-limitations-and-deferred-work:
+  en: c1499ca68c5cabc2
+  zh: 0ba410ea08f70e8b
+/deepseek-ai-dsh-api-text-to-speech/known-limitations-and-deferred-work/dev-note:
+  en: 782e08d496301a5a
+  zh: 3e3c2234ac41256d

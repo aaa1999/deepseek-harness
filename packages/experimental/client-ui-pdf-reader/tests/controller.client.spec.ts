@@ -1,13 +1,19 @@
 /** Reader controller flows over a faked Remote face: library, pages, streams, shots, progress. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { RemoteError, type RemoteResult, type RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
+import type { Context } from '@deepseek-ai/cordis'
 // Registers the pdf/* RemoteError codes the failure mocks carry.
 import type {} from '@deepseek-ai/dsh-pdf-reader'
+// Merges the pdfReader namespace onto Context['remote'] for the mock generics.
+import type {} from '@deepseek-ai/dsh-pdf-reader/remote'
+import { RemoteError, type RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
 import type {
-  AskImageRequest, BookRow, ExplainRequest, MetaReport, PdfAnnotation, PdfBytes, TocEntry, TreatChunk,
+  BookRow, ExplainRequest, PdfAnnotation, TocEntry, TreatChunk,
 } from '@deepseek-ai/dsh-pdf-reader/types'
-import { ReaderController, type ReaderContext } from '../src/client/controller.ts'
+import { ReaderController } from '../src/client/controller.ts'
 import type { PdfSelectionValue } from '../src/client/contract.ts'
+
+/** The Remote face the mocks below borrow their signatures from. */
+type PdfRemote = Context['remote']['pdfReader']
 
 /**
  * Wrap treatment chunks as the handle face the controller iterates; the
@@ -37,38 +43,28 @@ const selection: PdfSelectionValue = {
 }
 
 /** The Remote face mock: every method a controller can call. */
-function remoteFace(): ReaderContext['remote']['pdfReader'] {
+function remoteFace() {
   const choice = { text: { provider: '', model: '' }, shot: { provider: '', model: '' } }
   return {
-    list: vi.fn(async (): Promise<RemoteResult<BookRow[]>> => ({ ok: true, value: [bookRow()] })),
-    importBook: vi.fn(async (name: string): Promise<RemoteResult<BookRow>> => ({
+    list: vi.fn<PdfRemote['list']>(async () => ({ ok: true, value: [bookRow()] })),
+    importBook: vi.fn<PdfRemote['importBook']>(async (name: string) => ({
       ok: true, value: bookRow({ title: name, pageCount: 0 }),
     })),
-    removeBook: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    saveBookMeta: vi.fn(async (_bookId: string, report: MetaReport): Promise<RemoteResult<BookRow>> => ({
+    removeBook: vi.fn<PdfRemote['removeBook']>(async () => ({ ok: true, value: undefined })),
+    saveBookMeta: vi.fn<PdfRemote['saveBookMeta']>(async (_bookId: string, report) => ({
       ok: true, value: bookRow({ title: report.title, pageCount: report.pageCount, outline: [...report.outline] }),
     })),
-    saveCover: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    pdfBytes: vi.fn(async (): Promise<RemoteResult<PdfBytes>> => ({ ok: true, value: { data: new Uint8Array([37, 80, 68, 70]) } })),
-    saveProgress: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    annotations: vi.fn(async (): Promise<RemoteResult<PdfAnnotation[]>> => ({ ok: true, value: [] })),
-    saveAnnotation: vi.fn(async (_bookId: string, _annotation: PdfAnnotation): Promise<RemoteResult<void>> => ({
+    saveCover: vi.fn<PdfRemote['saveCover']>(async () => ({ ok: true, value: undefined })),
+    pdfBytes: vi.fn<PdfRemote['pdfBytes']>(async () => ({ ok: true, value: { data: new Uint8Array([37, 80, 68, 70]) } })),
+    saveProgress: vi.fn<PdfRemote['saveProgress']>(async () => ({ ok: true, value: undefined })),
+    annotations: vi.fn<PdfRemote['annotations']>(async () => ({ ok: true, value: [] })),
+    saveAnnotation: vi.fn<PdfRemote['saveAnnotation']>(async (_bookId: string, _annotation: PdfAnnotation) => ({
       ok: true, value: undefined,
     })),
-    deleteAnnotation: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    storage: vi.fn(async (): Promise<RemoteResult<{ directory: string; configurable: boolean }>> => ({
-      ok: true, value: { directory: '/Papers/reader', configurable: true },
-    })),
-    setStorageDirectory: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    treatmentModels: vi.fn(async (): Promise<RemoteResult<{
-      provider: string
-      model: string
-      shotProvider: string
-      shotModel: string
-      defaultProvider: string
-      defaultModel: string
-      models: { provider: string; model: string; name: string; vision: boolean }[]
-    }>> => ({
+    deleteAnnotation: vi.fn<PdfRemote['deleteAnnotation']>(async () => ({ ok: true, value: undefined })),
+    storage: vi.fn<PdfRemote['storage']>(async () => ({ ok: true, value: { directory: '/Papers/reader', configurable: true } })),
+    setStorageDirectory: vi.fn<PdfRemote['setStorageDirectory']>(async () => ({ ok: true, value: undefined })),
+    treatmentModels: vi.fn<PdfRemote['treatmentModels']>(async () => ({
       ok: true,
       value: {
         provider: choice.text.provider, model: choice.text.model,
@@ -80,18 +76,18 @@ function remoteFace(): ReaderContext['remote']['pdfReader'] {
         ],
       },
     })),
-    setTreatmentModel: vi.fn(async (provider: string, model: string): Promise<RemoteResult<void>> => {
+    setTreatmentModel: vi.fn<PdfRemote['setTreatmentModel']>(async (provider: string, model: string) => {
       choice.text = { provider, model }
       return { ok: true, value: undefined }
     }),
-    setShotModel: vi.fn(async (provider: string, model: string): Promise<RemoteResult<void>> => {
+    setShotModel: vi.fn<PdfRemote['setShotModel']>(async (provider: string, model: string) => {
       choice.shot = { provider, model }
       return { ok: true, value: undefined }
     }),
-    explain: vi.fn((_request: ExplainRequest, _signal: AbortSignal): RemoteStreamHandle<TreatChunk, never> => {
+    explain: vi.fn<PdfRemote['explain']>(() => {
       throw new Error('each test overrides explain')
     }),
-    askImage: vi.fn((_request: AskImageRequest, _signal: AbortSignal): RemoteStreamHandle<TreatChunk, never> => {
+    askImage: vi.fn<PdfRemote['askImage']>(() => {
       throw new Error('each test overrides askImage')
     }),
   }
@@ -253,8 +249,8 @@ describe('ReaderController', () => {
     reader.askShot({ bookId: 'b1', page: 2, rect: { x: 0.1, y: 0.1, width: 0.5, height: 0.3 }, pngBase64: 'aGk=', question: '解释这块' })
     await vi.runAllTimersAsync()
 
-    const ask = remote.askImage.mock.calls[0]?.[0] as { annotationId: string; question: string }
-    expect(ask.annotationId).toMatch(/^[\da-f-]{36}$/iu)
+    const ask = remote.askImage.mock.calls[0]?.[0]
+    expect(ask?.annotationId).toMatch(/^[\da-f-]{36}$/iu)
     const saved = remote.saveAnnotation.mock.calls[0]?.[1] as Extract<PdfAnnotation, { kind: 'shot' }>
     expect(saved).toMatchObject({
       kind: 'shot', page: 2, imageUrl: '/api/pdf-reader/shot?book=b1&id=s1',
@@ -276,7 +272,7 @@ describe('ReaderController', () => {
     })()))
     reader.retryTextAnnotation('a1')
     await vi.runAllTimersAsync()
-    const request = remote.explain.mock.calls[0]?.[0] as { text: string; kind: string }
+    const request = remote.explain.mock.calls[0]?.[0]
     expect(request).toMatchObject({ text: 'was th', kind: 'translate' })
   })
 
@@ -321,7 +317,7 @@ describe('ReaderController', () => {
     await vi.runAllTimersAsync()
     let observed: AbortSignal | undefined
     let released: (() => void) | undefined
-    remote.explain.mockImplementationOnce((_request: ExplainRequest, signal: AbortSignal): RemoteStreamHandle<TreatChunk, never> => {
+    remote.explain.mockImplementationOnce((_request: ExplainRequest, signal?: AbortSignal): RemoteStreamHandle<TreatChunk, never> => {
       observed = signal
       return streamHandle((async function* () {
         yield { type: 'meta', model: 'm' }

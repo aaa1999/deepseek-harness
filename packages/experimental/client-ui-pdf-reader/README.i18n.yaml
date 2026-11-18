@@ -1,0 +1,49 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/client-ui-pdf-reader/README.md
+/:
+  en: 3293525f81167e91
+  zh: 9d8b169f2e77ab9c
+/deepseek-ai-dsh-client-ui-pdf-reader:
+  en: 0d19654438f5ff19
+  zh: 8dc0b3879e85e4cc
+/deepseek-ai-dsh-client-ui-pdf-reader/summary:
+  en: e08f89c268f30a36
+  zh: adb7c19603bf9dc0
+/deepseek-ai-dsh-client-ui-pdf-reader/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-client-ui-pdf-reader/use-this-package:
+  en: 9b1d5f27315fd65e
+  zh: 269cb2ce56bc26a2
+/deepseek-ai-dsh-client-ui-pdf-reader/use-this-package/read-and-manage-books:
+  en: 6c200dade0938f1c
+  zh: 1d255f7dcce9ada9
+/deepseek-ai-dsh-client-ui-pdf-reader/use-this-package/annotate-and-treat-selections:
+  en: 652ed35579d275f8
+  zh: 46ba374fddcb33f7
+/deepseek-ai-dsh-client-ui-pdf-reader/use-this-package/ask-about-screenshot-regions:
+  en: 4a9f7f9cd0f71870
+  zh: 012013c269c9b2bb
+/deepseek-ai-dsh-client-ui-pdf-reader/use-this-package/set-storage-and-models:
+  en: 3e8678f764e2f167
+  zh: e5bab4bc9a329756
+/deepseek-ai-dsh-client-ui-pdf-reader/understand-the-implementation:
+  en: a97ba9d2826efd03
+  zh: 3338c05ef5712ebb
+/deepseek-ai-dsh-client-ui-pdf-reader/further-exploration:
+  en: 727c2b5cf7bfb5dc
+  zh: 201188c6aceb5179
+/deepseek-ai-dsh-client-ui-pdf-reader/model-experience:
+  en: 9e8456ad9c7cab48
+  zh: d306243f9fd8fbbe
+/deepseek-ai-dsh-client-ui-pdf-reader/model-experience/kv-cache-effect:
+  en: c78c1a3cbcd81e08
+  zh: 1d043634b5f27c69
+/deepseek-ai-dsh-client-ui-pdf-reader/known-limitations-and-deferred-work:
+  en: 467611600eee9e03
+  zh: b2823b5967065220
+/deepseek-ai-dsh-client-ui-pdf-reader/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 6c5f9788c6536776

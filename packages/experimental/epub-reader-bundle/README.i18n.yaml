@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/epub-reader-bundle/README.md
+/:
+  en: 6e49dfdc4c135899
+  zh: 91483c5763f9796b
+/deepseek-ai-dsh-epub-reader-bundle:
+  en: 3d9ddde05f64e5ca
+  zh: a03130ffcf5acef7
+/deepseek-ai-dsh-epub-reader-bundle/summary:
+  en: bfd0c046571ae776
+  zh: 4efd7232c1f574fd
+/deepseek-ai-dsh-epub-reader-bundle/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-epub-reader-bundle/use-this-package:
+  en: bbff250eba0f1b89
+  zh: b20a47f82d8ab6e0
+/deepseek-ai-dsh-epub-reader-bundle/use-this-package/install-into-a-profile:
+  en: 4b50140181ce7d56
+  zh: 17083b8612f0ba8b
+/deepseek-ai-dsh-epub-reader-bundle/use-this-package/what-you-get:
+  en: ed42a4b2d7b07c5a
+  zh: 7db3c48bea70b149
+/deepseek-ai-dsh-epub-reader-bundle/understand-the-implementation:
+  en: 191c4def6589a85f
+  zh: 63d9d32fab78126b
+/deepseek-ai-dsh-epub-reader-bundle/further-exploration:
+  en: 4f088337d2a145de
+  zh: 6108ba5ef8f762fd
+/deepseek-ai-dsh-epub-reader-bundle/model-experience:
+  en: e5809a72971da76b
+  zh: 4c8491d7f5b5abd2
+/deepseek-ai-dsh-epub-reader-bundle/model-experience/kv-cache-effect:
+  en: b9f8b10b66e6c12c
+  zh: 50d822cbb2ab0e62
+/deepseek-ai-dsh-epub-reader-bundle/known-limitations-and-deferred-work:
+  en: 23f2459efa4363ff
+  zh: 482ee5fc0b9926fa
+/deepseek-ai-dsh-epub-reader-bundle/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 6c5f9788c6536776

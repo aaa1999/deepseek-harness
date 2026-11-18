@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for plan-20261108-pdf-reader.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/plan-20261108-pdf-reader.md
+/:
+  en: 7df091ae8b634e6e
+  zh: 987e5dc503932703
+/pdf-reader-plugin-design-plan:
+  en: df1f20c80e86106c
+  zh: 0a966c69485a41c5
+/pdf-reader-plugin-design-plan/1-goals-and-scope:
+  en: e28f29218844e5bf
+  zh: d0bb664292f7d003
+/pdf-reader-plugin-design-plan/2-interaction-design:
+  en: 3802dc48fbd3b6f0
+  zh: e9a29eaa676a9718
+/pdf-reader-plugin-design-plan/2-interaction-design/2-1-entry-and-layout:
+  en: 6233acca99e556fd
+  zh: f94e72264247aefa
+/pdf-reader-plugin-design-plan/2-interaction-design/2-2-visual-direction:
+  en: ca35b76eab28fda8
+  zh: 96c80634db97ca0e
+/pdf-reader-plugin-design-plan/3-overall-architecture:
+  en: 6bc1ddf18432af5d
+  zh: 0770cdd6fd456f55
+/pdf-reader-plugin-design-plan/4-key-technical-decisions:
+  en: 00c52ba931e39952
+  zh: 98b4c052c3184c2f
+/pdf-reader-plugin-design-plan/5-data-model-and-remote-api:
+  en: 10b22ebeda2b6c48
+  zh: f0dcc2e94cea3822
+/pdf-reader-plugin-design-plan/6-prompt-design:
+  en: e372e2882270d37e
+  zh: 3c19558553c36919
+/pdf-reader-plugin-design-plan/7-plugin-config:
+  en: f7a47b154b6ffad1
+  zh: 83e965cb8d0b621e
+/pdf-reader-plugin-design-plan/8-package-structure-and-delivery:
+  en: 63d210bbbbc534d9
+  zh: 4af63243d68618e1
+/pdf-reader-plugin-design-plan/9-implementation-stages:
+  en: 10f0e52e68f69c4a
+  zh: 3f029d225c4d58dd
+/pdf-reader-plugin-design-plan/confirmed-decisions-2026-11-08:
+  en: ed52a2e78c8ee1b4
+  zh: 9f15a45504d789ef

@@ -41,6 +41,7 @@ export function rectFromStroke(from: StrokePoint, to: StrokePoint, box: { width:
  * Whether one stroke rect is large enough to keep.
  * @param rect - the unit rect the stroke produced.
  * @param box - the displayed page box it was drawn on.
+ * @returns whether the stroke covers at least the minimum pixel area.
  */
 export function strokeIsMeaningful(rect: StrokeRect, box: { width: number; height: number }): boolean {
   return rect.width * box.width * rect.height * box.height >= MIN_STROKE_AREA

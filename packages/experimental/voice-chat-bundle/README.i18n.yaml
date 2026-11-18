@@ -5,15 +5,33 @@
 /:
   en: c0a92c59908e7248
   zh: 30edc6d965f7a113
-/deepseek-ai-dsh-experimental-voice-chat-bundle:
-  en: 5fb6cba0b1e636fc
-  zh: c56c4102949aaa92
-/deepseek-ai-dsh-experimental-voice-chat-bundle/summary:
+/deepseek-ai-dsh-voice-chat-bundle:
+  en: a0f767dca469adfa
+  zh: d4d7e65f52aa157e
+/deepseek-ai-dsh-voice-chat-bundle/summary:
   en: a9546cb998bd99f6
-  zh: 6ee11b786f4b69a0
-/deepseek-ai-dsh-experimental-voice-chat-bundle/use-this-package:
-  en: 7c1818741e4e158f
-  zh: f304d9f292555f94
-/deepseek-ai-dsh-experimental-voice-chat-bundle/known-limitations:
-  en: bfb94eabf1c095b4
-  zh: 36d458a0f63c55e9
+  zh: f502b47fb5d886fb
+/deepseek-ai-dsh-voice-chat-bundle/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-voice-chat-bundle/use-this-package:
+  en: 9016165a2643bb06
+  zh: a8f64af852d06f58
+/deepseek-ai-dsh-voice-chat-bundle/understand-the-implementation:
+  en: adefbaf9610e74a4
+  zh: 0a54843a918afc5b
+/deepseek-ai-dsh-voice-chat-bundle/further-exploration:
+  en: f942c2cd9a1d62bb
+  zh: 7e56b0a9d05df9e9
+/deepseek-ai-dsh-voice-chat-bundle/model-experience:
+  en: e6b041c5c527f5a2
+  zh: 1a0184ae35993b04
+/deepseek-ai-dsh-voice-chat-bundle/model-experience/kv-cache-effect:
+  en: a25c5e2898ae6c1b
+  zh: d22e678669261cb4
+/deepseek-ai-dsh-voice-chat-bundle/known-limitations-and-deferred-work:
+  en: e146ab7b77fdef4d
+  zh: 4553722bf1b3a0cc
+/deepseek-ai-dsh-voice-chat-bundle/known-limitations-and-deferred-work/dev-note:
+  en: 782e08d496301a5a
+  zh: 3e3c2234ac41256d

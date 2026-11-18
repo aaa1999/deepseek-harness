@@ -30,3 +30,136 @@ The [voice-chat bundle](../../packages/experimental/voice-chat-bundle/README.md)
 ## Design rationale
 
 The [realtime voice chat decision](../../.agents/notes/proposed/architecture/2026-11-01-realtime-voice-chat.md) explains the two-phase plan, the browser-side energy endpointing choice and the vits-melo model selection.
+
+<!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
+
+<a id="cordis-surface"></a>
+
+## Cordis API
+
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+
+<a id="ctxspeechsynthesiscontroller--speechsynthesiscontroller"></a>
+
+### `ctx.speechSynthesisController` — `SpeechSynthesisController`
+
+Synthesis calls never activate or submit to an Agent.
+
+```ts cordis-catalog
+/**
+ * Read provider choices without preparing a synthesizer.
+ * @returns available providers, resolved default, and synthesis limits.
+ */
+@Remote catalog(): SynthesisCatalog
+
+/**
+ * Follow provider readiness independently of Session and preparation lifetimes.
+ * @param signal - Client observation lifetime.
+ * @returns initial and subsequent complete readiness snapshots.
+ */
+@Remote({ mode: 'stream' }) async *follow(signal: AbortSignal): AsyncIterable<SynthesisCatalog>
+
+/**
+ * Persist the user's synthesis preferences.
+ * @param patch - changed preference fields.
+ * @returns after preferences are saved.
+ */
+@Remote configure(patch: SynthesisSelectionPatch): Promise<void>
+
+/**
+ * Start or join one Host-owned preparation task.
+ * @param providerId - selected synthesizer.
+ * @param options - task-local source selection validated by the provider.
+ */
+@Remote prepare(providerId: SynthesisProviderId, options?: SynthesisPreparationOptions): void
+
+/**
+ * Explicitly cancel resource preparation.
+ * @param providerId - selected synthesizer.
+ * @returns after the preparation task settles.
+ */
+@Remote cancelPreparation(providerId: SynthesisProviderId): Promise<void>
+
+/**
+ * Validate and synthesize one text through the explicit provider selection.
+ * @param request - text, provider id and language hint.
+ * @param signal - Client cancellation or Remote contribution disposal.
+ * @returns final audio without adding a Session event.
+ */
+@Remote async synthesize(request: SynthesisRequest, signal: AbortSignal): Promise<SynthesizedAudio>
+```
+
+Source: [`packages/experimental/api-text-to-speech/src/index.ts`](../../packages/experimental/api-text-to-speech/src/index.ts)
+
+<a id="ctxtexttospeech--texttospeech"></a>
+
+### `ctx.textToSpeech` — `TextToSpeech`
+
+Registry shared by all synthesis consumers in one Host composition.
+
+```ts cordis-catalog
+/**
+ * Register one synthesizer; duplicate ids fail without replacing the original.
+ * @param provider - synthesizer owned by the contributing fiber.
+ * @returns idempotent disposer which rejects admission, cancels, and joins accepted work.
+ */
+register(provider: SpeechSynthesizer): () => Promise<void>
+
+/**
+ * Read the current synthesizer roster.
+ * @returns available provider facts in registration order.
+ */
+listProviders(): readonly SynthesisProviderInfo[]
+
+/**
+ * Observe complete readiness snapshots; a slow reader coalesces intermediate progress.
+ * @param caller - observer lifetime, independent of any preparation task.
+ * @returns an initial snapshot followed by the latest provider states.
+ */
+async *follow(caller: AbortSignal): AsyncIterable<SynthesisSnapshot>
+
+/**
+ * Read provider readiness and current user preferences together.
+ * @returns one detached complete observation.
+ */
+snapshot(): SynthesisSnapshot
+
+/**
+ * Persist changed selection fields into this plugin's profile entry; the resulting language must be accepted by the selected provider.
+ * @param patch - explicit provider or language changes.
+ * @returns after the profile write and the live update it applies.
+ */
+async configure(patch: SynthesisSelectionPatch): Promise<void>
+
+/**
+ * Start or join provider-owned preparation.
+ * @param id - exact registered provider identity.
+ * @param options - task-local source selection validated by the provider.
+ */
+prepare(id: SynthesisProviderId, options?: SynthesisPreparationOptions): void
+
+/**
+ * Explicitly cancel provider preparation without tying it to a browser connection.
+ * @param id - exact registered provider identity.
+ * @returns after the preparation task settles.
+ */
+async cancelPreparation(id: SynthesisProviderId): Promise<void>
+
+/**
+ * Apply composition defaults and capture the selected provider. Missing providers and unsupported languages fail explicitly.
+ * @param request - text and optional selection.
+ * @returns provider-pinned input for synthesize().
+ */
+resolve(request: SynthesisRequest): SynthesisSpec
+
+/**
+ * Execute exactly the resolved provider; no fallback sends text elsewhere.
+ * @param spec - resolved input; a withdrawn or replaced registration is rejected.
+ * @param signal - caller cancellation.
+ * @returns final audio after provider settlement.
+ */
+async synthesize(spec: SynthesisSpec, signal: AbortSignal): Promise<SynthesisOutput>
+```
+
+Source: [`packages/experimental/text-to-speech/src/index.ts`](../../packages/experimental/text-to-speech/src/index.ts)
+<!-- END GENERATED cordis-surface -->

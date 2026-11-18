@@ -78,6 +78,14 @@ Two phases. Phase 1 closes the loop (already near-realtime in feel: finish a sen
 5. e2e tests (reusing the voice-input scaffold pattern with a fake microphone stream) and docs (subsystems + i18n).
 6. Phase 2: streaming ASR / streaming uplink / streaming TTS.
 
+## Alternatives considered
+
+- **Build word-level streaming directly, skipping the closed loop.** The user asked for true realtime, but every streaming piece needs new host machinery: an `OnlineRecognizer` plus a streaming Zipformer model, a `wireStream` audio uplink, and chunked TTS transfer. Phase 1 closes the conversation loop entirely with pieces that already exist — continuous browser capture, one-shot SenseVoice recognition (usually under 1 s for 1–5 s segments), and offline TTS — so streaming lands in phase 2 as an upgrade rather than a prerequisite.
+- **Host-side Silero VAD in phase 1.** Running the VAD on the host would need the audio uplink phase 2 introduces. Browser energy VAD adds zero dependencies, and SenseVoice's internal Silero segmentation re-segments each submitted region precisely, so the browser only has to find the speaking region approximately; phase 2 moves VAD host-side together with streaming ASR.
+- **`kokoro-multi-lang-v1_0` as the default TTS model.** Better quality, but 350 MB against 167 MB for `vits-melo-tts-zh_en`, which already covers the Chinese-English preference the STT side chose. The provider pattern keeps kokoro a configurable alternative.
+- **Interruption without cancelling the active turn.** Only stopping playback and letting generation finish would keep partial replies. The default stops playback, cancels the outstanding TTS request, and calls `session.cancel()` so the user's new speech submits immediately; a config switch selects the gentler behavior.
+- **Extending the existing `voice-input-bundle`.** Voice input stays useful as independent one-shot dictation with its own off-by-default activation; a separate `voice-chat-bundle` composes the call loop without changing it, and both share the `dataRoot/models` cache convention.
+
 ## Acceptance criteria
 
 - With voice chat active the user keeps speaking, the VAD endpoints automatically, recognized text auto-submits, and no Send click is needed.
@@ -86,7 +94,7 @@ Two phases. Phase 1 closes the loop (already near-realtime in feel: finish a sen
 - Unprepared models trigger download guidance with progress; cancel, leaving voice chat, switching Sessions, and hiding the page all release the microphone.
 - Unit and e2e tests pass; existing voice-input behavior does not regress.
 
-## Risks and open questions
+## Risks
 
 - Browser energy VAD is sensitive to background noise: use an adaptive noise floor and rely on SenseVoice's internal Silero as fallback; extreme noise is a phase 2 host-side Silero improvement.
 - The 167 MB TTS model makes first use slow; its sha256 and byte count must be pinned into `runtime/assets.json` after one download during implementation.

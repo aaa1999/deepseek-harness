@@ -1,0 +1,55 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/epub-reader/README.md
+/:
+  en: 37fbac9fde26cdcb
+  zh: 42ed08359f796674
+/deepseek-ai-dsh-epub-reader:
+  en: f1d01961a7909581
+  zh: 1a2ba1d436ad6614
+/deepseek-ai-dsh-epub-reader/summary:
+  en: 864d903e4de3503a
+  zh: 455b6bca4a3d7851
+/deepseek-ai-dsh-epub-reader/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-epub-reader/use-this-package:
+  en: 2a643dfb4e179694
+  zh: 96328d536e94d5a5
+/deepseek-ai-dsh-epub-reader/use-this-package/minimal-configuration:
+  en: ac5038c34bbbfb07
+  zh: a6573ddeedd6fcd9
+/deepseek-ai-dsh-epub-reader/use-this-package/storage-and-resources:
+  en: ce04b580d6f26d2e
+  zh: 5b7879c17038e389
+/deepseek-ai-dsh-epub-reader/understand-the-implementation:
+  en: 017efd9649741c15
+  zh: 0b8416faaa3293f0
+/deepseek-ai-dsh-epub-reader/further-exploration:
+  en: 4337614486d2c481
+  zh: a1d34cac6442e7f5
+/deepseek-ai-dsh-epub-reader/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-epub-reader/model-experience/selection-treatments:
+  en: e091e791c8f9e2f0
+  zh: 374a2b5cb28f538e
+/deepseek-ai-dsh-epub-reader/model-experience/selection-treatments/what-the-model-sees:
+  en: 2440975170dbaed4
+  zh: d067ebecd9997678
+/deepseek-ai-dsh-epub-reader/model-experience/selection-treatments/what-the-model-sees/translate-prompt-template:
+  en: 75e2bae18e35b559
+  zh: 89c6257fc888de78
+/deepseek-ai-dsh-epub-reader/model-experience/selection-treatments/token-effect:
+  en: c373c4fec8da8466
+  zh: 8790678e83418272
+/deepseek-ai-dsh-epub-reader/model-experience/selection-treatments/kv-cache-effect:
+  en: 25c1fdc597a0f2bd
+  zh: c8737da8429bf2bb
+/deepseek-ai-dsh-epub-reader/known-limitations-and-deferred-work:
+  en: 66be0e5ac160f54c
+  zh: c177dd87f0981562
+/deepseek-ai-dsh-epub-reader/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 6c5f9788c6536776

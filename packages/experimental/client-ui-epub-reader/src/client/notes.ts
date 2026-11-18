@@ -27,13 +27,20 @@ async function notesFetch(path: string, init?: RequestInit): Promise<Response | 
   }
 }
 
-/** Whether the Notes panel is installed and answering. */
+/**
+ * Whether the Notes panel is installed and answering.
+ * @returns whether the panel's `/meta` endpoint answered successfully.
+ */
 export async function notesReachable(): Promise<boolean> {
   const response = await notesFetch('/meta')
   return response !== null && response.ok
 }
 
-/** Append one note through the Notes panel. */
+/**
+ * Append one note through the Notes panel.
+ * @param draft - the note's title and body to append.
+ * @returns whether the panel accepted the note.
+ */
 export async function saveNote(draft: NoteDraft): Promise<boolean> {
   const response = await notesFetch('/notes', {
     method: 'POST',

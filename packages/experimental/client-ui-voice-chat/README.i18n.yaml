@@ -3,8 +3,35 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/client-ui-voice-chat/README.md
 /:
-  en: 3c7bcda69a6e908f
-  zh: 47f4d417cd12aa8e
-/deepseek-ai-dsh-experimental-client-ui-voice-chat:
-  en: d8794a56d3ce241f
-  zh: 6200ed43c8bea224
+  en: 9786e0141d88aa30
+  zh: 55c6c870b53dd556
+/deepseek-ai-dsh-client-ui-voice-chat:
+  en: 4b98c4b308ba1803
+  zh: 644d54cd51ff02f2
+/deepseek-ai-dsh-client-ui-voice-chat/summary:
+  en: 0567428f381340bf
+  zh: 2a13fb644c9a7bd8
+/deepseek-ai-dsh-client-ui-voice-chat/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-client-ui-voice-chat/use-this-package:
+  en: 81e5f30167e6d735
+  zh: a920a746773f5e8a
+/deepseek-ai-dsh-client-ui-voice-chat/understand-the-implementation:
+  en: cca03e2e17ccc0ba
+  zh: 50981962ea859c5f
+/deepseek-ai-dsh-client-ui-voice-chat/further-exploration:
+  en: 701162d6de15f520
+  zh: 08c1e3867d0d0582
+/deepseek-ai-dsh-client-ui-voice-chat/model-experience:
+  en: 8278d9c9610de666
+  zh: 76b583b439f1028b
+/deepseek-ai-dsh-client-ui-voice-chat/model-experience/kv-cache-effect:
+  en: d882c42b5069cb93
+  zh: 924fce50bc2974f0
+/deepseek-ai-dsh-client-ui-voice-chat/known-limitations-and-deferred-work:
+  en: 6819ad493c3b8a9c
+  zh: 3a954f4706ec0411
+/deepseek-ai-dsh-client-ui-voice-chat/known-limitations-and-deferred-work/dev-note:
+  en: 782e08d496301a5a
+  zh: 3e3c2234ac41256d

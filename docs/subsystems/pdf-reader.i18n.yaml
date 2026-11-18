@@ -1,0 +1,13 @@
+# Bilingual-pair consistency record for pdf-reader.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/pdf-reader.md
+/pdf-reader:
+  en: ad81b89d6bd261c2
+  zh: d8d00c9b64095e19
+/pdf-reader/library-and-reading:
+  en: abf0e9bcdb9efc51
+  zh: 26eaaba236bdd025
+/pdf-reader/annotations-and-treatments:
+  en: 00b9708fd8270752
+  zh: 9ed0f9337b11ecf1

@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/client-ui-epub-reader/README.md
+/:
+  en: d6f702ea7238d06c
+  zh: 3e651e5bd2f4e7cd
+/deepseek-ai-dsh-client-ui-epub-reader:
+  en: aef4f27172a0cba4
+  zh: c7e936b613bb51cd
+/deepseek-ai-dsh-client-ui-epub-reader/summary:
+  en: 5e95782f449873da
+  zh: 57aace553f698d95
+/deepseek-ai-dsh-client-ui-epub-reader/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-client-ui-epub-reader/use-this-package:
+  en: 41d838e9f9d7cc02
+  zh: 3121e089d7569f3a
+/deepseek-ai-dsh-client-ui-epub-reader/use-this-package/read-and-manage-books:
+  en: a15789e0ba06f84d
+  zh: 93743ed290a4405f
+/deepseek-ai-dsh-client-ui-epub-reader/use-this-package/annotate-and-treat-selections:
+  en: 826a8d54945809c5
+  zh: 38a124b1034259b7
+/deepseek-ai-dsh-client-ui-epub-reader/use-this-package/set-storage-and-models:
+  en: f0861bb3ef314077
+  zh: e4fe6aeca0878351
+/deepseek-ai-dsh-client-ui-epub-reader/understand-the-implementation:
+  en: 7e701877a55b33c2
+  zh: ccc5b351b574918e
+/deepseek-ai-dsh-client-ui-epub-reader/further-exploration:
+  en: 5bd609cbb0465af5
+  zh: 3864c37d2736d2ec
+/deepseek-ai-dsh-client-ui-epub-reader/model-experience:
+  en: 5c40e5ff96dc52f9
+  zh: c341c2f8f20ee11f
+/deepseek-ai-dsh-client-ui-epub-reader/model-experience/kv-cache-effect:
+  en: c78c1a3cbcd81e08
+  zh: 1d043634b5f27c69
+/deepseek-ai-dsh-client-ui-epub-reader/known-limitations-and-deferred-work:
+  en: dd3a1c40c25c048c
+  zh: 75ed6fc7be03e40a
+/deepseek-ai-dsh-client-ui-epub-reader/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 6c5f9788c6536776

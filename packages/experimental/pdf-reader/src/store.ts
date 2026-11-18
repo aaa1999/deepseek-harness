@@ -77,14 +77,21 @@ export class PdfStore {
     return join(this.bookDir(bookId), 'shots')
   }
 
-  /** One book's stored metadata, or null when its record is unreadable. */
+  /**
+   * One book's stored metadata, or null when its record is unreadable.
+   * @param bookId - the imported book's id.
+   * @returns the stored metadata, or null when the id is malformed or no record reads.
+   */
   async loadMeta(bookId: string): Promise<StoredBookMeta | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     const meta = await readJson<StoredBookMeta | null>(join(this.bookDir(bookId), 'meta.json'), null)
     return meta
   }
 
-  /** Every readable book record, newest import first. */
+  /**
+   * Every readable book record, newest import first.
+   * @returns every readable book as a shelf row, newest import first.
+   */
   async listBooks(): Promise<StoredBookMeta[]> {
     let entries
     try {
@@ -138,7 +145,12 @@ export class PdfStore {
     return meta
   }
 
-  /** Merge the browser's first-open structure report into one book's record. */
+  /**
+   * Merge the browser's first-open structure report into one book's record.
+   * @param bookId - the imported book's id.
+   * @param report - page count and outline the browser's PDF document reported.
+   * @returns the merged metadata after it is persisted.
+   */
   async saveMetaReport(bookId: string, report: MetaReport): Promise<StoredBookMeta> {
     const current = await this.loadMeta(bookId)
     if (current === null) throw new PdfFormatError(`no such book: ${bookId}`)
@@ -152,20 +164,30 @@ export class PdfStore {
     return next
   }
 
-  /** Mark the stored cover thumbnail present after the browser uploaded one. */
+  /**
+   * Mark the stored cover thumbnail present after the browser uploaded one.
+   * @param bookId - the imported book whose `cover.png` landed.
+   */
   async noteCover(bookId: string): Promise<void> {
     const current = await this.loadMeta(bookId)
     if (current === null || current.hasCover) return
     await writeJson(join(this.bookDir(bookId), 'meta.json'), { ...current, hasCover: true })
   }
 
-  /** Delete one book and every stored byte of it. */
+  /**
+   * Delete one book and every stored byte of it.
+   * @param bookId - the imported book's id; a malformed id deletes nothing.
+   */
   async removeBook(bookId: string): Promise<void> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return
     await rm(this.bookDir(bookId), { recursive: true, force: true })
   }
 
-  /** The stored original bytes, for the browser's PDF.js parse. */
+  /**
+   * The stored original bytes, for the browser's PDF.js parse.
+   * @param bookId - the imported book's id.
+   * @returns the stored PDF bytes, or null when the id is malformed or the file is missing.
+   */
   async readPdf(bookId: string): Promise<Uint8Array | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     try {
@@ -175,7 +197,11 @@ export class PdfStore {
     }
   }
 
-  /** The stored cover thumbnail bytes, for the cover Fetch route. */
+  /**
+   * The stored cover thumbnail bytes, for the cover Fetch route.
+   * @param bookId - the imported book's id.
+   * @returns the stored PNG bytes, or null when the id is malformed or no cover is stored.
+   */
   async readCover(bookId: string): Promise<Uint8Array | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     try {
@@ -185,14 +211,23 @@ export class PdfStore {
     }
   }
 
-  /** Persist the browser-rendered cover thumbnail. */
+  /**
+   * Persist the browser-rendered cover thumbnail.
+   * @param bookId - the imported book whose cover is stored.
+   * @param png - the rendered first page's PNG bytes.
+   */
   async writeCover(bookId: string, png: Uint8Array): Promise<void> {
     await mkdir(this.bookDir(bookId), { recursive: true })
     await writeFile(join(this.bookDir(bookId), 'cover.png'), png)
     await this.noteCover(bookId)
   }
 
-  /** One stored screenshot crop, for the shot Fetch route. */
+  /**
+   * One stored screenshot crop, for the shot Fetch route.
+   * @param bookId - the imported book's id.
+   * @param annotationId - the shot annotation the crop belongs to.
+   * @returns the stored PNG bytes, or null when an id is malformed or the crop is missing.
+   */
   async readShot(bookId: string, annotationId: string): Promise<Uint8Array | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId) || !/^[\da-f-]{1,64}$/iu.test(annotationId)) return null
     try {
@@ -202,26 +237,43 @@ export class PdfStore {
     }
   }
 
-  /** Persist one screenshot crop under its annotation id. */
+  /**
+   * Persist one screenshot crop under its annotation id.
+   * @param bookId - the imported book whose shots directory holds the crop.
+   * @param annotationId - the shot annotation the crop belongs to.
+   * @param png - the cropped page image's PNG bytes.
+   */
   async writeShot(bookId: string, annotationId: string, png: Uint8Array): Promise<void> {
     if (!/^[\da-f-]{1,64}$/iu.test(annotationId)) throw new PdfFormatError('screenshot id must be a short uuid')
     await mkdir(this.shotsDir(bookId), { recursive: true })
     await writeFile(join(this.shotsDir(bookId), `${annotationId}.png`), png)
   }
 
-  /** Remove one screenshot crop with its annotation. */
+  /**
+   * Remove one screenshot crop with its annotation.
+   * @param bookId - the imported book whose shots directory holds the crop.
+   * @param annotationId - the shot annotation whose crop file is deleted.
+   */
   async removeShot(bookId: string, annotationId: string): Promise<void> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId) || !/^[\da-f-]{1,64}$/iu.test(annotationId)) return
     await rm(join(this.shotsDir(bookId), `${annotationId}.png`), { force: true })
   }
 
-  /** The saved reading position. */
+  /**
+   * The saved reading position.
+   * @param bookId - the imported book's id.
+   * @returns the saved 1-based page, or null when the id is malformed or none is stored.
+   */
   async loadProgress(bookId: string): Promise<BookProgress | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     return await readJson<BookProgress | null>(join(this.bookDir(bookId), 'progress.json'), null)
   }
 
-  /** Persist the reading position, clamped into the known page range. */
+  /**
+   * Persist the reading position, clamped into the known page range.
+   * @param bookId - the imported book's id; an unknown book saves nothing.
+   * @param progress - the 1-based page to save, clamped to the reported page count.
+   */
   async saveProgress(bookId: string, progress: BookProgress): Promise<void> {
     const meta = await this.loadMeta(bookId)
     if (meta === null) return
@@ -229,13 +281,21 @@ export class PdfStore {
     await writeJson(join(this.bookDir(bookId), 'progress.json'), { page })
   }
 
-  /** The saved annotations of one book. */
+  /**
+   * The saved annotations of one book.
+   * @param bookId - the imported book's id.
+   * @returns the saved annotations, or null when the id is malformed or no record reads.
+   */
   async loadAnnotations(bookId: string): Promise<PdfAnnotation[] | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     return await readJson<PdfAnnotation[] | null>(join(this.bookDir(bookId), 'annotations.json'), null)
   }
 
-  /** Persist the complete annotation list of one book. */
+  /**
+   * Persist the complete annotation list of one book.
+   * @param bookId - the imported book's id; a malformed id saves nothing.
+   * @param annotations - the full replacement annotation list.
+   */
   async saveAnnotations(bookId: string, annotations: readonly PdfAnnotation[]): Promise<void> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return
     await mkdir(this.bookDir(bookId), { recursive: true })

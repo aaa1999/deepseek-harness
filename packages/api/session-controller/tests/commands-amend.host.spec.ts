@@ -32,7 +32,7 @@ async function amendHarness(status: 'idle' | 'running', owned = false): Promise<
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(TypertRegistry)
-  installSessionReadTestServices(ctx)
+  await installSessionReadTestServices(ctx)
   const sessionId = SessionId('amend-session')
   const session = ctx.sessions.create(sessionId, {
     meta: {

@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/pdf-reader-bundle/README.md
+/:
+  en: 04b92e74f05f4d25
+  zh: e0b18668df9223bd
+/deepseek-ai-dsh-pdf-reader-bundle:
+  en: b5409dc6c3903651
+  zh: 5d174736a3f588c7
+/deepseek-ai-dsh-pdf-reader-bundle/summary:
+  en: 2db2eecfb9712317
+  zh: c3665314c29d09e7
+/deepseek-ai-dsh-pdf-reader-bundle/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-pdf-reader-bundle/use-this-package:
+  en: bbff250eba0f1b89
+  zh: b20a47f82d8ab6e0
+/deepseek-ai-dsh-pdf-reader-bundle/use-this-package/install-into-a-profile:
+  en: 0d16e8964f5bf332
+  zh: 7872e96e074867e3
+/deepseek-ai-dsh-pdf-reader-bundle/use-this-package/what-you-get:
+  en: e248af86da597dc5
+  zh: f0092bd4d833f756
+/deepseek-ai-dsh-pdf-reader-bundle/understand-the-implementation:
+  en: 1b5e98ad150a9ea8
+  zh: 1dbd792a53aa28ff
+/deepseek-ai-dsh-pdf-reader-bundle/further-exploration:
+  en: d9595a299cb01834
+  zh: c12fc37bb9b935af
+/deepseek-ai-dsh-pdf-reader-bundle/model-experience:
+  en: e5809a72971da76b
+  zh: 4c8491d7f5b5abd2
+/deepseek-ai-dsh-pdf-reader-bundle/model-experience/kv-cache-effect:
+  en: 1ef309e8c4538fcb
+  zh: 49050542fbc7d365
+/deepseek-ai-dsh-pdf-reader-bundle/known-limitations-and-deferred-work:
+  en: 2bbe5a737dc4220c
+  zh: 2b27a23aac895663
+/deepseek-ai-dsh-pdf-reader-bundle/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 6c5f9788c6536776

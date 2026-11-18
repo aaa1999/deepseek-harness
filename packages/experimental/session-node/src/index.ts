@@ -147,7 +147,10 @@ export class SessionNodeService extends TypertRemoteService {
     return node
   }
 
-  /** List every saved node in durable order (most recently saved first). */
+  /**
+   * List every saved node in durable order (most recently saved first).
+   * @returns the saved nodes in durable order.
+   */
   @Remote('list')
   list(): SessionNode[] {
     const order = this.requireGlobal().get().order

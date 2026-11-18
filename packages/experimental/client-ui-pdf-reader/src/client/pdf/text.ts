@@ -36,7 +36,11 @@ export function pdfTextRenderer(host: HTMLDivElement): RenderPdfText {
   }
 }
 
-/** Build the outline destinations of one document onto 1-based pages. */
+/**
+ * Build the outline destinations of one document onto 1-based pages.
+ * @param document - PDF.js document whose outline is walked, capped at 2000 entries.
+ * @returns each outline title with its 1-based page; destinations that do not land are dropped.
+ */
 export async function outlinePages(document: {
   getOutline(): Promise<readonly { title: string; dest: unknown; items: readonly unknown[] }[] | null>
   getDestination(dest: string): Promise<unknown[] | null>

@@ -114,6 +114,7 @@ function errorText(error: unknown): string {
  * treatments, and the debounced progress save pass through here.
  */
 export class ReaderController {
+  /** The snapshot store the reader panel subscribes to. */
   readonly store: SnapshotStore<EpubReaderState> = createSnapshotStore<EpubReaderState>({
     view: 'library',
     library: { status: 'loading', error: '' },
@@ -151,7 +152,10 @@ export class ReaderController {
     }
   }
 
-  /** Import every EPUB of a picked file list, then refresh the shelf. */
+  /**
+   * Import every EPUB of a picked file list, then refresh the shelf.
+   * @param files - picked files; names not ending in `.epub` are skipped.
+   */
   importFiles(files: readonly File[]): void {
     const accepted = files.filter(file => /\.epub$/iu.test(file.name))
     if (accepted.length === 0) return
@@ -172,7 +176,10 @@ export class ReaderController {
     void run
   }
 
-  /** Remove one book; the shelf refresh keeps the remaining rows in order. */
+  /**
+   * Remove one book; the shelf refresh keeps the remaining rows in order.
+   * @param bookId - the book the Host deletes from its storage directory.
+   */
   removeBook(bookId: string): void {
     const run = (async () => {
       const result = await this.ctx.remote.epubReader.removeBook(bookId)
@@ -183,7 +190,10 @@ export class ReaderController {
     void run.catch(() => { /* the shelf reload reports removal failures */ })
   }
 
-  /** Open a book at its saved chapter and ratio. */
+  /**
+   * Open a book at its saved chapter and ratio.
+   * @param bookId - the book whose saved progress positions the reader.
+   */
   openBook(bookId: string): void {
     const book = this.store.getSnapshot().books.find(row => row.bookId === bookId)
     if (book === undefined) return
@@ -197,7 +207,11 @@ export class ReaderController {
     this.store.set({ ...this.store.getSnapshot(), view: 'library', open: null, annotations: [], streams: {} })
   }
 
-  /** Jump to one chapter from the picker. */
+  /**
+   * Jump to one chapter from the picker.
+   * @param chapterIndex - target chapter's index in the book's table of contents.
+   * @param restoreRatio - scroll ratio to land at inside the target chapter.
+   */
   selectChapter(chapterIndex: number, restoreRatio = 0): void {
     const open = this.store.getSnapshot().open
     if (open === null || chapterIndex === open.chapterIndex) return
@@ -218,7 +232,10 @@ export class ReaderController {
     this.selectChapter(next, restoreRatio)
   }
 
-  /** Record the reading column's ratio; the Host save follows the debounce. */
+  /**
+   * Record the reading column's ratio; the Host save follows the debounce.
+   * @param ratio - scroll position within the chapter, from 0 to 1.
+   */
   noteScroll(ratio: number): void {
     const open = this.store.getSnapshot().open
     if (open === null) return
@@ -227,7 +244,12 @@ export class ReaderController {
     this.progressTimer = setTimeout(() => { this.flushProgress() }, PROGRESS_DEBOUNCE_MS)
   }
 
-  /** Stream one treatment of a captured selection and persist it as an annotation. */
+  /**
+   * Stream one treatment of a captured selection and persist it as an annotation.
+   * @param selection - the captured selection to treat.
+   * @param kind - treatment kind the streamed model call requests.
+   * @param reuseId - annotation id to replace; omitted generates a new one.
+   */
   treat(selection: EpubSelectionValue, kind: ExplainKind, reuseId?: string): void {
     const id = reuseId ?? randomUUID()
     const abort = new AbortController()
@@ -279,7 +301,10 @@ export class ReaderController {
     void run
   }
 
-  /** Re-run the first treatment of a saved annotation against its stored quote. */
+  /**
+   * Re-run the first treatment of a saved annotation against its stored quote.
+   * @param id - the saved annotation whose first treatment kind is re-requested.
+   */
   retryAnnotation(id: string): void {
     const annotation = this.store.getSnapshot().annotations.find(row => row.id === id)
     if (annotation === undefined) return
@@ -294,7 +319,10 @@ export class ReaderController {
     }, kind, id)
   }
 
-  /** Delete one saved annotation and its card. */
+  /**
+   * Delete one saved annotation and its card.
+   * @param id - the annotation removed from the store and deleted on the Host.
+   */
   deleteAnnotation(id: string): void {
     const state = this.store.getSnapshot()
     const bookId = state.open?.bookId
@@ -307,7 +335,10 @@ export class ReaderController {
     void this.ctx.remote.epubReader.deleteAnnotation(bookId, id)
   }
 
-  /** Carry one captured selection into the Notes panel; the note body is the raw text. */
+  /**
+   * Carry one captured selection into the Notes panel; the note body is the raw text.
+   * @param selection - the captured selection whose text becomes the note body.
+   */
   captureSelectionNote(selection: EpubSelectionValue): void {
     const open = this.store.getSnapshot().open
     void saveNote({
@@ -316,7 +347,10 @@ export class ReaderController {
     })
   }
 
-  /** Carry one annotation card — quote plus every treatment — into the Notes panel. */
+  /**
+   * Carry one annotation card — quote plus every treatment — into the Notes panel.
+   * @param id - the saved annotation whose quote and treatments become the note body.
+   */
   captureAnnotationNote(id: string): void {
     const state = this.store.getSnapshot()
     const annotation = state.annotations.find(row => row.id === id)
@@ -351,7 +385,7 @@ export class ReaderController {
         busy: false,
       })
     })()
-    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+    void run.catch((error: unknown) => { this.setStorage({ busy: false, error: errorText(error) }) })
   }
 
   /** Close the storage settings panel without changing anything. */
@@ -359,7 +393,10 @@ export class ReaderController {
     this.setStorage({ open: false, error: '', saved: false })
   }
 
-  /** Point the library at a new directory; empty restores the profile default. */
+  /**
+   * Point the library at a new directory; empty restores the profile default.
+   * @param directory - the storage directory the Host re-applies its config with.
+   */
   saveStorageSettings(directory: string): void {
     this.setStorage({ busy: true, error: '', saved: false })
     const run = (async () => {
@@ -372,10 +409,14 @@ export class ReaderController {
         void this.loadLibrary()
       }, STORAGE_REFRESH_MS)
     })()
-    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+    void run.catch((error: unknown) => { this.setStorage({ busy: false, error: errorText(error) }) })
   }
 
-  /** Choose the model treatments use; the empty pair follows the profile default. */
+  /**
+   * Choose the model treatments use; the empty pair follows the profile default.
+   * @param provider - treatment model's provider key.
+   * @param model - treatment model's id under `provider`.
+   */
   saveTreatmentModel(provider: string, model: string): void {
     this.setStorage({ busy: true, error: '', saved: false })
     const run = (async () => {
@@ -388,7 +429,7 @@ export class ReaderController {
         void this.refreshTreatmentModels()
       }, STORAGE_REFRESH_MS)
     })()
-    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+    void run.catch((error: unknown) => { this.setStorage({ busy: false, error: errorText(error) }) })
   }
 
   /** Re-read the treatment catalog into the open panel. */

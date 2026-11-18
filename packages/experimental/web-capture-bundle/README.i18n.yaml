@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/web-capture-bundle/README.md
+/:
+  en: 0b8a90c218da3908
+  zh: c3d00642df4f2e03
+/deepseek-ai-dsh-web-capture-bundle:
+  en: 88aea68e85e5b137
+  zh: afe01f74ee0b7f7d
+/deepseek-ai-dsh-web-capture-bundle/summary:
+  en: ca42e91e240c7b4f
+  zh: 517232138406ff84
+/deepseek-ai-dsh-web-capture-bundle/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-web-capture-bundle/use-this-package:
+  en: bbff250eba0f1b89
+  zh: b20a47f82d8ab6e0
+/deepseek-ai-dsh-web-capture-bundle/use-this-package/install-into-a-profile:
+  en: 05b14ea72e8d4d65
+  zh: c4d5475d7bcd639d
+/deepseek-ai-dsh-web-capture-bundle/use-this-package/what-you-get:
+  en: fd43af066d556947
+  zh: 9d9b2540f479465a
+/deepseek-ai-dsh-web-capture-bundle/understand-the-implementation:
+  en: 2b3bf35961cfdcb4
+  zh: 16b5feb1431f2e57
+/deepseek-ai-dsh-web-capture-bundle/further-exploration:
+  en: c9214b8f6cf8d334
+  zh: accf2bed535c32f3
+/deepseek-ai-dsh-web-capture-bundle/model-experience:
+  en: d7822f9031cc7f9e
+  zh: f51a965159c312a8
+/deepseek-ai-dsh-web-capture-bundle/model-experience/kv-cache-effect:
+  en: 1ef309e8c4538fcb
+  zh: 49050542fbc7d365
+/deepseek-ai-dsh-web-capture-bundle/known-limitations-and-deferred-work:
+  en: e2ba1895b9ced56f
+  zh: c8f9ed0c5700428e
+/deepseek-ai-dsh-web-capture-bundle/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 6c5f9788c6536776

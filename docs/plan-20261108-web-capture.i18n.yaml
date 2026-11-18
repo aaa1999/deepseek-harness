@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for plan-20261108-web-capture.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/plan-20261108-web-capture.md
+/:
+  en: d0b1ca81d3fd39d0
+  zh: 61f948bce1755e5f
+/web-snapshot-pdf-reader-design-plan:
+  en: 712eef15e160a0eb
+  zh: 958d75b9474d2928
+/web-snapshot-pdf-reader-design-plan/1-one-sentence-goal:
+  en: 7462d7301a006a4e
+  zh: eb13939fe9f52fc1
+/web-snapshot-pdf-reader-design-plan/2-think-it-through-first-where-the-real-difficulty-lies:
+  en: 79eb5da78234915a
+  zh: 8370515573e904cf
+/web-snapshot-pdf-reader-design-plan/3-overall-architecture:
+  en: 5374bc4c431b275d
+  zh: e072e1e175cc021f
+/web-snapshot-pdf-reader-design-plan/4-how-to-capture-so-layout-and-styles-are-reproduced:
+  en: 0a5d3eda4f4ac682
+  zh: 14aa1cf956fa2596
+/web-snapshot-pdf-reader-design-plan/5-transport-and-security:
+  en: 1fde6aaa928193d7
+  zh: a073d8b3864bc4b7
+/web-snapshot-pdf-reader-design-plan/6-import-and-preview-interplay:
+  en: 2ce203535f513baf
+  zh: 05efb65a253f304f
+/web-snapshot-pdf-reader-design-plan/7-implementation-stages-final-dual-mode-in-m1-extension-entry-only-chromium-family:
+  en: 6fea7290d19d4410
+  zh: f607fe9a52713bfb
+/web-snapshot-pdf-reader-design-plan/8-edge-cases:
+  en: eb30118cab1a048c
+  zh: 13f510e3d99f7e31
+/web-snapshot-pdf-reader-design-plan/9-verification-criteria:
+  en: b0298528de63d4d4
+  zh: 0455422888eb9020

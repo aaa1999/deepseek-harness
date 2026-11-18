@@ -72,13 +72,20 @@ export class EpubStore {
     return join(this.bookDir(bookId), 'content')
   }
 
-  /** One book's stored metadata, or null when its record is unreadable. */
+  /**
+   * One book's stored metadata, or null when its record is unreadable.
+   * @param bookId - the imported book's id.
+   * @returns the stored metadata, or null when the id is malformed or no record reads.
+   */
   async loadMeta(bookId: string): Promise<StoredBookMeta | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     return await readJson<StoredBookMeta | null>(join(this.bookDir(bookId), 'meta.json'), null)
   }
 
-  /** Every readable book record. */
+  /**
+   * Every readable book record.
+   * @returns every readable book as a shelf row, newest import first.
+   */
   async listBooks(): Promise<StoredBookMeta[]> {
     let entries
     try {
@@ -134,13 +141,21 @@ export class EpubStore {
     return { meta, files }
   }
 
-  /** Delete one book and every stored byte of it. */
+  /**
+   * Delete one book and every stored byte of it.
+   * @param bookId - the imported book's id; a malformed id deletes nothing.
+   */
   async removeBook(bookId: string): Promise<void> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return
     await rm(this.bookDir(bookId), { recursive: true, force: true })
   }
 
-  /** Raw XHTML text of one spine chapter, with its interior path. */
+  /**
+   * Raw XHTML text of one spine chapter, with its interior path.
+   * @param bookId - the imported book's id.
+   * @param chapterIndex - the chapter's index in the book's spine.
+   * @returns the chapter's XHTML and interior path, or null when the book, chapter, or file is missing.
+   */
   async readChapter(bookId: string, chapterIndex: number): Promise<{ xhtml: string; path: string } | null> {
     const meta = await this.loadMeta(bookId)
     if (meta === null) return null
@@ -155,7 +170,12 @@ export class EpubStore {
     }
   }
 
-  /** One resource file's bytes, for the Fetch route. */
+  /**
+   * One resource file's bytes, for the Fetch route.
+   * @param bookId - the imported book's id.
+   * @param interiorPath - the requested book-interior path.
+   * @returns the file's bytes, or null when the path escapes, is missing, or fails to read.
+   */
   async readResource(bookId: string, interiorPath: string): Promise<Uint8Array | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     const target = joinInterior(this.contentDir(bookId), interiorPath)
@@ -167,14 +187,22 @@ export class EpubStore {
     }
   }
 
-  /** The saved reading position. */
+  /**
+   * The saved reading position.
+   * @param bookId - the imported book's id.
+   * @returns the saved chapter index and scroll ratio, or null when none is stored.
+   */
   async loadProgress(bookId: string): Promise<BookProgress | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     const progress = await readJson<BookProgress | null>(join(this.bookDir(bookId), 'progress.json'), null)
     return progress
   }
 
-  /** Persist the reading position. */
+  /**
+   * Persist the reading position.
+   * @param bookId - the imported book's id; an unknown book saves nothing.
+   * @param progress - chapter index and scroll ratio, clamped to the book's chapters.
+   */
   async saveProgress(bookId: string, progress: BookProgress): Promise<void> {
     const meta = await this.loadMeta(bookId)
     if (meta === null) return
@@ -185,13 +213,21 @@ export class EpubStore {
     })
   }
 
-  /** The saved highlights of one book. */
+  /**
+   * The saved highlights of one book.
+   * @param bookId - the imported book's id.
+   * @returns the saved annotations, or null when the id is malformed or no record reads.
+   */
   async loadAnnotations(bookId: string): Promise<Annotation[] | null> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return null
     return await readJson<Annotation[] | null>(join(this.bookDir(bookId), 'annotations.json'), null)
   }
 
-  /** Persist the complete highlight list of one book. */
+  /**
+   * Persist the complete highlight list of one book.
+   * @param bookId - the imported book's id; a malformed id saves nothing.
+   * @param annotations - the full replacement annotation list.
+   */
   async saveAnnotations(bookId: string, annotations: readonly Annotation[]): Promise<void> {
     if (!/^[\da-f-]{1,64}$/iu.test(bookId)) return
     await mkdir(this.bookDir(bookId), { recursive: true })

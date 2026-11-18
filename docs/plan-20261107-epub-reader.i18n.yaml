@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for plan-20261107-epub-reader.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/plan-20261107-epub-reader.md
+/:
+  en: f26f819f9abf27c8
+  zh: 7bd3c681b7c4c85f
+/epub-reader-plugin-design-plan:
+  en: 2af800baca5882b9
+  zh: 8f7c37ec3e96ca53
+/epub-reader-plugin-design-plan/1-goals-and-scope:
+  en: 22ad12357f9f2010
+  zh: 57f20af80e7c3ae4
+/epub-reader-plugin-design-plan/2-interaction-design:
+  en: 3802dc48fbd3b6f0
+  zh: e9a29eaa676a9718
+/epub-reader-plugin-design-plan/2-interaction-design/2-1-entry-and-layout:
+  en: 7c003eaea20be12b
+  zh: 43337956050aa35b
+/epub-reader-plugin-design-plan/2-interaction-design/2-2-visual-direction:
+  en: d3e192be7cc915f3
+  zh: 53092feb1de08485
+/epub-reader-plugin-design-plan/3-overall-architecture:
+  en: 980656b378c806ff
+  zh: 9fe0b2cea1d44270
+/epub-reader-plugin-design-plan/4-key-technical-decisions:
+  en: 101ead669ce9492e
+  zh: 355c7ecc58cce2d3
+/epub-reader-plugin-design-plan/5-data-model-and-remote-api:
+  en: 047cb619a64253ac
+  zh: 4675cef7914a0ceb
+/epub-reader-plugin-design-plan/6-prompt-design-host-side-templates-configurable-override:
+  en: 531cbcc7edbff730
+  zh: e49f5040a595f674
+/epub-reader-plugin-design-plan/7-plugin-config-schema:
+  en: 2c676f038f86cb99
+  zh: f130d86b6f797386
+/epub-reader-plugin-design-plan/8-package-structure-and-development-delivery-forms:
+  en: 3ec6dd96ad22db91
+  zh: 5d0a9f31b6dd30f3
+/epub-reader-plugin-design-plan/9-implementation-stages:
+  en: 5091353b3dfd7b30
+  zh: df2ba2d487f255dd
+/epub-reader-plugin-design-plan/confirmed-decisions-2026-11-07:
+  en: 174d1cfb0922efbf
+  zh: 5d9c995b589d746c

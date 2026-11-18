@@ -1,35 +1,92 @@
-# DSH Web Capture（网页快照 → PDF 书架）
+---
+description: "Profile layer that mounts the PDF reader trio plus the browser relay that files companion-extension page snapshots into the PDF shelf."
+kind: "package-bundle"
+---
 
-把任意网页一键快照成 PDF，自动送进 DSH 的 PDF 阅读器书架并打开预览。PDF 按**屏幕媒体**渲染，布局、字体、颜色与你在浏览器里看到的一致，且保留可选中文本层，可继续使用划词翻译/解释。
+# @deepseek-ai/dsh-web-capture-bundle
 
-## 组成
+English | [中文](README.zh.md)
 
-| 组件 | 位置 | 职责 |
-|---|---|---|
-| MV3 扩展 | `packages/experimental/client-ui-web-capture/extension/` | CDP `Page.printToPDF`（screen 媒体）捕获，经 GUI 标签页中继投递 |
-| 客户端插件 | `packages/experimental/client-ui-web-capture` | 监听 `window.postMessage`，配对 token，重组分片，调 `pdfReader.importBook` 入库并切到 PDF 面板 |
-| 组合包 | 本包 | 组装 pdf-reader 三件套 + 中继插件 |
+## Summary
 
-与 `pdf-reader-bundle` 的插件行同 id：**二选一安装，不要同装**。
+Adds web capture to a `dsh --profile`: the PDF reader pair plus the browser relay in one layer. Install the layer into a Web profile and load the companion Chromium extension once; snapshots captured on any page then land in the PDF shelf and open in the reader with their source URL and date. The patch pins the same DeepSeek model routes as `dsh-pdf-reader-bundle`. No shipped profile includes this layer.
 
-## 安装
+## Table of Contents
 
-1. 安装组合包：`dsh plugin add @deepseek-ai/dsh-web-capture-bundle`（或本地路径）。
-2. Chrome 打开 `chrome://extensions` → 开发者模式 → 「加载已解压的扩展程序」→ 选择 `client-ui-web-capture/extension/` 目录。
-3. 打开 DSH GUI（默认 `http://127.0.0.1:3080`）。
+- [Use this package](#use-this-package)
+- [Understand the implementation](#understand-the-implementation)
+- [Further Exploration](#further-exploration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
-## 使用
+-----
 
-1. 在任意网页点扩展图标，选「长页 / A4」与捕获宽度；「深度捕获」默认开启，会先整页滚动一遍触发懒加载内容，再捕获。
-2. 点「捕获并送入 PDF 书架」。浏览器顶部会短暂出现「正在调试此浏览器」横幅，属 CDP 附件的正常现象。
-3. 成功后 DSH 自动切到 PDF 面板并直接打开这份快照；书架卡片显示「网页快照 · 日期」，悬停可见来源 URL。canvas/视频会冻结为当前帧一起进入 PDF。
+<a id="use-this-package"></a>
+## Use this package
 
-配对零配置：插件启动时在 GUI 页 localStorage 写入随机 token，扩展的中继 content script 注入每条消息，token 不离开 GUI 源。
+### Install into a profile
 
-## 边界
+Run `dsh plugin --profile <name> add @deepseek-ai/dsh-web-capture-bundle` in a profile that runs the Web client, or point the command at a local checkout with a `file:` path. The dsh installation does not ship this bundle, so it does not appear in the plugin manager's optional list. Then load the companion extension from `dsh-client-ui-web-capture`'s `extension/` directory as described in [that package](../client-ui-web-capture/README.md#use-this-package).
 
-- 页面过高（约 >19200 CSS px）时长页自动分成多张 200in 长页；固定定位元素可能在分段页重复。
-- 目标页开着 DevTools 时无法附加调试器：先关 DevTools。
-- 默认上限 100MB（`maxPdfBytes`），超出回明确错误。
-- 需登录的页面：扩展在真实浏览器会话里捕获，天然带登录态。
-- 扩展不做跨浏览器适配（Chromium 系）。
+### What you get
+
+The three inserted rows provide the full capture path: the library service [`dsh-pdf-reader`](../pdf-reader/README.md) stores books under the harness home and streams treatments, the browser panel [`dsh-client-ui-pdf-reader`](../client-ui-pdf-reader/README.md) registers the PDF sidebar entry, and the relay [`dsh-client-ui-web-capture`](../client-ui-web-capture/README.md) files extension snapshots into that shelf. The patch selects `deepseek-official/deepseek-chat` for text treatments and `deepseek-official/deepseek-v4-flash-vision-exp` for screenshot questions.
+
+-----
+
+<a id="understand-the-implementation"></a>
+## Understand the implementation
+
+<details>
+<summary>Implementation internals — click to expand</summary>
+
+The bundle is a static patch document with one `insert` list: the `pdf-reader` service row carrying the data root and both model pairs, the `pdf-reader-ui` browser row, and the `web-capture-ui` relay row. The row ids mirror `dsh-pdf-reader-bundle` so either bundle can be replaced by the other in one step, which is also why installing both conflicts. A later layer or the profile's own patch overrides any row by id and replaces its whole configuration. The package entry carries no runtime API.
+
+| File | Role |
+|---|---|
+| [`cordis.patch.yml`](cordis.patch.yml) | The bundle substance: the three rows with their pinned configuration |
+| [`src/index.ts`](src/index.ts) | Package entry; carries no runtime API |
+
+</details>
+
+-----
+
+<a id="further-exploration"></a>
+## Further Exploration
+
+- [Web capture relay](../client-ui-web-capture/README.md) — the relay and the companion extension.
+- [PDF library service](../pdf-reader/README.md) — storage and treatment requests.
+- [Browser reader panel](../client-ui-pdf-reader/README.md) — the sidebar surface.
+- [PDF reader bundle](../pdf-reader-bundle/README.md) — the same reader rows without the relay.
+- [Experimental package map](../README.md) — the surrounding package group.
+
+-----
+
+<a id="model-experience"></a>
+## Model Experience
+
+Indirectly, through the inserted rows: the library service owns every treatment request, the browser panel registers no model input, and the relay files snapshots without any model request.
+
+#### KV Cache effect
+
+The layer adds no request prefix; treatment requests and their routing belong to `dsh-pdf-reader`.
+
+## Known Limitations and Deferred Work
+
+<a id="known-limitations-and-deferred-work"></a>
+
+- The row ids mirror `dsh-pdf-reader-bundle`; install one or the other, never both, or the duplicate rows conflict.
+- Capturing requires the companion Chromium extension loaded unpacked; the bundle cannot install or update it.
+- The patch pins both model pairs to DeepSeek routes; clear `provider`/`model` and `shotProvider`/`shotModel` in a later layer to follow the profile default model.
+- Storage stays at the `dshHomePath('pdf-reader')` directory the patch sets; moving it requires the reader's settings panel or a config override that restates the row.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

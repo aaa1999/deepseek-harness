@@ -27,20 +27,20 @@ id: 2026-11-14-amend-source
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-10-27-retry-control-input"
-    after: "64e7d6d0894e22bcdd549e97e960f6666eb40476665b821d50c3eca083cb14fd"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "75f4c93b44a5a231de6c57857be01b1140dcac5fd045b51f7c7948979e496a45"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-10-27-retry-control-input"
-    after: "03a5b58a9e4aba42cc0a05e6d59591a65b31d29e8c5b9fa2b337a77a84ceefa1"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "78d59e50904fa0771d231bfe54c131c5753e2dc3d60f2e854ba26e430b695892"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-10-27-retry-control-input"
-    after: "3261154bfda7f9ba63ad422ae663f683bff164c9a1b15285d8720cfd1d324883"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "b451ec63ddb35802cc6f47df1d3a18622157bab598c815579aee39e8e55ad125"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-10-27-retry-control-input"
-    after: "b00947979c6e2af072c702ff37cc1cc09aacfa87a70a14a07da4570463122faa"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "0c392ac299d07b4d77d68c320e9ece80fd30637a1f150d7cbc121a3096026b80"
     decision: same-version
 ```
 

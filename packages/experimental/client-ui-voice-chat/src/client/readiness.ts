@@ -15,7 +15,11 @@ export interface VoiceReadiness {
   readonly error: string | null
 }
 
-/** Resolved usability of one named provider side. */
+/**
+ * Resolved usability of one named provider side.
+ * @param catalog - the direction's catalog snapshot, or null before it arrives.
+ * @returns whether the selected provider's preparation phase allows a call.
+ */
 export function providerUsable(catalog: {
   providers: readonly { id: unknown; preparation: { phase: string } }[]
   selection: { providerId: unknown }

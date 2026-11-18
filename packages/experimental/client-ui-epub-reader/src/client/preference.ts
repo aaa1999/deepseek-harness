@@ -7,20 +7,26 @@
 /** localStorage key holding `on` or `off`; absent means the default `on`. */
 const PAPER_KEY = 'epub-reader:paper'
 
-/** Read the paper tint preference; on unless the reader explicitly turned it off. */
+/**
+ * Read the paper tint preference; on unless the reader explicitly turned it off.
+ * @returns whether the paper tint renders behind the reading column.
+ */
 export function readPaperPreference(): boolean {
   try {
-    return globalThis.localStorage?.getItem(PAPER_KEY) !== 'off'
+    return globalThis.localStorage.getItem(PAPER_KEY) !== 'off'
   } catch {
     // Blocked storage (private mode, disabled) keeps the in-memory default.
     return true
   }
 }
 
-/** Persist the paper tint preference for the next reader session. */
+/**
+ * Persist the paper tint preference for the next reader session.
+ * @param on - whether the paper tint renders behind the reading column.
+ */
 export function writePaperPreference(on: boolean): void {
   try {
-    globalThis.localStorage?.setItem(PAPER_KEY, on ? 'on' : 'off')
+    globalThis.localStorage.setItem(PAPER_KEY, on ? 'on' : 'off')
   } catch {
     // Blocked storage only loses the choice across reloads.
   }
@@ -29,19 +35,25 @@ export function writePaperPreference(on: boolean): void {
 /** localStorage key holding `sans` (PingFang-led) or `serif`; absent means the default `sans`. */
 const FONT_KEY = 'epub-reader:font'
 
-/** Read the reading typeface preference; PingFang-led sans unless the reader chose the serif stack. */
+/**
+ * Read the reading typeface preference; PingFang-led sans unless the reader chose the serif stack.
+ * @returns whether chapters render in the sans typeface.
+ */
 export function readSansFontPreference(): boolean {
   try {
-    return globalThis.localStorage?.getItem(FONT_KEY) !== 'serif'
+    return globalThis.localStorage.getItem(FONT_KEY) !== 'serif'
   } catch {
     return true
   }
 }
 
-/** Persist the reading typeface preference for the next reader session. */
+/**
+ * Persist the reading typeface preference for the next reader session.
+ * @param sans - whether chapters render in the sans typeface.
+ */
 export function writeSansFontPreference(sans: boolean): void {
   try {
-    globalThis.localStorage?.setItem(FONT_KEY, sans ? 'sans' : 'serif')
+    globalThis.localStorage.setItem(FONT_KEY, sans ? 'sans' : 'serif')
   } catch {
     // Blocked storage only loses the choice across reloads.
   }
@@ -53,7 +65,10 @@ export const ZOOM_STEPS: readonly number[] = [0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75
 /** localStorage key holding one zoom stop, e.g. `1.25`; absent means the default 1. */
 const ZOOM_KEY = 'epub-reader:zoom'
 
-/** Read the zoom preference; a stored value off the ladder snaps back to the default. */
+/**
+ * Read the zoom preference; a stored value off the ladder snaps back to the default.
+ * @returns the zoom stop the reader last chose, or 1 when none is stored.
+ */
 export function readZoomPreference(): number {
   try {
     const raw = globalThis.localStorage.getItem(ZOOM_KEY)
@@ -64,7 +79,10 @@ export function readZoomPreference(): number {
   }
 }
 
-/** Persist the zoom preference for the next reader session. */
+/**
+ * Persist the zoom preference for the next reader session.
+ * @param zoom - the zoom stop to store; a value off the ladder reads back as the default.
+ */
 export function writeZoomPreference(zoom: number): void {
   try {
     globalThis.localStorage.setItem(ZOOM_KEY, String(zoom))

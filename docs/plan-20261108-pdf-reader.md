@@ -1,28 +1,29 @@
 ---
-日期：2026-11-08
-分支：dev
-状态：执行中
+date: 2026-11-08
+branch: dev
+status: in progress
 ---
 
-# PDF 阅读器插件 · 设计方案
+# PDF reader plugin · design plan
 
-## 1. 目标与范围
+English | [中文](plan-20261108-pdf-reader.zh.md)
 
-做一个 DSH 组合包插件 `dsh-pdf-reader`：导入 PDF → 书架 → 单页阅读。核心是两个标注闭环：
+## 1. Goals and scope
 
-- **文本闭环**（对齐 epub 插件）：文本层选词 → 右键「翻译 / 解释」→ 流式进右栏 → 划线持久化 + 正文高亮回显
-- **截图闭环**（新增）：内置截图小工具，在页面上框选区域 → 裁剪成图 → 连问题发给 vision 模型 → 流式回答 + 截图卡片持久化
-- **模型可指定**：文本模型与截图模型分别指定，留空跟随默认
-- **工作区间**：导入即复制进插件自管目录（同 epub），存储目录可在面板设置里指定
+Build a DSH composition bundle plugin `dsh-pdf-reader`: import PDF → bookshelf → single-page reading. The core is two annotation loops:
 
-v1 范围：书架（导入/删除/进度）、单页阅读（目录书签、上下页、跳页、缩放、进度记忆）、划词翻译/解释（流式）、截图框选提问（流式）、标注持久化与回看。
-暂不做：连续滚动、双页平铺、注释导出、表单填写、标注搜索（列升级路径）。
+- **Text loop** (aligned with the epub plugin): select text in the text layer → right-click "Translate / Explain" → streams into the right pane → highlight persistence + highlight re-rendering in the body text
+- **Screenshot loop** (new): a built-in screenshot tool drag-selects a region on the page → crops it into an image → sends it with a question to a vision model → streaming answer + persisted screenshot card
+- **Model selection**: the text model and the screenshot model are specified separately; left empty they follow the default
+- **Workspace**: importing copies into the plugin-managed directory (same as epub), and the storage directory can be specified in the panel settings
 
-## 2. 交互设计
+The v1 scope covers the bookshelf (import/delete/progress), single-page reading (TOC bookmarks, previous/next page, page jump, zoom, progress memory), selection translate/explain (streaming), screenshot region-select questioning (streaming), and annotation persistence and review. Out of scope for now: continuous scrolling, two-page tiling, annotation export, form filling, and annotation search (listed as upgrade paths).
 
-### 2.1 入口与布局
+## 2. Interaction design
 
-入口同 epub：左侧栏新面板（`sidebar.panellist` + main slot，`PANEL_ID = 'pdfReader'`），内部书架 / 阅读两级视图。
+### 2.1 Entry and layout
+
+The entry matches epub: a new left-sidebar panel (`sidebar.panellist` + main slot, `PANEL_ID = 'pdfReader'`), with bookshelf / reading as the two internal view levels.
 
 ```text
 ┌─ 阅读视图（单页两栏）────────────────────────────────┐
@@ -42,22 +43,22 @@ v1 范围：书架（导入/删除/进度）、单页阅读（目录书签、上
 └──────────────────────────────────────────────────────┘
 ```
 
-交互细节：
+Interaction details:
 
-- **划词 → 右键**：`ContextMenuTargetMap` 新增 target family `pdfSelection`，菜单项「翻译」「解释」，与 epub 同型。
-- **截图小工具**：工具条 ✂ 按钮（快捷键 S）进入框选模式，光标变十字，页面拖矩形；松开后原位浮出提问框——输入框 + 快捷动作（解释内容 / 翻译图中文字 / 自由提问），Enter 发送、Esc 取消。裁剪按当前缩放换算回页面原始坐标，2× devicePixelRatio 输出 PNG。
-- **标注栏卡片两类**：文本卡（原文引用 + 翻译/解释 Tab 流式，同 epub）＋ 截图卡（缩略图 + 问题 + 流式回答 + 重新生成/复制/删除/跳回该页）。
-- **回显**：文本划线在文本层加下划线式弱高亮；截图标注在对应页工具条角标记数，悬停卡片平滑跳页。
-- **进度**：页码防抖自动保存，书架显示进度，打开直接续读。
-- 响应式与可达性同 epub：窄面板标注栏收抽屉、尊重 reduced-motion、全程键盘可达。
+- **Selection → right-click**: `ContextMenuTargetMap` gains the target family `pdfSelection` with the menu items "Translate" and "Explain", the same shape as epub.
+- **Screenshot tool**: the toolbar ✂ button (shortcut S) enters region-select mode, the cursor turns into a crosshair, and a rectangle is dragged across the page; on release, a question box pops out in place — an input plus quick actions (explain the content / translate the text in the image / ask freely), Enter sends, Esc cancels. The crop is converted back to the page's original coordinates at the current zoom and outputs PNG at 2× devicePixelRatio.
+- **Two annotation-pane card kinds**: text cards (source quote + translate/explain tabs streaming, as in epub) + screenshot cards (thumbnail + question + streaming answer + regenerate/copy/delete/jump back to that page).
+- **Re-rendering**: text highlights get an underline-style weak highlight in the text layer; screenshot annotations show a count badge on the corresponding page's toolbar corner, and hovering a card smoothly jumps to that page.
+- **Progress**: the page number auto-saves with debounce; the bookshelf shows progress, and opening a book resumes reading directly.
+- Responsiveness and accessibility match epub: the annotation pane collapses into a drawer in a narrow panel, reduced-motion is respected, and everything is keyboard accessible.
 
-### 2.2 视觉方向
+### 2.2 Visual direction
 
-延续 epub「正文优先、铬件退后」：PDF 页面自带白底，面板用中性灰底衬托页面阴影，做出「纸」的物理感；标注栏是安静笔记纸；全局强调色只给一处——划线高亮与截图矩形框共用。
+Continues epub's "body content first, UI chrome receding": the PDF page carries its own white ground, and the panel uses a neutral gray ground to set off the page shadow, producing the physical feel of "paper"; the annotation pane is quiet note paper; the global accent color goes to exactly one place — shared by the highlight color and the screenshot rectangle.
 
-## 3. 总体架构
+## 3. Overall architecture
 
-三包结构，完全对齐 epub-reader 三件套形态：
+A three-package structure, fully aligned with the epub-reader trio:
 
 ```text
 pdf-reader（Host 半区，Node）
@@ -80,50 +81,50 @@ pdf-reader-bundle（组合包）
    └─ cordis.patch.yml：host 服务行 + client UI 行（含模型默认值）
 ```
 
-数据流：
+Data flow:
 
-- **文本**：文本层选词 → 右键 → `ctx.remote.pdfReader.explain()` → Host 组 prompt（选词 + 页上下文 + 书名页码）→ `ctx.llm.stream` → 流式回推 → 卡片渲染 → `saveAnnotation` 落库。
-- **截图**：框选 → 裁剪 PNG → `ctx.remote.pdfReader.askImage()`（bytes 走 binary 参数）→ Host `ctx.attachments.saveImage` → `ctx.llm.stream`（image block + 问题）→ 流式回推 → 截图卡片 → 落库。
+- **Text**: select text in the text layer → right-click → `ctx.remote.pdfReader.explain()` → the Host assembles the prompt (the selection + page context + book title and page number) → `ctx.llm.stream` → streamed back → card rendering → `saveAnnotation` persists it.
+- **Screenshot**: drag-select → crop to PNG → `ctx.remote.pdfReader.askImage()` (the bytes travel as a binary argument) → the Host runs `ctx.attachments.saveImage` → `ctx.llm.stream` (image block + question) → streamed back → screenshot card → persisted.
 
-## 4. 关键技术决策
+## 4. Key technical decisions
 
-| # | 决策 | 理由与依据 |
+| # | Decision | Rationale and basis |
 |---|---|---|
-| 1 | **PDF 解析渲染全在浏览器**（pdfjs-dist 6.x），Host 只存字节 | pdf.js 是浏览器库，text layer 原生供选区；`ui-sidebar-documentpreview` 已验证 owned-Worker + TextLayerBuilder 路线，本仓库有成熟参照 |
-| 2 | **导入即复制**进插件自管目录，存储目录可在面板指定 | 已确认走 epub 式导入；沿用 EpubStore + `saveStorageSettings` 既有惯例 |
-| 3 | **PDF bytes 经 Remote binary 下发**，不开 Fetch 资源路由（除首页缩略图） | typert 协议原生支持 Uint8Array 二进制；书已在自管目录内，无路径穿越面 |
-| 4 | **单页翻页** | 已确认；渲染窗口恒为一页，内存可控；截图框选几何在单页坐标系内，简单可靠 |
-| 5 | **文本锚定 = 页码 + 页内纯文本偏移** + 引文哈希兜底 | epub 纯文本偏移方案按页改造；缩放/重渲染后稳定；失配降级为仅笔记不定位 |
-| 6 | **截图走 `ctx.attachments.saveImage` → ImageBlock** | 仓库唯一受支持的图片输入路径（ImageBlock 必须持附件引用），不做裸 base64 |
-| 7 | **模型两套配置**：文本 `provider/model` + 截图 `shotProvider/shotModel` | 截图需 vision；模型列表按 `inputModalities` 过滤；留空跟随 agentDefaultModel，不支持图片时返回明确错误码并引导设置 |
-| 8 | **护栏**：≤100MB、magic bytes 校验、加密/坏文件明确报错；无文本层的页引导用截图工具 | 扫描版 PDF 恰是截图工具的核心场景 |
+| 1 | **PDF parsing and rendering stay entirely in the browser** (pdfjs-dist 6.x); the Host only stores bytes | pdf.js is a browser library and its text layer natively supports selection; `ui-sidebar-documentpreview` has already validated the owned-Worker + TextLayerBuilder route, a mature in-repo reference |
+| 2 | **Importing copies** into the plugin-managed directory, and the storage directory is settable in the panel | Confirmed to follow the epub-style import; reuses the existing EpubStore + `saveStorageSettings` conventions |
+| 3 | **PDF bytes are delivered via Remote binary**, with no Fetch resource route (except first-page thumbnails) | The Typert protocol natively supports Uint8Array binary; the book already sits in the managed directory, so there is no path-traversal surface |
+| 4 | **Single-page paging** | Confirmed; the render window is always one page, keeping memory under control; the screenshot region geometry stays within single-page coordinates, simple and reliable |
+| 5 | **Text anchoring = page number + plain-text offset within the page** + a quote-hash fallback | The epub plain-text-offset scheme adapted per page; stable across zoom and re-rendering; a mismatch degrades to note-only, without re-location |
+| 6 | **Screenshots go through `ctx.attachments.saveImage` → ImageBlock** | The repo's only supported image input path (an ImageBlock must hold an attachment reference); no raw base64 |
+| 7 | **Two model configurations**: text `provider/model` + screenshot `shotProvider/shotModel` | Screenshots need vision; the model list is filtered by `inputModalities`; left empty they follow agentDefaultModel, and when images are unsupported an explicit error code is returned with guidance to the settings |
+| 8 | **Guardrails**: ≤100MB, magic-bytes validation, explicit errors for encrypted/broken files; pages without a text layer point to the screenshot tool | Scanned PDFs are precisely the screenshot tool's core scenario |
 
-## 5. 数据模型与 Remote API
+## 5. Data model and Remote API
 
 ```ts
-interface BookRow { bookId, title, pageCount, coverUrl /* 首页缩略图 */, outline: TocEntry[], progress: { page }, importedAt }
-interface TextAnnotation { id, bookId, page, start, end /* 页内文本偏移 */, quote, createdAt,
-                           results: { kind: 'translate'|'explain', text, model, createdAt }[] }
-interface ShotAnnotation { id, bookId, page, rect { x, y, w, h } /* 页面归一坐标 */, imageUrl,
-                           question, answer: { text, model, createdAt }, createdAt }
+interface PdfBookRow { bookId: string; title: string; pageCount: number; coverUrl: string /* 首页缩略图 */; outline: { title: string; page: number }[]; progress: { page: number }; importedAt: string }
+interface PdfTextAnnotation { id: string; bookId: string; page: number; start: number; end: number /* 页内文本偏移 */; quote: string; createdAt: string;
+                           results: { kind: 'translate' | 'explain'; text: string; model: string; createdAt: string }[] }
+interface PdfShotAnnotation { id: string; bookId: string; page: number; rect: { x: number; y: number; w: number; h: number } /* 页面归一坐标 */; imageUrl: string;
+                           question: string; answer: { text: string; model: string; createdAt: string }; createdAt: string }
 ```
 
-| Remote 方法 | 形态 | 说明 |
+| Remote method | Form | Notes |
 |---|---|---|
-| `list()` / `importBook(name, bytes)` / `removeBook(id)` | unary | 导入即复制 + 校验；页数/目录在 Host 用轻量解析提取 |
-| `pdfBytes(bookId)` | unary·binary | 完整 PDF 字节给浏览器 pdf.js |
-| `saveProgress` / `listAnnotations` / `saveTextAnnotation` / `saveShotAnnotation` / `deleteAnnotation` | unary | 持久化 |
-| `explain(bookId, page, kind, text, signal)` | **stream** | meta / delta / done，同 epub |
+| `list()` / `importBook(name, bytes)` / `removeBook(id)` | unary | Importing copies and validates immediately; page count/TOC are extracted on the Host with lightweight parsing |
+| `pdfBytes(bookId)` | unary·binary | The full PDF bytes for the browser's pdf.js |
+| `saveProgress` / `listAnnotations` / `saveTextAnnotation` / `saveShotAnnotation` / `deleteAnnotation` | unary | Persistence |
+| `explain(bookId, page, kind, text, signal)` | **stream** | meta / delta / done, as in epub |
 | `askImage(bookId, page, rect, pngBytes, question, signal)` | **stream** | meta / delta / done |
 
-错误码：`pdf/not-found`、`pdf/bad-file`、`pdf/too-large`、`pdf/encrypted`、`pdf/no-text-layer`、`pdf/no-vision-model`、`pdf/explain-failed`。
+Error codes: `pdf/not-found`, `pdf/bad-file`, `pdf/too-large`, `pdf/encrypted`, `pdf/no-text-layer`, `pdf/no-vision-model`, `pdf/explain-failed`.
 
-## 6. Prompt 设计
+## 6. Prompt design
 
-- 翻译/解释：沿用 epub 模板（书名、页码、前后文截断保护，选区超长转整段策略）。
-- 截图：默认问题「解释这张 PDF 截图中的内容」，快捷动作「翻译图中文字」，支持自由提问；prompt 附书名/页码元数据。
+- Translate/explain: reuse the epub templates (book title, page number, surrounding-context truncation protection, and the over-long-selection switch to the whole-paragraph strategy).
+- Screenshot: the default question is "Explain the content of this PDF screenshot", the quick action "Translate the text in the image", with free-form questions supported; the prompt carries book-title/page-number metadata.
 
-## 7. 插件配置
+## 7. Plugin config
 
 ```yaml
 dataRoot: ''
@@ -135,23 +136,23 @@ maxSelectionChars: 2000
 maxOutputTokens: 2048
 ```
 
-## 8. 包结构与交付
+## 8. Package structure and delivery
 
-`pdf-reader` / `client-ui-pdf-reader` / `pdf-reader-bundle` 三包，包结构、测试布局（fixture 解析/锚定/控制器 + client 组件测试，LLM 走 mock adapter）、打包交付（`dsh plugin add`）全部对齐 epub-reader 三件套。
+The three packages `pdf-reader` / `client-ui-pdf-reader` / `pdf-reader-bundle` align fully with the epub-reader trio in package structure, test layout (fixture parsing/anchoring/controller + client component tests, with the LLM behind a mock adapter), and packaged delivery (`dsh plugin add`).
 
-## 9. 实施阶段
+## 9. Implementation stages
 
-| 阶段 | 内容 | 产出 |
+| Stage | Content | Output |
 |---|---|---|
-| M1 | Host：导入复制/存储/bytes/目录 Remote；client 书架、单页 pdf.js 渲染、翻页缩放跳页、进度记忆 | 能导能读 |
-| M2 | 文本层选区 → 右键 → explain 流式 → 标注卡片 + 划线持久化高亮回显 | 文本闭环 |
-| M3 | 截图工具框选 + 提问框 → askImage 流式 → 截图卡片；模型指定 UI（vision 过滤）；存储目录设置、i18n、可达性、测试补齐、打包验证 | 可交付 |
+| M1 | Host: import-copy/storage/bytes/TOC Remote; client bookshelf, single-page pdf.js rendering, paging/zoom/page jump, progress memory | Books can be imported and read |
+| M2 | Text-layer selection → right-click → streaming explain → annotation cards + highlight persistence and re-rendering | Text loop |
+| M3 | Screenshot-tool region select + question box → streaming askImage → screenshot cards; model-selection UI (vision filtering); storage-directory settings, i18n, accessibility, test completion, packaging verification | Deliverable |
 
-风险与备选：扫描版无文本层（截图路径兜底，正是卖点）；超大 PDF（单页窗口 + 目录懒解析控制）；vision 模型不可用（明确错误码 + 设置引导）。
+Risks and alternatives: scanned PDFs without a text layer (the screenshot path is the fallback — and precisely the selling point); oversized PDFs (the single-page window + lazy TOC parsing keep it controlled); the vision model being unavailable (explicit error code + settings guidance).
 
-## 已确认决策（2026-11-08）
+## Confirmed decisions (2026-11-08)
 
-- 工作区间：跟 epub 一样导入复制（存储目录可在面板设置里指定）。
-- 阅读模式：单页翻页。
-- 截图默认动作：先弹提问框。
-- 工作区：DSH 源码仓内开发（/Users/lwc/Desktop/code/github/deepseek-harness，dev 分支）。
+- Workspace: importing copies as in epub (the storage directory can be set in the panel settings).
+- Reading mode: single-page paging.
+- Screenshot default action: pop the question box first.
+- Workspace: developed inside the DSH source repo (/Users/lwc/Desktop/code/github/deepseek-harness, dev branch).

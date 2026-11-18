@@ -24,6 +24,7 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [persistence.md](persistence.md) | the durability seam: `SessionPersistence`, the JSONL provider, `session/flush`, crash recovery, `SessionHeader` |
 | [settings.md](settings.md) | the user-settings seam: `SettingsNamespace` registration, layered resolution (defaults → composition `base` → user document), owner scopes, hot commits |
 | [credentials.md](credentials.md) | the credential seam: `CredentialRef` references (never values) in configuration, per-operation resolution, UI-safe `CredentialInfo`, provider source layers |
+| [account.md](account.md) | the DeepSeek account: browser sign-in state, the stored grant, Host-only request credentials for the account model route and the web providers, and the Platform session projection |
 | [session-query.md](session-query.md) | logical records, bounded exact-event reads, relationship traces, semantic filters/documents, and full-text result pages |
 | [feedback.md](feedback.md) | lifecycle-bound per-message feedback records, optimistic versions, sidecar persistence, and the Host Remote contract |
 | [session-title.md](session-title.md) | durable title snapshots, cited source-message seqs, and the asynchronous provider contract |
@@ -50,6 +51,9 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [compaction.md](compaction.md) | the compaction seam: the `compaction/*` session events, `CompactionResult`, the `CompactionEngine` interface |
 | [subagent.md](subagent.md) | the subagent seam: the named-provider registry, `SubagentStartRequest`/`Result`/`Run`, the start-time-vs-runtime capability split |
 | [voice-input.md](voice-input.md) | experimental named recognizers, transient audio and revision-guarded draft insertion |
+| [voice-chat.md](voice-chat.md) | experimental realtime voice conversation: the synthesizer registry, auto-submitted transcript turns, read-aloud replies, and speech-onset interruption |
+| [pdf-reader.md](pdf-reader.md) | experimental PDF library: import and shelf rows, browser PDF.js parse with reported structure, text highlights and screenshot questions |
+| [epub-reader.md](epub-reader.md) | experimental EPUB library: import and shelf rows, sanitized chapters with book-served resources, and highlight treatments |
 | [translation.md](translation.md) | experimental anonymous text translation and explicit provider requests |
 | [agent-team.md](agent-team.md) | Agent Teams: shared task DAG and task ownership for a subagent tree |
 | [liveshare.md](liveshare.md) | the opt-in LiveShare bundle: nested share modes, a fork's ceiling and durability, enforcement installation, and the constraint a shared Session's externally driven turns run under |

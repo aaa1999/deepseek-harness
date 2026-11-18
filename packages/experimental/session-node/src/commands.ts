@@ -12,8 +12,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { CommandDefinitionId } from '@deepseek-ai/dsh-commands/brand'
-import type { CommandInvocation, CommandResult } from '@deepseek-ai/dsh-commands'
+import { CommandDefinitionId, type CommandInvocation, type CommandResult } from '@deepseek-ai/dsh-commands'
 import { SessionNodeError } from './runtime.ts'
 import type { SessionNode } from './types.ts'
 

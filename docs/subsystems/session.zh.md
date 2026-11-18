@@ -988,6 +988,15 @@ workspaceDesktop(): { name: string; available: boolean; fileManager: 'finder' | 
 @Remote('prompt') async prompt(request: SessionPromptRequest, signal: AbortSignal): Promise<SessionPromptValue>
 
 /**
+ * Revise one already-sent user message: an idle Session re-runs from the
+ * amended message; a Session paused for human input applies the revision in
+ * place for the next model request.
+ * @param request - Session identity, revised text, target message identity, and correlation.
+ * @returns acknowledgement that the Agent accepted the amendment.
+ */
+@Remote('amend') async amend(request: SessionAmendRequest): Promise<SessionAmendValue>
+
+/**
  * Read one image from the attachment store after gateway authorization.
  * @param request - image reference and gateway permission scope; Session existence is not checked.
  * @returns the durable attachment reference and base64-encoded bytes.
@@ -1104,6 +1113,57 @@ registerExclusion(exclude: SessionLogUploadExclusion): () => Promise<void>
 ```
 
 Source: [`packages/session/session-log-deepseek/src/index.ts`](../../packages/session/session-log-deepseek/src/index.ts)
+
+<a id="ctxsessionnodes--sessionnodeservice"></a>
+
+### `ctx.sessionNodes` — `SessionNodeService`
+
+Global saved-node registry (`ctx.sessionNodes`). Startup opens the durable storage domain and rebuilds the in-memory cache; all reads are synchronous from that cache and every mutation persists through the domain write chain.
+
+The service is also the Remote owner: the `@Remote` methods below export the `ctx.remote.sessionNodes` namespace for GUI clients, while the same methods remain directly callable by host plugins (the `/save-node` command plugin calls them in-process).
+
+```ts cordis-catalog
+/**
+ * Save one history node of a session under its project (workspace).
+ * @param input - source session, optional title/note, and optional exact boundary.
+ * @returns the created node.
+ */
+@Remote('save') async save(input: SaveNodeInput): Promise<SessionNode>
+
+/**
+ * List every saved node in durable order (most recently saved first).
+ * @returns the saved nodes in durable order.
+ */
+@Remote('list') list(): SessionNode[]
+
+/**
+ * Delete one saved node. Idempotent: an unknown id resolves `false`.
+ * The wire export is `delete`: `remove` is reserved by the client's
+ * Remote namespace service.
+ * @param id - node identity.
+ * @returns `true` when a record was deleted.
+ */
+@Remote('delete') async remove(id: SessionNodeId): Promise<boolean>
+
+/**
+ * Rename one saved node.
+ * @param id - node identity.
+ * @param title - new label; trimmed, and rejected when it empties.
+ * @returns the updated node.
+ */
+@Remote('rename') async rename(id: SessionNodeId, title: string): Promise<SessionNode>
+
+/**
+ * Fork a new session from a saved node, attached to the source's workspace
+ * (project). The child inherits the saved prefix exactly, with synthetic
+ * closers for any open turn at the boundary.
+ * @param id - node identity.
+ * @returns the new forked session identity.
+ */
+@Remote('fork') async fork(id: SessionNodeId): Promise<ForkNodeResult>
+```
+
+Source: [`packages/experimental/session-node/src/index.ts`](../../packages/experimental/session-node/src/index.ts)
 
 <a id="ctxsessions--sessionstore"></a>
 
@@ -1454,4 +1514,25 @@ Awaited parallel durability checkpoint: every listener runs and the caller await
 Types: [Scoped](scope.zh.md)
 
 Source: [`packages/core/session/src/index.ts`](../../packages/core/session/src/index.ts)
+
+<a id="timeline-events"></a>
+
+### `timeline/*` events
+
+<a id="timelinepriority--emit"></a>
+
+#### `timeline/priority` — emit
+
+A saved user edit entered or left P0. Model task patches do not emit it.
+
+```ts cordis-catalog
+/**
+ * A saved user edit entered or left P0. Model task patches do not emit it.
+ * @mode emit
+ * @param session - the session that owns the task.
+ */
+'timeline/priority'(session: Session): void
+```
+
+Source: [`packages/experimental/timeline/src/storage.ts`](../../packages/experimental/timeline/src/storage.ts)
 <!-- END GENERATED cordis-surface -->

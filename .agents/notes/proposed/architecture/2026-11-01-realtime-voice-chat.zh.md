@@ -78,6 +78,14 @@ Status: proposed
 5. e2e 测试（复用 voice-input 的脚手架模式，伪造麦克风流）与文档（subsystems + i18n）。
 6. 阶段 2：流式 ASR / 流式上行 / 流式 TTS。
 
+## 考虑过的替代方案
+
+- **直接做字级流式，跳过闭环阶段。** 用户要求真实时，但每个流式环节都需要新的宿主机制：`OnlineRecognizer` 加流式 Zipformer 模型、`wireStream` 音频上行、TTS 分块传输。阶段 1 完全用既有部件闭环——浏览器持续拾音、SenseVoice 一次识别（1–5 秒段落通常低于 1 秒）、离线 TTS——流式作为升级放到阶段 2，而不是前置依赖。
+- **阶段 1 就把 Silero VAD 放在宿主端。** 宿主端 VAD 需要阶段 2 才引入的音频上行。浏览器能量 VAD 零新增依赖，SenseVoice 内部 Silero 会对提交的区段重新精确切分，浏览器只需大致圈出说话区段；阶段 2 再随流式 ASR 一起把 VAD 移到宿主端。
+- **默认 TTS 模型用 `kokoro-multi-lang-v1_0`。** 质量更好，但 350 MB 对 `vits-melo-tts-zh_en` 的 167 MB，后者已覆盖 STT 侧选定的中英偏好。provider 模式让 kokoro 保持为可配置的替代选项。
+- **打断时不取消活跃 turn。** 只停播、让生成继续，可以保留部分回复。默认选择停播、取消未完成的 TTS 请求并调用 `session.cancel()`，让用户的新语音立即提交；配置开关可选择更温和的行为。
+- **扩展现有 `voice-input-bundle`。** 语音输入作为独立的一次性听写仍然有用，保持自己的默认关闭激活；单独的 `voice-chat-bundle` 组合通话循环而不改动它，两者共享 `dataRoot/models` 缓存约定。
+
 ## 验收标准
 
 - 开启通话模式后持续说话，VAD 自动断句，识别文本自动提交，无需点击发送。
@@ -86,7 +94,7 @@ Status: proposed
 - 模型未准备时引导下载并显示进度；取消、退出通话、切换 Session、页面隐藏都释放麦克风。
 - 单测与 e2e 通过；语音输入既有行为不回归。
 
-## 风险与未决
+## 风险
 
 - 浏览器能量 VAD 对背景噪声敏感：采用自适应噪声门限，并依赖 SenseVoice 内部 Silero 兜底；极端噪声环境体验差，属阶段 2 宿主端 Silero 解决。
 - TTS 模型 167 MB 首次下载耗时；sha256 与字节数需在实现时下载一次后固化进 `runtime/assets.json`。

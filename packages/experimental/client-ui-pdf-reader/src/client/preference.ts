@@ -12,7 +12,10 @@ export type ReadingMode = 'scroll' | 'flip'
 /** localStorage key holding `scroll` or `flip`; absent means the default `scroll`. */
 const MODE_KEY = 'pdf-reader:mode'
 
-/** Read the reading-mode preference; scroll unless the reader explicitly chose flip. */
+/**
+ * Read the reading-mode preference; scroll unless the reader explicitly chose flip.
+ * @returns the stored reading mode, or `scroll` when none is stored.
+ */
 export function readReadingMode(): ReadingMode {
   try {
     return globalThis.localStorage.getItem(MODE_KEY) === 'flip' ? 'flip' : 'scroll'
@@ -22,7 +25,10 @@ export function readReadingMode(): ReadingMode {
   }
 }
 
-/** Persist the reading-mode preference for the next reader session. */
+/**
+ * Persist the reading-mode preference for the next reader session.
+ * @param mode - the reading mode the reading pane presents pages in.
+ */
 export function writeReadingMode(mode: ReadingMode): void {
   try {
     globalThis.localStorage.setItem(MODE_KEY, mode)
@@ -34,7 +40,10 @@ export function writeReadingMode(mode: ReadingMode): void {
 /** localStorage key holding the marker color; absent means the default `yellow`. */
 const COLOR_KEY = 'pdf-reader:color'
 
-/** Read the marker-color preference; yellow unless the reader explicitly chose another. */
+/**
+ * Read the marker-color preference; yellow unless the reader explicitly chose another.
+ * @returns the stored palette color, or `yellow` when none is stored.
+ */
 export function readAnnotationColor(): HighlightColor {
   try {
     const held = globalThis.localStorage.getItem(COLOR_KEY)
@@ -45,7 +54,10 @@ export function readAnnotationColor(): HighlightColor {
   }
 }
 
-/** Persist the marker-color preference for the next reader session. */
+/**
+ * Persist the marker-color preference for the next reader session.
+ * @param color - the palette color highlights paint with.
+ */
 export function writeAnnotationColor(color: HighlightColor): void {
   try {
     globalThis.localStorage.setItem(COLOR_KEY, color)

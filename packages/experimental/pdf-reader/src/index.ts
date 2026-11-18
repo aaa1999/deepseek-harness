@@ -261,6 +261,7 @@ export default class PdfReaderController extends TypertRemoteService {
    * The browser's first-open structure report: title, page count, and outline.
    * @param bookId - the book the browser opened.
    * @param report - the PDF.js-resolved structure.
+   * @returns the stored book row.
    */
   @Remote
   async saveBookMeta(bookId: string, report: MetaReport): Promise<BookRow> {
@@ -273,10 +274,14 @@ export default class PdfReaderController extends TypertRemoteService {
       throw new RemoteError('pdf/invalid-request', 'Outline is not a bounded entry list', { reason: 'outline' })
     }
     for (const entry of report.outline) {
-      if (typeof entry?.title !== 'string' || entry.title.length > 300) {
+      if (typeof entry !== 'object' || entry === null) {
         throw new RemoteError('pdf/invalid-request', 'Outline entry title is malformed', { reason: 'outline' })
       }
-      if (!Number.isInteger(entry.page) || entry.page < 1 || entry.page > pageCount) {
+      const candidate = entry as { title?: unknown; page?: unknown }
+      if (typeof candidate.title !== 'string' || candidate.title.length > 300) {
+        throw new RemoteError('pdf/invalid-request', 'Outline entry title is malformed', { reason: 'outline' })
+      }
+      if (typeof candidate.page !== 'number' || !Number.isInteger(candidate.page) || candidate.page < 1 || candidate.page > pageCount) {
         throw new RemoteError('pdf/invalid-request', 'Outline entry page is out of range', { reason: 'outline' })
       }
     }
@@ -301,6 +306,7 @@ export default class PdfReaderController extends TypertRemoteService {
   /**
    * The complete stored bytes of one book, for the browser's PDF.js parse.
    * @param bookId - the book to read.
+   * @returns the book's PDF bytes.
    */
   @Remote
   async pdfBytes(bookId: string): Promise<PdfBytes> {
@@ -391,6 +397,7 @@ export default class PdfReaderController extends TypertRemoteService {
    * @returns the resolved data root and whether this profile can move it.
    */
   @Remote
+  // oxlint-disable-next-line typescript/require-await -- the Remote face requires a Promise return; the metadata resolves without awaiting
   async storage(): Promise<StorageMeta> {
     return {
       directory: this.resolveDataRoot(),
@@ -457,6 +464,7 @@ export default class PdfReaderController extends TypertRemoteService {
    * Treat one text selection with the LLM service, streaming text deltas.
    * @param request - the selection, its kind, and its page context.
    * @param signal - Client cancellation for the whole stream.
+   * @returns an async iterator over the treatment chunks.
    * @yields one meta chunk, text deltas, then a done chunk.
    */
   @Remote({ mode: 'stream' })
@@ -503,6 +511,7 @@ export default class PdfReaderController extends TypertRemoteService {
    * Answer one screenshot question, storing the crop and streaming text deltas.
    * @param request - the page region, its PNG, and the question.
    * @param signal - Client cancellation for the whole stream.
+   * @returns an async iterator over the treatment chunks.
    * @yields one meta chunk, text deltas, then a done chunk carrying the crop URL.
    */
   @Remote({ mode: 'stream' })
@@ -661,15 +670,19 @@ export default class PdfReaderController extends TypertRemoteService {
     }
   }
 
-  /** Require a rect inside the unit page box. */
-  private expectRect(rect: ShotRect): void {
-    const numbers = [rect?.x, rect?.y, rect?.width, rect?.height]
+  /**
+   * Require a rect inside the unit page box.
+   * @param rect - the wire-reported region; hostile input may omit it, which reports as malformed.
+   */
+  private expectRect(rect: ShotRect | undefined): void {
+    const numbers: unknown[] = [rect?.x, rect?.y, rect?.width, rect?.height]
     if (numbers.some(value => typeof value !== 'number' || !Number.isFinite(value))) {
       throw new RemoteError('pdf/invalid-request', 'Screenshot rect is malformed', { reason: 'rect' })
     }
-    if (rect.x < 0 || rect.y < 0 || rect.width <= 0 || rect.height <= 0
-      || rect.x + rect.width > 1.001 || rect.y + rect.height > 1.001
-      || rect.width > 1 || rect.height > 1) {
+    const { x, y, width, height } = rect as ShotRect
+    if (x < 0 || y < 0 || width <= 0 || height <= 0
+      || x + width > 1.001 || y + height > 1.001
+      || width > 1 || height > 1) {
       throw new RemoteError('pdf/invalid-request', 'Screenshot rect escapes the page box', { reason: 'rect' })
     }
   }
@@ -730,7 +743,12 @@ export default class PdfReaderController extends TypertRemoteService {
     })
   }
 
-  /** Answer `GET ${COVER_PATH}?book=<id>` and `GET ${SHOT_PATH}?book=<id>&id=<annotation>` with one stored PNG. */
+  /**
+   * Answer `GET ${COVER_PATH}?book=<id>` and `GET ${SHOT_PATH}?book=<id>&id=<annotation>` with one stored PNG.
+   * @param request - the incoming GET request.
+   * @param kind - which image route the request addressed.
+   * @returns the PNG response, or a 400/404 error response.
+   */
   async serveImage(request: Request, kind: 'cover' | 'shot'): Promise<Response> {
     const params = new URL(request.url).searchParams
     const bookId = params.get('book') ?? ''

@@ -29,6 +29,7 @@ export type SessionNodeErrorCode =
 
 /** Domain error for rejected session-node operations. */
 export class SessionNodeError extends Error {
+  /** Which precondition the operation failed on. */
   readonly code: SessionNodeErrorCode
 
   constructor(message: string, code: SessionNodeErrorCode) {

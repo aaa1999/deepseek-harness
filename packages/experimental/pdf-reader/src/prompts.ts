@@ -29,8 +29,8 @@ function clip(text: string, cap: number): string {
   return text.length <= cap ? text : `${text.slice(0, cap)}…`
 }
 
-/** The book-and-page provenance line shared by every prompt kind. */
-function provenance(context: PromptContext): string {
+/** The book-and-page identity line shared by every prompt kind. */
+function bookAndPage(context: PromptContext): string {
   const book = `书名《${context.title}》`
   return context.pageLabel === '' ? book : `${book}，${context.pageLabel}`
 }
@@ -44,13 +44,13 @@ function provenance(context: PromptContext): string {
 export function systemPromptFor(kind: ExplainRequest['kind'], context: PromptContext): string {
   if (kind === 'translate') {
     return [
-      `你是一位忠于原作的翻译。读者正在阅读${provenance(context)}的 PDF，会给你一段选中的原文及其上下文。`,
+      `你是一位忠于原作的翻译。读者正在阅读${bookAndPage(context)}的 PDF，会给你一段选中的原文及其上下文。`,
       `把选段翻译成${context.targetLanguage}：忠实原意，保留语气、修辞与人称；术语按文档领域惯用译法。`,
       '只输出译文本身，不要加注释、标题或原文重复。',
     ].join('\n')
   }
   return [
-    `你是一位耐心的讲解老师。读者正在阅读${provenance(context)}的 PDF，会给你一段选中的原文及其上下文。`,
+    `你是一位耐心的讲解老师。读者正在阅读${bookAndPage(context)}的 PDF，会给你一段选中的原文及其上下文。`,
     `用${context.targetLanguage}讲解这个选段，按以下结构输出：`,
     '1. 释义：逐个解释关键词和短语在此处的意思（含术语、缩写、典故的来历）',
     '2. 结构：说明句子或公式的结构，指出不常见的用法',
@@ -80,7 +80,7 @@ export function userPromptFor(request: ExplainRequest): string {
  */
 export function shotSystemPrompt(context: PromptContext): string {
   return [
-    `你是读者的 PDF 阅读助手。读者正在阅读${provenance(context)}，从页面上截取了一块区域发给你，并附有一个问题。`,
+    `你是读者的 PDF 阅读助手。读者正在阅读${bookAndPage(context)}，从页面上截取了一块区域发给你，并附有一个问题。`,
     `读取截图中的文字与图形，用${context.targetLanguage}回答问题。截图里是外文时，翻译要完整准确；问题开放时，解释要具体、贴合这页内容。`,
   ].join('\n')
 }

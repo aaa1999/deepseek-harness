@@ -16,7 +16,11 @@ interface TextSpan { readonly node: Text; readonly start: number; readonly end: 
 /** The concatenated plain-text stream of one rendered page. */
 export interface TextMap { readonly spans: readonly TextSpan[]; readonly total: number }
 
-/** Map every text node under `root` into one offset-addressable stream. */
+/**
+ * Map every text node under `root` into one offset-addressable stream.
+ * @param root - rendered page's PDF.js text layer.
+ * @returns the page's text spans and the concatenated stream length.
+ */
 export function mapText(root: Element): TextMap {
   const spans: TextSpan[] = []
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
@@ -38,7 +42,13 @@ function offsetOf(map: TextMap, node: Node, offset: number): number | undefined 
   return undefined
 }
 
-/** Resolve one `[start, end)` global offset pair into a DOM range, or null when it no longer lands. */
+/**
+ * Resolve one `[start, end)` global offset pair into a DOM range.
+ * @param map - page stream produced by {@link mapText}.
+ * @param start - inclusive start offset into the stream.
+ * @param end - exclusive end offset into the stream.
+ * @returns the DOM range covering the offsets, or null when the pair no longer lands on the page.
+ */
 export function rangeOf(map: TextMap, start: number, end: number): Range | null {
   if (start < 0 || end <= start || end > map.total) return null
   let begin: { node: Text; offset: number } | undefined
@@ -66,7 +76,13 @@ export interface PageSelection {
   readonly context: string
 }
 
-/** Clip the page stream to a window around one selection for prompt context. */
+/**
+ * Clip the page stream to a window around one selection for prompt context.
+ * @param map - page stream produced by {@link mapText}.
+ * @param start - inclusive start offset of the selection.
+ * @param end - exclusive end offset of the selection.
+ * @returns whitespace-collapsed text within the context window, capped at 1600 characters.
+ */
 export function contextOf(map: TextMap, start: number, end: number): string {
   const pieces: string[] = []
   let cursor = 0
@@ -82,7 +98,12 @@ export function contextOf(map: TextMap, start: number, end: number): string {
   return pieces.join('').replace(/\s+/gu, ' ').trim().slice(0, 1600)
 }
 
-/** Capture the current selection as page offsets plus prompt context, or null outside it. */
+/**
+ * Capture the current selection as page offsets plus prompt context.
+ * @param container - rendered text layer a selection must fall inside.
+ * @param map - page stream produced by {@link mapText}.
+ * @returns the selection's offsets, text, and windowed context, or null when nothing is selected inside `container`.
+ */
 export function captureSelection(container: HTMLElement, map: TextMap): PageSelection | null {
   const selection = document.getSelection()
   if (selection === null || selection.rangeCount === 0) return null
@@ -133,7 +154,10 @@ export function paintHighlights(
   }
 }
 
-/** Drop every painted annotation highlight. */
+/**
+ * Drop every painted annotation highlight.
+ * @param layer - the overlay element whose marker rectangles are removed; null skips painting.
+ */
 export function clearHighlights(layer: HTMLElement | null): void {
   layer?.replaceChildren()
 }

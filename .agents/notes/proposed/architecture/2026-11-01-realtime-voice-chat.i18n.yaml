@@ -29,9 +29,12 @@
 /agent-note-realtime-voice-chat-spoken-turns/plan:
   en: b9fd6a0b9e6888d6
   zh: 6a00503450f5c231
+/agent-note-realtime-voice-chat-spoken-turns/alternatives-considered:
+  en: 90d2c9ef86b9f106
+  zh: fc19ff74799b0855
 /agent-note-realtime-voice-chat-spoken-turns/acceptance-criteria:
   en: e5376f2779471723
   zh: 0871092acd6a8dc6
-/agent-note-realtime-voice-chat-spoken-turns/risks-and-open-questions:
-  en: d9e57d26649303c8
-  zh: 4e6cf6b85581b8cd
+/agent-note-realtime-voice-chat-spoken-turns/risks:
+  en: ccf526e23004a1a3
+  zh: 4cb5a69177b8f5ad

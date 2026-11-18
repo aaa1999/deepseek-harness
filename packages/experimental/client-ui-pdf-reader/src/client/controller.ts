@@ -134,6 +134,7 @@ function errorText(error: unknown): string {
  * treatments, and the debounced progress save pass through here.
  */
 export class ReaderController {
+  /** The snapshot store the reader panel subscribes to. */
   readonly store: SnapshotStore<PdfReaderState> = createSnapshotStore<PdfReaderState>({
     view: 'library',
     mode: readReadingMode(),
@@ -179,7 +180,10 @@ export class ReaderController {
     }
   }
 
-  /** Import every PDF of a picked file list, then refresh the shelf. */
+  /**
+   * Import every PDF of a picked file list, then refresh the shelf.
+   * @param files - picked files; names not ending in `.pdf` are skipped.
+   */
   importFiles(files: readonly File[]): void {
     const accepted = files.filter(file => /\.pdf$/iu.test(file.name))
     if (accepted.length === 0) return
@@ -200,7 +204,10 @@ export class ReaderController {
     void run
   }
 
-  /** Remove one book; the shelf refresh keeps the remaining rows in order. */
+  /**
+   * Remove one book; the shelf refresh keeps the remaining rows in order.
+   * @param bookId - the book the Host deletes from its storage directory.
+   */
   removeBook(bookId: string): void {
     const run = (async () => {
       const result = await this.ctx.remote.pdfReader.removeBook(bookId)
@@ -212,7 +219,11 @@ export class ReaderController {
     void run.catch(() => { /* the shelf reload reports removal failures */ })
   }
 
-  /** The stored bytes of one book, fetched once per plugin lifetime. */
+  /**
+   * The stored bytes of one book, fetched once per plugin lifetime.
+   * @param bookId - the book whose stored PDF bytes are fetched.
+   * @returns the cached or freshly fetched bytes; a failed fetch throws.
+   */
   async readBytes(bookId: string): Promise<Uint8Array | null> {
     const cached = this.bytes.get(bookId)
     if (cached !== undefined) return cached
@@ -222,7 +233,10 @@ export class ReaderController {
     return result.value.data
   }
 
-  /** Open a book at its saved page; bytes fetch and readiness follow. */
+  /**
+   * Open a book at its saved page; bytes fetch and readiness follow.
+   * @param bookId - the book whose saved progress positions the reader.
+   */
   openBook(bookId: string): void {
     const book = this.store.getSnapshot().books.find(row => row.bookId === bookId)
     if (book === undefined) return
@@ -276,7 +290,10 @@ export class ReaderController {
     this.store.set({ ...current, annotations: result.value })
   }
 
-  /** Turn to one page, flushing the pending progress save. */
+  /**
+   * Turn to one page, flushing the pending progress save.
+   * @param page - 1-based page number, clamped to the book's page count.
+   */
   selectPage(page: number): void {
     const open = this.store.getSnapshot().open
     if (open === null) return
@@ -287,14 +304,20 @@ export class ReaderController {
     this.noteProgress()
   }
 
-  /** Step to the adjacent page. */
+  /**
+   * Step to the adjacent page.
+   * @param delta - page step, normally `1` or `-1`.
+   */
   stepPage(delta: number): void {
     const open = this.store.getSnapshot().open
     if (open === null) return
     this.selectPage(open.page + delta)
   }
 
-  /** Set the display zoom factor. */
+  /**
+   * Set the display zoom factor.
+   * @param zoom - zoom factor over the base page size, clamped between 0.5 and 3.
+   */
   setZoom(zoom: number): void {
     const open = this.store.getSnapshot().open
     if (open === null) return
@@ -303,19 +326,29 @@ export class ReaderController {
     this.store.set({ ...this.store.getSnapshot(), open: { ...open, zoom: next } })
   }
 
-  /** Choose the reading presentation; the choice persists across sessions. */
+  /**
+   * Choose the reading presentation; the choice persists across sessions.
+   * @param mode - scroll or flip presentation for the reading column.
+   */
   setReadingMode(mode: ReadingMode): void {
     writeReadingMode(mode)
     this.store.set({ ...this.store.getSnapshot(), mode })
   }
 
-  /** Choose the marker pen's color; the choice persists and new highlights paint with it. */
+  /**
+   * Choose the marker pen's color; the choice persists and new highlights paint with it.
+   * @param color - the palette color new highlights paint with.
+   */
   setPenColor(color: HighlightColor): void {
     writeAnnotationColor(color)
     this.store.set({ ...this.store.getSnapshot(), penColor: color })
   }
 
-  /** Merge the browser's first-open structure report into the open book and shelf. */
+  /**
+   * Merge the browser's first-open structure report into the open book and shelf.
+   * @param bookId - the book the report describes.
+   * @param report - page count and outline the browser's PDF document reported.
+   */
   async reportMeta(bookId: string, report: MetaReport): Promise<void> {
     const result = await this.ctx.remote.pdfReader.saveBookMeta(bookId, report)
     if (!result.ok) return
@@ -330,7 +363,11 @@ export class ReaderController {
     this.store.set({ ...state, books, open })
   }
 
-  /** Store the browser-rendered cover thumbnail and refresh its shelf row. */
+  /**
+   * Store the browser-rendered cover thumbnail and refresh its shelf row.
+   * @param bookId - the book whose cover row the thumbnail updates.
+   * @param pngBase64 - base64-encoded PNG bytes of the rendered first page.
+   */
   async saveCover(bookId: string, pngBase64: string): Promise<void> {
     if (this.covers.has(bookId)) return
     this.covers.add(bookId)
@@ -373,7 +410,12 @@ export class ReaderController {
     } catch { /* the popover falls back to the configured pair */ }
   }
 
-  /** Stream one treatment of a captured selection and persist it as an annotation. */
+  /**
+   * Stream one treatment of a captured selection and persist it as an annotation.
+   * @param selection - the captured selection to treat.
+   * @param kind - treatment kind the streamed model call requests.
+   * @param reuseId - annotation id to replace; omitted generates a new one.
+   */
   treat(selection: PdfSelectionValue, kind: ExplainKind, reuseId?: string): void {
     const id = reuseId ?? randomUUID()
     const abort = new AbortController()
@@ -427,7 +469,10 @@ export class ReaderController {
     void run
   }
 
-  /** Persist one selection as a plain marker highlight, with no model treatment. */
+  /**
+   * Persist one selection as a plain marker highlight, with no model treatment.
+   * @param selection - the captured selection highlighted with the current pen color.
+   */
   annotate(selection: PdfSelectionValue): void {
     const annotation: TextAnnotation = {
       kind: 'text',
@@ -449,7 +494,11 @@ export class ReaderController {
     void run.catch(() => { /* a failed plain highlight simply never lands */ })
   }
 
-  /** Repaint one saved text annotation in another marker color, and make that color current. */
+  /**
+   * Repaint one saved text annotation in another marker color, and make that color current.
+   * @param annotationId - the saved text annotation repainted.
+   * @param color - the palette color the annotation and the pen take on.
+   */
   setAnnotationColor(annotationId: string, color: HighlightColor): void {
     const state = this.store.getSnapshot()
     const bookId = state.open?.bookId
@@ -470,7 +519,10 @@ export class ReaderController {
     void run.catch(() => { /* a failed repaint keeps the previous color */ })
   }
 
-  /** Re-run the first treatment of a saved text annotation against its stored quote. */
+  /**
+   * Re-run the first treatment of a saved text annotation against its stored quote.
+   * @param id - the saved text annotation whose first treatment kind is re-requested.
+   */
   retryTextAnnotation(id: string): void {
     const state = this.store.getSnapshot()
     const annotation = state.annotations.find((row): row is Extract<PdfAnnotation, { kind: 'text' }> =>
@@ -487,7 +539,11 @@ export class ReaderController {
     }, kind, id)
   }
 
-  /** Ask one screenshot question and persist it as a shot annotation. */
+  /**
+   * Ask one screenshot question and persist it as a shot annotation.
+   * @param ask - the question, page crop, and optional model pair to send.
+   * @param reuseId - annotation id to replace; omitted generates a new one.
+   */
   askShot(ask: ShotAsk, reuseId?: string): void {
     const id = reuseId ?? randomUUID()
     const abort = new AbortController()
@@ -546,14 +602,23 @@ export class ReaderController {
     void run
   }
 
-  /** Re-ask one saved shot annotation; the caller supplies a fresh crop of the same rect. */
+  /**
+   * Re-ask one saved shot annotation; the caller supplies a fresh crop of the same rect.
+   * @param id - the saved shot annotation whose question is re-asked.
+   * @param fresh - the question text, crop image, and optional model pair to resend.
+   * @param page - 1-based page number the rect crops from.
+   * @param rect - screenshot rectangle in page coordinates.
+   */
   retryShotAnnotation(id: string, fresh: Omit<ShotAsk, 'page' | 'rect' | 'bookId'>, page: number, rect: ShotRect): void {
     const open = this.store.getSnapshot().open
     if (open === null) return
     this.askShot({ ...fresh, bookId: open.bookId, page, rect }, id)
   }
 
-  /** Delete one saved annotation and its card. */
+  /**
+   * Delete one saved annotation and its card.
+   * @param id - the annotation removed from the store and deleted on the Host.
+   */
   deleteAnnotation(id: string): void {
     const state = this.store.getSnapshot()
     const bookId = state.open?.bookId
@@ -590,7 +655,7 @@ export class ReaderController {
         busy: false,
       })
     })()
-    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+    void run.catch((error: unknown) => { this.setStorage({ busy: false, error: errorText(error) }) })
   }
 
   /** Close the settings panel without changing anything. */
@@ -598,7 +663,10 @@ export class ReaderController {
     this.setStorage({ open: false, error: '', saved: false })
   }
 
-  /** Point the library at a new directory; empty restores the profile default. */
+  /**
+   * Point the library at a new directory; empty restores the profile default.
+   * @param directory - the storage directory the Host re-applies its config with.
+   */
   saveStorageSettings(directory: string): void {
     this.setStorage({ busy: true, error: '', saved: false })
     const run = (async () => {
@@ -612,17 +680,25 @@ export class ReaderController {
         void this.loadLibrary()
       }, STORAGE_REFRESH_MS)
     })()
-    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+    void run.catch((error: unknown) => { this.setStorage({ busy: false, error: errorText(error) }) })
   }
 
-  /** Choose the model text treatments use; the empty pair follows the profile default. */
+  /**
+   * Choose the model text treatments use; the empty pair follows the profile default.
+   * @param provider - treatment model's provider key.
+   * @param model - treatment model's id under `provider`.
+   */
   saveTreatmentModel(provider: string, model: string): void {
     this.saveModelChoice(() => this.ctx.remote.pdfReader.setTreatmentModel(provider, model), () => {
       this.setStorage({ modelProvider: provider, modelId: model })
     })
   }
 
-  /** Choose the model screenshots use; the empty pair follows the profile default. */
+  /**
+   * Choose the model screenshots use; the empty pair follows the profile default.
+   * @param provider - screenshot model's provider key.
+   * @param model - screenshot model's id under `provider`.
+   */
   saveShotModel(provider: string, model: string): void {
     this.saveModelChoice(() => this.ctx.remote.pdfReader.setShotModel(provider, model), () => {
       this.setStorage({ shotProvider: provider, shotModel: model })
@@ -643,7 +719,7 @@ export class ReaderController {
         void this.refreshTreatmentModels()
       }, STORAGE_REFRESH_MS)
     })()
-    void run.catch((error) => { this.setStorage({ busy: false, error: errorText(error) }) })
+    void run.catch((error: unknown) => { this.setStorage({ busy: false, error: errorText(error) }) })
   }
 
   /** Re-read the treatment catalog into the open panel and the ask popover. */

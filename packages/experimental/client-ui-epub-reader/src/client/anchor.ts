@@ -21,7 +21,11 @@ const HIGHLIGHT_NAME = 'epub-reader-note'
 interface HighlightConstructor { new (...ranges: Range[]): object }
 type HighlightRegistry = { set(name: string, highlight: object): void; delete(name: string): boolean }
 
-/** Map every text node under `root` into one offset-addressable stream. */
+/**
+ * Map every text node under `root` into one offset-addressable stream.
+ * @param root - sanitized chapter body whose text nodes become the stream.
+ * @returns the chapter's text spans and the concatenated stream length.
+ */
 export function mapText(root: Element): TextMap {
   const spans: TextSpan[] = []
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
@@ -43,7 +47,13 @@ function offsetOf(map: TextMap, node: Node, offset: number): number | undefined 
   return undefined
 }
 
-/** Resolve one `[start, end)` global offset pair into a DOM range, or null when it no longer lands. */
+/**
+ * Resolve one `[start, end)` global offset pair into a DOM range.
+ * @param map - chapter stream produced by {@link mapText}.
+ * @param start - inclusive start offset into the stream.
+ * @param end - exclusive end offset into the stream.
+ * @returns the DOM range covering the offsets, or null when the pair no longer lands in the chapter.
+ */
 export function rangeOf(map: TextMap, start: number, end: number): Range | null {
   if (start < 0 || end <= start || end > map.total) return null
   let begin: { node: Text; offset: number } | undefined
@@ -68,7 +78,12 @@ export interface ChapterSelection {
   readonly context: string
 }
 
-/** Capture the current selection as chapter offsets plus prompt context, or null outside it. */
+/**
+ * Capture the current selection as chapter offsets plus prompt context.
+ * @param container - rendered chapter element a selection must fall inside.
+ * @param map - chapter stream produced by {@link mapText}.
+ * @returns the selection's offsets, text, and containing block's context, or null when nothing is selected inside `container`.
+ */
 export function captureSelection(container: HTMLElement, map: TextMap): ChapterSelection | null {
   const selection = document.getSelection()
   if (selection === null || selection.rangeCount === 0) return null
@@ -92,7 +107,10 @@ function cssHighlights(): HighlightRegistry | undefined {
   return (globalThis as { CSS?: { highlights?: HighlightRegistry } }).CSS?.highlights
 }
 
-/** Paint saved annotation ranges through the CSS Custom Highlight API. */
+/**
+ * Paint saved annotation ranges through the CSS Custom Highlight API.
+ * @param ranges - one DOM range per saved annotation; an empty list clears every painted highlight.
+ */
 export function applyHighlights(ranges: readonly Range[]): void {
   const highlights = cssHighlights()
   const HighlightCtor = (globalThis as { Highlight?: HighlightConstructor }).Highlight

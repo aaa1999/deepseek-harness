@@ -66,7 +66,12 @@ function attrOf(node: unknown, name: string): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
 
-/** Normalize one href against the directory of the document that references it. */
+/**
+ * Normalize one href against the directory of the document that references it.
+ * @param baseDir - interior directory of the referencing document.
+ * @param href - the href as written, fragment ignored.
+ * @returns the normalized interior path; an empty href resolves to ''.
+ */
 export function resolveHref(baseDir: string, href: string): string {
   const withoutFragment = href.split('#')[0] ?? ''
   if (withoutFragment === '') return ''
@@ -80,7 +85,11 @@ export function resolveHref(baseDir: string, href: string): string {
   return resolved.join('/')
 }
 
-/** Directory portion of one interior path, as `resolveHref` takes it. */
+/**
+ * Directory portion of one interior path, as `resolveHref` takes it.
+ * @param path - interior path of a referenced document.
+ * @returns everything before the last `/`, or '' for a root-level path.
+ */
 export function dirOf(path: string): string {
   const slash = path.lastIndexOf('/')
   return slash < 0 ? '' : path.slice(0, slash)

@@ -95,7 +95,10 @@ export class CaptureRelay {
     this.makeSignal = options.makeSignal ?? defaultSignal
   }
 
-  /** Handle one `message` event's data; unrelated traffic returns silently. */
+  /**
+   * Handle one `message` event's data; unrelated traffic returns silently.
+   * @param data - the posted message's data; only relay-sourced envelopes are read.
+   */
   handle(data: unknown): void {
     if (typeof data !== 'object' || data === null) return
     const envelope = data as { source?: unknown; kind?: unknown }
@@ -289,7 +292,11 @@ function sanitizeCapturedAt(value: number): number {
   return Number.isSafeInteger(value) && value > 0 && value <= now + 86_400_000 ? value : now
 }
 
-/** Decoded byte count of one canonical base64 body; a malformed body reads as `NaN`. */
+/**
+ * Decoded byte count of one canonical base64 body; a malformed body reads as `NaN`.
+ * @param base64 - the canonical base64 body to measure.
+ * @returns the decoded byte count, or `NaN` when the body is not canonical base64.
+ */
 export function decodedByteLength(base64: string): number {
   if (!BASE64.test(base64) || base64.length % 4 !== 0) return Number.NaN
   const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0

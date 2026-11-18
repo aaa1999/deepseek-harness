@@ -12,7 +12,7 @@ const selection: ExplainRequest = {
 }
 
 describe('prompts', () => {
-  it('builds the translate system prompt with book and page provenance', () => {
+  it('builds the translate system prompt with book and page identity', () => {
     const system = systemPromptFor('translate', context)
     expect(system).toContain('《Attention Is All You Need》')
     expect(system).toContain('第 3 页')
@@ -45,7 +45,7 @@ describe('prompts', () => {
     expect(user).toContain('…')
   })
 
-  it('frames screenshot questions with provenance and a default answer', () => {
+  it('frames screenshot questions with the book and page identity and a default answer', () => {
     const ask: AskImageRequest = {
       bookId: 'b1', page: 3, rect: { x: 0, y: 0, width: 0.5, height: 0.5 },
       annotationId: 'a1', pngBase64: '', question: '这个公式是什么意思？',

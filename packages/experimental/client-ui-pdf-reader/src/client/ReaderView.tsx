@@ -1,5 +1,5 @@
 /** The reading view: one rendered page, its text layer, the screenshot tool, and the notes column. */
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PdfAnnotation } from '@deepseek-ai/dsh-pdf-reader/types'
@@ -124,14 +124,14 @@ export function ReaderView({
           if (!lifetime.signal.aborted && !disposed) setFailure(errorText(error))
         },
       )
-    }, (error) => {
+    }, (error: unknown) => {
       if (!lifetime.signal.aborted && !disposed) setFailure(errorText(error))
     })
     const afterDocumentOpen = async (doc: PdfDocument, id: string, fallbackTitle: string, metaReported: boolean): Promise<void> => {
       if (!metaReported) {
         try {
           const metadata = await doc.getMetadata().catch(() => null) as { info?: { Title?: unknown } } | null
-          void documents.reportMeta(id, {
+          documents.reportMeta(id, {
             title: usableTitle(metadata?.info?.Title) || fallbackTitle,
             pageCount: doc.numPages,
             outline: await outlinePages(doc),
@@ -480,7 +480,7 @@ export function ReaderView({
           <div
             ref={box}
             className={`${css.pageBox} ${shotMode === 'armed' || shotMode === 'dragging' ? css.pageBoxCrosshair : ''}`}
-            style={displayed === undefined ? undefined : ({ width: `${displayed.width}px`, height: `${displayed.height}px` } as CSSProperties)}
+            style={displayed === undefined ? undefined : { width: `${displayed.width}px`, height: `${displayed.height}px` }}
             data-pdf-page={open.page}
             onPointerDown={(event) => {
               if (shotMode !== 'armed' || event.button !== 0) return
@@ -523,7 +523,7 @@ export function ReaderView({
             <canvas ref={canvas} className={css.pageCanvas} role="img" aria-label={t('pageOf', { current: open.page, total: Math.max(open.pageCount, 1) })} />
             <div
               ref={textHost} className={css.textHost}
-              style={base === null ? undefined : ({ width: `${base.width}px`, height: `${base.height}px`, scale: String(zoom) } as CSSProperties)}
+              style={base === null ? undefined : { width: `${base.width}px`, height: `${base.height}px`, scale: String(zoom) }}
               data-pdf-text
             />
             <div ref={highlightLayer} className={css.highlightLayer} aria-hidden="true" />

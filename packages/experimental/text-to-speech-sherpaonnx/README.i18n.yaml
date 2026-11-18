@@ -3,8 +3,35 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/text-to-speech-sherpaonnx/README.md
 /:
-  en: 8a76f4f38f096129
-  zh: f26a6b4ecce8f3c8
-/deepseek-ai-dsh-experimental-text-to-speech-sherpaonnx:
-  en: 78da68613c79cc38
-  zh: 0ba5a2ccdae466e2
+  en: 8093ef167030c245
+  zh: 2f2799dac2691e16
+/deepseek-ai-dsh-text-to-speech-sherpaonnx:
+  en: 8fe844be00785194
+  zh: c7bd47dc9ce47fa4
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/summary:
+  en: d8bad52ce48ac8bc
+  zh: 4d77ba72cb78c58f
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/use-this-package:
+  en: 4604f09034f96a2c
+  zh: b19cc2fb00035a3a
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/understand-the-implementation:
+  en: ea982afc868bd364
+  zh: dd07f9b0118eb341
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/further-exploration:
+  en: 701162d6de15f520
+  zh: 08c1e3867d0d0582
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/model-experience:
+  en: a3c1bab01e334bd7
+  zh: 6eb1cb73d83bbca1
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/model-experience/kv-cache-effect:
+  en: c0da9820c8140696
+  zh: 9f26261b6237ca3d
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/known-limitations-and-deferred-work:
+  en: 8d28cb53250087bf
+  zh: dfa6cb814a8599d2
+/deepseek-ai-dsh-text-to-speech-sherpaonnx/known-limitations-and-deferred-work/dev-note:
+  en: 782e08d496301a5a
+  zh: 3e3c2234ac41256d

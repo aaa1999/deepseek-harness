@@ -1,23 +1,24 @@
 ---
-日期：2026-11-07
-分支：dev
-状态：已完成
+date: 2026-11-07
+branch: dev
+status: completed
 ---
 
-# EPUB 阅读器插件 · 设计方案
+# EPUB reader plugin · design plan
 
-## 1. 目标与范围
+English | [中文](plan-20261107-epub-reader.zh.md)
 
-做一个 DSH 组合包插件 `dsh-epub-reader`：导入 EPUB → 书架 → 沉浸阅读；左栏读书、右栏笔记。核心闭环是**划词 → 右键「翻译 / 解释」→ 结果流式进右栏，并沉淀为可回看的划线笔记**。
+## 1. Goals and scope
 
-v1 范围：书架（导入/删除/进度）、章节阅读（目录 + 上下章 + 进度记忆）、划词翻译/解释（LLM 流式输出）、划线持久化并在正文中高亮回显。
-暂不做：书内 CSS 完整还原、双页平铺分页、TTS、导出笔记（列为升级路径）。
+Build a DSH composition bundle plugin `dsh-epub-reader`: import EPUB → bookshelf → immersive reading; books in the left pane, notes in the right pane. The core loop is **select text → right-click "Translate / Explain" → the result streams into the right pane and settles into a highlight note you can revisit**.
 
-## 2. 交互设计
+The v1 scope covers the bookshelf (import/delete/progress), chapter reading (table of contents, previous/next chapter, progress memory), selection translate/explain (streaming LLM output), and highlight persistence with highlight re-rendering in the body text. Out of scope for now: full book-CSS fidelity, two-page tiled pagination, TTS, and note export (listed as upgrade paths).
 
-### 2.1 入口与布局
+## 2. Interaction design
 
-入口是左侧栏的一个新面板（与 Files / Plugins 同级，注册进 `sidebar.panellist`，宽面板模式）。面板内部两级视图：
+### 2.1 Entry and layout
+
+The entry is a new panel in the left sidebar (a peer of Files / Plugins, registered into `sidebar.panellist`, wide-panel mode). The panel has two internal view levels:
 
 ```text
 ┌─ 书架 ──────────────────────────────────────────────┐
@@ -45,25 +46,25 @@ v1 范围：书架（导入/删除/进度）、章节阅读（目录 + 上下章
 └──────────────────────────────────────────────────────┘
 ```
 
-交互细节：
+Interaction details:
 
-- **划词 → 右键**：接入现有 ui-context-menu，新增一个 target family `epubSelection`（通过 `ContextMenuTargetMap` declaration merge），菜单项「翻译」「解释」。同一选区也可在鼠标释放后弹轻量浮动按钮（次路径，v1.1）。
-- **右栏卡片**：一条划线 = 一张卡片，含原文引用 + Tab（翻译 / 解释）+ 流式正文 + 操作（重新生成、复制、删除、跳回原文）。生成中显示流式增量；失败显示可重试的错误行。
-- **高亮回显**：已保存的划线在左栏以 `<mark>`（下划线式弱高亮，不抢阅读）渲染；悬停右栏卡片时正文平滑滚动到锚点并闪烁一次。
-- **进度**：章节号 + 章内滚动比例自动保存（防抖 2s），书架显示进度，打开书直接续读。
-- **响应式**：面板窄时笔记栏收为右侧抽屉（覆盖式），≥768px 恢复并排；尊重 reduced-motion；键盘可达（目录、菜单、卡片操作全部可 Tab/Enter）。
+- **Selection → right-click**: integrate with the existing ui-context-menu by adding a target family `epubSelection` (via `ContextMenuTargetMap` declaration merge) with the menu items "Translate" and "Explain". The same selection can also pop up a lightweight floating button on mouse release (secondary path, v1.1).
+- **Right-pane cards**: one highlight = one card, holding the source quote + a tab (Translate / Explain) + the streaming body + actions (regenerate, copy, delete, jump back to the source text). While generating, streaming increments are displayed; on failure, a retryable error row is shown.
+- **Highlight re-rendering**: saved highlights render in the left pane as `<mark>` (an underline-style weak highlight that does not compete with reading); hovering a right-pane card smoothly scrolls the body text to the anchor and flashes it once.
+- **Progress**: the chapter number plus the in-chapter scroll ratio are saved automatically (2s debounce); the bookshelf shows progress, and opening a book resumes reading directly.
+- **Responsive**: when the panel is narrow, the notes pane collapses into a right-side overlay drawer and returns side by side at ≥768px; respects reduced-motion; keyboard accessible (TOC, menus, and card actions are all reachable by Tab/Enter).
 
-### 2.2 视觉方向
+### 2.2 Visual direction
 
-阅读器是「长时间注视的面」，视觉策略是**正文优先、铬件退后**：
+The reader is a surface users look at for long stretches, so the visual strategy is **body content first, UI chrome receding**:
 
-- 阅读栏用衬线字体栈（`Songti SC / Noto Serif CJK / Georgia, serif`），UI 铬件（工具条、卡片、目录）沿用宿主界面字体与 `--dsh` 主题变量，跟暗色模式走；正文区额外提供「纸面」阅读底色开关（米白非纯白 / 暗面非纯黑，降低长阅读疲劳）。
-- 右栏卡片是安静的笔记纸：无重阴影、单一圆角层级、分隔靠间距而非框线；正在流式生成的卡片用一条顶部细进度线表达「在写」，不用跳动动画。
-- 全局只在两处花心思：封面书架的排布节奏，和划线高亮的颜色（唯一的强调色，翻译与解释共用一种，避免花）。
+- The reading pane uses a serif font stack (`Songti SC / Noto Serif CJK / Georgia, serif`); UI chrome (toolbars, cards, TOC) keeps the host interface font and `--dsh` theme variables and follows dark mode; the body area additionally offers a "paper" reading-background toggle (off-white instead of pure white / dark instead of pure black, reducing long-reading fatigue).
+- Right-pane cards are quiet note paper: no heavy shadows, a single radius level, separation by spacing instead of borders; a card with a generation in progress expresses "writing" through a thin top progress line, not a bouncing animation.
+- Care is spent in exactly two places: the layout rhythm of the cover bookshelf, and the highlight color (the only accent color, shared by translate and explain to avoid noise).
 
-## 3. 总体架构
+## 3. Overall architecture
 
-完全走 DSH 的正规扩展点，一个包、两个运行半区：
+Everything goes through DSH's regular extension points; one package, two runtime halves:
 
 ```text
 dsh-epub-reader（一个 bundle 包）
@@ -86,49 +87,49 @@ dsh-epub-reader（一个 bundle 包）
        ui-primitives / locale / api-remotes
 ```
 
-数据流：浏览器选词 → context menu → client 调 `ctx.remote.epubReader.explain()` → Host 组 prompt（选词 + 所在段落上下文 + 书名章节）→ `ctx.llm.stream` → Remote stream 逐块回推 → 右栏卡片流式渲染 → 完成后 client 调 `saveAnnotation` 持久化。
+Data flow: select text in the browser → context menu → the client calls `ctx.remote.epubReader.explain()` → the Host assembles the prompt (the selection + the surrounding paragraph context + book title and chapter) → `ctx.llm.stream` → the Remote stream pushes chunks back → the right-pane card renders the stream → on completion the client calls `saveAnnotation` to persist it.
 
-## 4. 关键技术决策
+## 4. Key technical decisions
 
-| # | 决策 | 理由与依据 |
+| # | Decision | Rationale and basis |
 |---|---|---|
-| 1 | **EPUB 解析放 Host**，客户端只收净化后的章节文档 | 解压/OPF/TOC 解析一次性在 Node 完成；二进制不进浏览器；`Uint8Array` 可走 binary Remote transfer，资源图片走 exact Fetch route |
-| 2 | **v1 自定义渲染**：净化后 XHTML 注入主文档容器，应用插件自己的阅读排版，**不加载书内 CSS** | 选区、Range 锚定、右键菜单（`getTriggerProps`）、`<mark>` 高亮全部走原生 DOM，集成成本最低；外语学习场景以文字书为主。书内 CSS 完整还原列为 v2（sandboxed iframe + postMessage 桥） |
-| 3 | **净化用白名单**（标签/属性），Host 出净化文档，客户端再过一遍 DOMPurify 双保险 | EPUB 是任意外部文件，必须当不可信内容处理 |
-| 4 | **划线锚定 = 章节纯文本偏移**（拼接文本节点算 offset）+ 文本哈希兜底 | 比 EPUB CF 简单一个量级，满足 v1；字号变化/重排后仍稳定；失配时按原文回退搜索 |
-| 5 | **LLM 只经 `ctx.llm.stream`**，默认取 `ctx.agentDefaultModel`，插件配置可覆盖 provider/model | 这是仓库明文规定的唯一受支持调用路径；不引入任何自有 API key |
-| 6 | **翻译/解释用 `@Remote({mode:'stream'})`** | 右栏逐 token 流式，体验对齐主对话；流结束由 client 主动落库 |
-| 7 | **存储用 profile 目录下插件自管目录**（`profileContext.dir` + `.epub-reader/`），JSON 元数据 + 原始 epub 分文件存 | 沿用 plugin-manager 在 profile 内自管 `.plugin-manager/` 的既有惯例；不引入 sqlite 依赖 |
-| 8 | **资源路由带护栏**：路径必须解析在书籍目录内（防穿越）、Content-Type 白名单、`CSP: sandbox` + `nosniff` + 私有缓存 | 对齐 plugin-manager detail-file 路由的安全模式 |
+| 1 | **EPUB parsing lives on the Host**; the client receives only sanitized chapter documents | Decompression/OPF/TOC parsing happens once in Node; no binaries enter the browser; `Uint8Array` can travel via binary Remote transfer, resource images via the exact Fetch route |
+| 2 | **v1 custom rendering**: sanitized XHTML is injected into the main document container with the plugin's own reading typography, and **book CSS is not loaded** | Selection, Range anchoring, the context menu (`getTriggerProps`), and `<mark>` highlighting all work on native DOM, at the lowest integration cost; the language-learning scenario is mostly text books. Full book-CSS fidelity is deferred to v2 (sandboxed iframe + postMessage bridge) |
+| 3 | **Sanitization uses an allowlist** (tags/attributes); the Host emits a sanitized document and the client runs DOMPurify over it again as a second layer | An EPUB is an arbitrary external file and must be treated as untrusted content |
+| 4 | **Highlight anchoring = plain-text offset within the chapter** (the offset is computed over concatenated text nodes) + a text-hash fallback | An order of magnitude simpler than EPUB CF and sufficient for v1; remains stable across font-size changes and reflow; on mismatch, falls back to searching for the source text |
+| 5 | **The LLM is reached only through `ctx.llm.stream`**, defaulting to `ctx.agentDefaultModel`; plugin config can override provider/model | This is the repo's explicitly documented and only supported call path; no private API key is introduced |
+| 6 | **Translate/explain uses `@Remote({mode:'stream'})`** | Token-by-token streaming into the right pane matches the main-conversation experience; the client persists the result to storage when the stream ends |
+| 7 | **Storage uses a plugin-managed directory under the profile directory** (`profileContext.dir` + `.epub-reader/`), with JSON metadata and the raw epub stored as separate files | Follows the existing convention of plugin-manager managing `.plugin-manager/` inside the profile; introduces no sqlite dependency |
+| 8 | **The resource route carries guardrails**: the path must resolve inside the books directory (path-traversal defense), a Content-Type allowlist, `CSP: sandbox` + `nosniff` + private caching | Matches the security pattern of the plugin-manager detail-file route |
 
-## 5. 数据模型与 Remote API
+## 5. Data model and Remote API
 
 ```ts
 // 书
-interface BookRow { bookId, title, author, language, coverPath?, chapterCount, progress: { chapterIndex, ratio }, importedAt }
+interface BookRow { bookId: string; title: string; author: string; language: string; coverPath?: string; chapterCount: number; progress: { chapterIndex: number; ratio: number }; importedAt: string }
 // 章（净化后）
-interface ChapterDoc { bookId, chapterIndex, title, html /* sanitized, 资源已改写为路由 URL */ }
+interface ChapterDoc { bookId: string; chapterIndex: number; title: string; html: string /* sanitized, 资源已改写为路由 URL */ }
 // 划线
-interface Annotation { id, bookId, chapterIndex, start, end /* 纯文本偏移 */, quote, createdAt,
-                       results: { kind: 'translate' | 'explain', text, model, createdAt }[] }
+interface Annotation { id: string; bookId: string; chapterIndex: number; start: number; end: number /* 纯文本偏移 */; quote: string; createdAt: string;
+                       results: { kind: 'translate' | 'explain'; text: string; model: string; createdAt: string }[] }
 ```
 
-| Remote 方法 | 形态 | 说明 |
+| Remote method | Form | Notes |
 |---|---|---|
-| `list()` / `importBook(name, bytes)` / `removeBook(id)` | unary | 导入即解析 + 提取元数据，≤100MB |
-| `chapter(bookId, index)` | unary | 返回净化 ChapterDoc |
-| `saveProgress` / `listAnnotations` / `saveAnnotation` / `deleteAnnotation` | unary | 持久化 |
-| `explain(bookId, chapterIndex, kind, text, signal)` | **stream** | 逐块吐文本增量，终块带 usage/model |
+| `list()` / `importBook(name, bytes)` / `removeBook(id)` | unary | Importing parses immediately and extracts metadata; ≤100MB |
+| `chapter(bookId, index)` | unary | Returns a sanitized ChapterDoc |
+| `saveProgress` / `listAnnotations` / `saveAnnotation` / `deleteAnnotation` | unary | Persistence |
+| `explain(bookId, chapterIndex, kind, text, signal)` | **stream** | Emits text increments chunk by chunk; the final chunk carries usage/model |
 
-错误码走统一 `RemoteError` 码表：`epub/not-found`、`epub/bad-file`、`epub/too-large`、`epub/anchor-mismatch`、`epub/no-model`。
+Error codes use the unified `RemoteError` code table: `epub/not-found`, `epub/bad-file`, `epub/too-large`, `epub/anchor-mismatch`, `epub/no-model`.
 
-## 6. Prompt 设计（Host 侧模板，可配置覆盖）
+## 6. Prompt design (Host-side templates, configurable override)
 
-- **翻译**：给书名、章节、原文所在段落（上下文各 ≤1 段、截断保护），指令为「忠实文学翻译，保留语气与修辞，只输出译文」。目标语言默认中文，可配。
-- **解释**：同上下文，输出结构为「逐词/短语释义 → 语法结构 → 用法与语域 → 必要的文化背景」，面向语言学习者，使用目标语言书写。
-- 选区超长（>2000 字符）时提示改为整段翻译策略，防 token 爆炸。
+- **Translate**: given the book title, the chapter, and the paragraph containing the source text (at most one paragraph of context on each side, with truncation protection), the instruction is "faithful literary translation, preserving tone and rhetoric, output only the translation". The target language defaults to Chinese and is configurable.
+- **Explain**: same context; the output structure is "word/phrase senses → grammatical structure → usage and register → necessary cultural background", aimed at language learners and written in the target language.
+- When the selection is over-long (>2000 characters), the prompt switches to a whole-paragraph translation strategy to prevent token blowup.
 
-## 7. 插件配置（Schema）
+## 7. Plugin config (Schema)
 
 ```yaml
 targetLanguage: zh      # 目标语言
@@ -138,7 +139,7 @@ maxSelectionChars: 2000
 paperMode: auto         # 纸面底色: auto | off
 ```
 
-## 8. 包结构与开发/交付形态
+## 8. Package structure and development/delivery forms
 
 ```text
 dsh-epub-reader/
@@ -151,22 +152,22 @@ dsh-epub-reader/
 └─ tests/ (fixture.epub 解析/净化/锚定单测 + client 组件测试)
 ```
 
-- 开发：checkout 根 `pnpm dsh web --patch ./dsh-epub-reader/cordis.yml` 起 3080 端口；配合 `pnpm run dev:web` 时 client 插件改动免刷新热更。
-- 交付：`dsh plugin add ./dsh-epub-reader`（或发布 npm / GitHub 安装），装进 profile 即全局面板生效。
-- 测试：Host 单测（fixture 书解析、净化白名单、路径穿越攻击用例、锚定重定位）；client 用 `@deepseek-ai/dsh-client-test-runtime`；LLM 路径 mock adapter。
+- Development: from the checkout root, `pnpm dsh web --patch ./dsh-epub-reader/cordis.yml` starts on port 3080; combined with `pnpm run dev:web`, client-plugin edits hot-reload without a refresh.
+- Delivery: `dsh plugin add ./dsh-epub-reader` (or publish to npm / install from GitHub); once installed into a profile, the panel takes effect globally.
+- Testing: Host unit tests (fixture-book parsing, the sanitization allowlist, path-traversal attack cases, anchor re-location); the client uses `@deepseek-ai/dsh-client-test-runtime`; the LLM path uses a mock adapter.
 
-## 9. 实施阶段
+## 9. Implementation stages
 
-| 阶段 | 内容 | 产出 |
+| Stage | Content | Output |
 |---|---|---|
-| M1 | Host：解析/存储/Remote + client 书架与阅读视图、进度记忆 | 能导书能读 |
-| M2 | 选区 → 右键菜单 → explain 流式 → 右栏卡片 + 划线持久化与高亮回显 | 核心闭环 |
-| M3 | 目录抽屉、纸面模式、i18n、键盘可达、测试补齐、打包安装验证 | 可交付 |
+| M1 | Host: parsing/storage/Remote + the client bookshelf and reading views, progress memory | Books can be imported and read |
+| M2 | Selection → context menu → streaming explain → right-pane cards + highlight persistence and re-rendering | Core loop |
+| M3 | TOC drawer, paper mode, i18n, keyboard accessibility, test completion, packaging and install verification | Deliverable |
 
-风险与备选：复杂排版书籍在 v1 自定义渲染下观感降级（备选 v2 iframe 桥）；纯文本偏移锚定在跨段落大范围选区重排后可能失配（哈希 + 搜索兜底，失配卡片降级为「仅笔记不定位」）。
+Risks and alternatives: heavily typeset books degrade visually under v1 custom rendering (the fallback is the v2 iframe bridge); plain-text-offset anchoring can mismatch when a large cross-paragraph selection reflows (hash + search fallback; a mismatched card degrades to note-only, without re-location).
 
-## 已确认决策（2026-11-07）
+## Confirmed decisions (2026-11-07)
 
-- 工作区：DSH 源码仓内开发（/Users/lwc/Desktop/code/github/deepseek-harness，dev 分支）。
-- v1 渲染：接受「净化 + 自带排版、不加载书籍自带 CSS」。
-- 入口：左侧栏新面板（与 Files/Plugins 同级，全局可用）。
+- Workspace: developed inside the DSH source repo (/Users/lwc/Desktop/code/github/deepseek-harness, dev branch).
+- v1 rendering: accepted "sanitize + own typography, without loading the book's own CSS".
+- Entry: a new left-sidebar panel (a peer of Files/Plugins, globally available).

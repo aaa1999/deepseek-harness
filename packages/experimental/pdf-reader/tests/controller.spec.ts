@@ -231,7 +231,7 @@ describe('PdfReaderController', () => {
     expect(chunks).toEqual([
       { type: 'meta', model: 'deepseek-v4-flash-vision-exp' },
       { type: 'delta', text: '图中是' },
-      { type: 'done', imageUrl: expect.stringContaining('/api/pdf-reader/shot?book=') },
+      { type: 'done', imageUrl: expect.stringContaining('/api/pdf-reader/shot?book=') as string },
     ])
     expect(saved).toEqual([{ mediaType: 'image/png', bytes: 48 }])
     const blocks = calls[0]!.content as { type: string }[]
@@ -387,7 +387,7 @@ describe('PdfReaderController', () => {
     ctx.provide('configEditor', {
       entries: () => [entry],
       edit: async (_entry: unknown, change: (current: Record<string, unknown>) => Record<string, unknown>) => {
-        applied = change as typeof applied
+        applied = change
       },
     } as never)
     const service = new PdfReaderController(ctx, config())
@@ -424,7 +424,7 @@ describe('PdfReaderController', () => {
     ctx.provide('configEditor', {
       entries: () => [entry, { options: { id: 'other' } }],
       edit: async (_entry: unknown, change: (current: Record<string, unknown>) => Record<string, unknown>) => {
-        applied = change as typeof applied
+        applied = change
       },
     } as never)
     const editable = new PdfReaderController(ctx, config())

@@ -1,11 +1,17 @@
 /** Reader controller flows over a faked Remote face: library, streaming treatments, progress. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { RemoteError, type RemoteResult, type RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
+import type { Context } from '@deepseek-ai/cordis'
 // Registers the epub/* RemoteError codes the failure mocks carry.
 import type {} from '@deepseek-ai/dsh-epub-reader'
-import type { Annotation, BookRow, ChapterDoc, ExplainChunk, ExplainRequest, TocEntry } from '@deepseek-ai/dsh-epub-reader/types'
-import { ReaderController, type ReaderContext } from '../src/client/controller.ts'
+// Merges the epubReader namespace onto Context['remote'] for the mock generics.
+import type {} from '@deepseek-ai/dsh-epub-reader/remote'
+import { RemoteError, type RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
+import type { Annotation, BookRow, ExplainChunk, ExplainRequest } from '@deepseek-ai/dsh-epub-reader/types'
+import { ReaderController } from '../src/client/controller.ts'
 import type { EpubSelectionValue } from '../src/client/contract.ts'
+
+/** The Remote face the mocks below borrow their signatures from. */
+type EpubRemote = Context['remote']['epubReader']
 
 /**
  * Wrap treatment chunks as the handle face the controller iterates; the
@@ -35,30 +41,22 @@ const selection: EpubSelectionValue = {
 }
 
 /** The Remote face mock: every method a controller can call. */
-function remoteFace(): ReaderContext['remote']['epubReader'] {
+function remoteFace() {
   return {
-    list: vi.fn(async (): Promise<RemoteResult<BookRow[]>> => ({ ok: true, value: [bookRow()] })),
-    importBook: vi.fn(async (name: string): Promise<RemoteResult<BookRow>> => ({ ok: true, value: bookRow({ title: name }) })),
-    removeBook: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    toc: vi.fn(async (): Promise<RemoteResult<TocEntry[]>> => ({ ok: true, value: [{ title: 'One', chapterIndex: 0 }] })),
-    chapter: vi.fn(async (): Promise<RemoteResult<ChapterDoc>> => ({
+    list: vi.fn<EpubRemote['list']>(async () => ({ ok: true, value: [bookRow()] })),
+    importBook: vi.fn<EpubRemote['importBook']>(async (name: string) => ({ ok: true, value: bookRow({ title: name }) })),
+    removeBook: vi.fn<EpubRemote['removeBook']>(async () => ({ ok: true, value: undefined })),
+    toc: vi.fn<EpubRemote['toc']>(async () => ({ ok: true, value: [{ title: 'One', chapterIndex: 0 }] })),
+    chapter: vi.fn<EpubRemote['chapter']>(async () => ({
       ok: true, value: { bookId: 'b1', chapterIndex: 0, title: 'One', html: '<p>chapter body</p>' },
     })),
-    annotations: vi.fn(async (): Promise<RemoteResult<Annotation[]>> => ({ ok: true, value: [] })),
-    saveAnnotation: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    saveProgress: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    deleteAnnotation: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    storage: vi.fn(async (): Promise<RemoteResult<{ directory: string; configurable: boolean }>> => ({
-      ok: true, value: { directory: '/Books/reader', configurable: true },
-    })),
-    setStorageDirectory: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    treatmentModels: vi.fn(async (): Promise<RemoteResult<{
-      provider: string
-      model: string
-      defaultProvider: string
-      defaultModel: string
-      models: { provider: string; model: string; name: string }[]
-    }>> => ({
+    annotations: vi.fn<EpubRemote['annotations']>(async () => ({ ok: true, value: [] })),
+    saveAnnotation: vi.fn<EpubRemote['saveAnnotation']>(async () => ({ ok: true, value: undefined })),
+    saveProgress: vi.fn<EpubRemote['saveProgress']>(async () => ({ ok: true, value: undefined })),
+    deleteAnnotation: vi.fn<EpubRemote['deleteAnnotation']>(async () => ({ ok: true, value: undefined })),
+    storage: vi.fn<EpubRemote['storage']>(async () => ({ ok: true, value: { directory: '/Books/reader', configurable: true } })),
+    setStorageDirectory: vi.fn<EpubRemote['setStorageDirectory']>(async () => ({ ok: true, value: undefined })),
+    treatmentModels: vi.fn<EpubRemote['treatmentModels']>(async () => ({
       ok: true,
       value: {
         provider: '', model: '',
@@ -69,8 +67,8 @@ function remoteFace(): ReaderContext['remote']['epubReader'] {
         ],
       },
     })),
-    setTreatmentModel: vi.fn(async (): Promise<RemoteResult<void>> => ({ ok: true, value: undefined })),
-    explain: vi.fn((_request: ExplainRequest, _signal: AbortSignal): RemoteStreamHandle<ExplainChunk, never> => {
+    setTreatmentModel: vi.fn<EpubRemote['setTreatmentModel']>(async () => ({ ok: true, value: undefined })),
+    explain: vi.fn<EpubRemote['explain']>(() => {
       throw new Error('each test overrides explain')
     }),
   }
@@ -191,7 +189,7 @@ describe('stepChapter', () => {
 describe('treat', () => {
   it('streams deltas and persists the finished annotation', async () => {
     const { reader, remote } = controller()
-    remote.explain.mockImplementationOnce((_request: ExplainRequest, _signal: AbortSignal) => streamHandle((async function* () {
+    remote.explain.mockImplementationOnce(() => streamHandle((async function* () {
       yield { type: 'meta', model: 'test-model' }
       yield { type: 'delta', text: '曾' }
       yield { type: 'delta', text: '是' }
@@ -212,7 +210,7 @@ describe('treat', () => {
 
   it('keeps the failed stream on the card with its error', async () => {
     const { reader, remote } = controller()
-    remote.explain.mockImplementationOnce((_request: ExplainRequest, _signal: AbortSignal) => streamHandle((async function* () {
+    remote.explain.mockImplementationOnce(() => streamHandle((async function* () {
       yield { type: 'meta', model: 'test-model' }
       yield { type: 'delta', text: 'partial' }
       throw new Error('provider unavailable')
@@ -249,11 +247,11 @@ describe('treat', () => {
   it('aborts an in-flight stream at disposal without marking it failed', async () => {
     const { reader, remote } = controller()
     let observed: AbortSignal | undefined
-    remote.explain.mockImplementationOnce((_request: ExplainRequest, signal: AbortSignal) => {
+    remote.explain.mockImplementationOnce((_request: ExplainRequest, signal?: AbortSignal) => {
       observed = signal
       return streamHandle((async function* () {
         yield { type: 'meta', model: 'test-model' }
-        await new Promise((_resolve, reject) => { signal.addEventListener('abort', () => { reject(new Error('cancelled')) }) })
+        await new Promise((_resolve, reject) => { signal?.addEventListener('abort', () => { reject(new Error('cancelled')) }) })
       })())
     })
     reader.treat(selection, 'translate', 'note-4')
@@ -319,22 +317,24 @@ describe('note capture', () => {
   }
 
   it('carries a raw selection into the Notes panel titled by book and chapter', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 201 })))
+    const fetch = vi.fn(async (_url: string, _init?: { method?: string; body?: string }) => new Response('{}', { status: 201 }))
+    vi.stubGlobal('fetch', fetch)
     const { reader } = readerWithCard()
     reader.captureSelectionNote(selection)
-    await vi.waitFor(() => { expect(globalThis.fetch).toHaveBeenCalledOnce() })
-    const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]!
-    expect(String(url)).toBe('/plugins/dsh-notes/api/notes')
+    await vi.waitFor(() => { expect(fetch).toHaveBeenCalledOnce() })
+    const [url, init] = fetch.mock.calls[0]!
+    expect(url).toBe('/plugins/dsh-notes/api/notes')
     expect(init?.method).toBe('POST')
     expect(JSON.parse(String(init?.body))).toEqual({ title: 'Sample Book · One', body: 'was th' })
   })
 
   it('carries one card as quote plus every treatment', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 201 })))
+    const fetch = vi.fn(async (_url: string, _init?: { method?: string; body?: string }) => new Response('{}', { status: 201 }))
+    vi.stubGlobal('fetch', fetch)
     const { reader } = readerWithCard()
     reader.captureAnnotationNote('a1')
-    await vi.waitFor(() => { expect(globalThis.fetch).toHaveBeenCalledOnce() })
-    const [, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]!
+    await vi.waitFor(() => { expect(fetch).toHaveBeenCalledOnce() })
+    const [, init] = fetch.mock.calls[0]!
     expect(JSON.parse(String(init?.body))).toEqual({
       title: 'Sample Book · One',
       body: 'was th\n\n翻译：曾是\n\n解释：讲解',

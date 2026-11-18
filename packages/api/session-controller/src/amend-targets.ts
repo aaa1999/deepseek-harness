@@ -4,7 +4,7 @@
  * command reads projected state instead of synchronously scanning history.
  */
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
-import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
+import type { MessageId } from '@deepseek-ai/dsh-llm/types'
 import type { SessionEvent, SessionSeq } from '@deepseek-ai/dsh-session/types'
 import { brandNumber, brandString } from '@deepseek-ai/dsh-brand'
 import { z } from 'zod'

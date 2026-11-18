@@ -1,0 +1,70 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/pdf-reader/README.md
+/:
+  en: 1578844001b9c438
+  zh: adcfc067f0255b7f
+/deepseek-ai-dsh-pdf-reader:
+  en: 52ed39e01222ea9d
+  zh: 0d48db5268b54444
+/deepseek-ai-dsh-pdf-reader/summary:
+  en: 2ec9a62e98b24aa5
+  zh: 18e32a0f900f5026
+/deepseek-ai-dsh-pdf-reader/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3bb08fc718c5b710
+/deepseek-ai-dsh-pdf-reader/use-this-package:
+  en: dccbfbbab1bd5f56
+  zh: 722638e50f9824d2
+/deepseek-ai-dsh-pdf-reader/use-this-package/minimal-configuration:
+  en: 5d94e8fbfed5b390
+  zh: 674f624e15ec6b04
+/deepseek-ai-dsh-pdf-reader/use-this-package/storage-and-images:
+  en: 1831dc12db999f7d
+  zh: 4125ae44a0781b78
+/deepseek-ai-dsh-pdf-reader/understand-the-implementation:
+  en: dc0f207adaddd128
+  zh: 65381705aed09d0a
+/deepseek-ai-dsh-pdf-reader/further-exploration:
+  en: 5e8db3daf36b1be2
+  zh: 21d1b0da12aa5985
+/deepseek-ai-dsh-pdf-reader/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-pdf-reader/model-experience/selection-treatments:
+  en: e091e791c8f9e2f0
+  zh: 374a2b5cb28f538e
+/deepseek-ai-dsh-pdf-reader/model-experience/selection-treatments/what-the-model-sees:
+  en: 9c03972078e4e508
+  zh: 5e0af31a078848de
+/deepseek-ai-dsh-pdf-reader/model-experience/selection-treatments/what-the-model-sees/translate-prompt-template:
+  en: 75e2bae18e35b559
+  zh: 89c6257fc888de78
+/deepseek-ai-dsh-pdf-reader/model-experience/selection-treatments/token-effect:
+  en: 9af4763e123716e7
+  zh: 81c77a3df17fc2cb
+/deepseek-ai-dsh-pdf-reader/model-experience/selection-treatments/kv-cache-effect:
+  en: 25c1fdc597a0f2bd
+  zh: c8737da8429bf2bb
+/deepseek-ai-dsh-pdf-reader/model-experience/screenshot-questions:
+  en: c653293af6675216
+  zh: 3943aae12dc6a74d
+/deepseek-ai-dsh-pdf-reader/model-experience/screenshot-questions/what-the-model-sees:
+  en: 2be08f3505dfe75b
+  zh: d11ff3af14fc61c7
+/deepseek-ai-dsh-pdf-reader/model-experience/screenshot-questions/what-the-model-sees/screenshot-prompt-template:
+  en: d6ddddba7b2bfe84
+  zh: f4e8580bc339afa1
+/deepseek-ai-dsh-pdf-reader/model-experience/screenshot-questions/token-effect:
+  en: 44316dc48a2ff63d
+  zh: 70424261546fd81e
+/deepseek-ai-dsh-pdf-reader/model-experience/screenshot-questions/kv-cache-effect:
+  en: 0a9932eacdde13f7
+  zh: cef75d8f1a5bf6de
+/deepseek-ai-dsh-pdf-reader/known-limitations-and-deferred-work:
+  en: e4e2e695c5f57148
+  zh: 1a80a633dce226c7
+/deepseek-ai-dsh-pdf-reader/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 6c5f9788c6536776

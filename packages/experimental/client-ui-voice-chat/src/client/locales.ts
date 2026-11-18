@@ -18,6 +18,7 @@ export const zh = {
   'setup.trigger': '打开语音通话引导',
 } as const
 
+/** Every voice-chat dictionary key, defined by the Chinese dictionary. */
 export type VoiceChatKey = keyof typeof zh
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -27,6 +28,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
+/** English dictionary. */
 export const en: Record<VoiceChatKey, string> = {
   call: 'Voice call',
   end: 'End call',
@@ -40,6 +42,7 @@ export const en: Record<VoiceChatKey, string> = {
   'setup.trigger': 'Open voice call setup',
 }
 
+/** Japanese dictionary. */
 export const ja: Record<VoiceChatKey, string> = {
   call: '音声通話',
   end: '通話終了',
@@ -53,6 +56,7 @@ export const ja: Record<VoiceChatKey, string> = {
   'setup.trigger': '音声通話セットアップを開く',
 }
 
+/** Spanish dictionary. */
 export const es: Record<VoiceChatKey, string> = {
   call: 'Llamada de voz',
   end: 'Finalizar llamada',
@@ -66,6 +70,7 @@ export const es: Record<VoiceChatKey, string> = {
   'setup.trigger': 'Abrir configuración de llamada de voz',
 }
 
+/** French dictionary. */
 export const fr: Record<VoiceChatKey, string> = {
   call: 'Appel vocal',
   end: 'Terminer l’appel',
@@ -79,6 +84,7 @@ export const fr: Record<VoiceChatKey, string> = {
   'setup.trigger': 'Ouvrir la configuration de l’appel vocal',
 }
 
+/** German dictionary. */
 export const de: Record<VoiceChatKey, string> = {
   call: 'Sprachanruf',
   end: 'Anruf beenden',
@@ -92,6 +98,7 @@ export const de: Record<VoiceChatKey, string> = {
   'setup.trigger': 'Sprachanruf-Einrichtung öffnen',
 }
 
+/** Russian dictionary. */
 export const ru: Record<VoiceChatKey, string> = {
   call: 'Голосовой звонок',
   end: 'Завершить звонок',
@@ -105,6 +112,7 @@ export const ru: Record<VoiceChatKey, string> = {
   'setup.trigger': 'Открыть настройку голосового звонка',
 }
 
+/** Portuguese dictionary. */
 export const pt: Record<VoiceChatKey, string> = {
   call: 'Chamada de voz',
   end: 'Encerrar chamada',
