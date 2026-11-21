@@ -52,7 +52,10 @@ export class FrameQueue<Item> {
   private readonly waiters: Array<(settled: boolean) => void> = []
   private ended = false
 
-  /** Queue one item for the next drain step. */
+  /**
+   * Queue one item for the next drain step.
+   * @param item - the item to queue.
+   */
   push(item: Item): void {
     if (this.ended) return
     this.items.push(item)
@@ -68,6 +71,7 @@ export class FrameQueue<Item> {
   /**
    * Yield queued items in order.
    * @param signal - stops the drain without ending the queue.
+   * @returns queued items in order, ending once the queue ends and empties.
    */
   async *drain(signal: AbortSignal): AsyncGenerator<Item> {
     while (!signal.aborted) {
@@ -96,6 +100,7 @@ export class FrameQueue<Item> {
  * command. Domain events become frames on {@link DebugSession.frames}.
  */
 export class DebugSession {
+  /** Debug frames of this session; termination ends it with the exit frame. */
   readonly frames = new FrameQueue<CodeDebugFrame>()
   private readonly scripts = new Map<string, string>()
   private readonly breakpointLines = new Map<string, { readonly path: string; readonly line: number }>()
@@ -255,7 +260,10 @@ export class DebugSession {
     void this.child.done.finally(() => { this.frames.end() })
   }
 
-  /** Terminate the child and close the connection; the queue ends with the exit frame. */
+  /**
+   * Terminate the child and close the connection; the queue ends with the exit frame.
+   * @param reason - the termination cause to log.
+   */
   dispose(reason: string): void {
     if (this.disposed) return
     this.disposed = true
@@ -342,31 +350,46 @@ export class DebugSession {
       const object = scope.object as RemoteObject | undefined
       if (object?.objectId === undefined) continue
       try {
-        const properties = await connection.send('Runtime.getProperties', {
-          objectId: object.objectId,
-          ownProperties: true,
-          generatePreview: false,
-        }) as { result?: Array<{ name?: unknown; value?: RemoteObject }> }
-        const variables: CodeVariable[] = []
-        let truncated = false
-        for (const property of properties.result ?? []) {
-          if (variables.length >= this.limits.maxVariablesPerScope) {
-            truncated = true
-            break
-          }
-          const value = property.value
-          variables.push({
-            name: typeof property.name === 'string' ? property.name : '',
-            value: value === undefined ? 'undefined' : preview(value, this.limits.maxPreviewChars),
-            type: typeof value?.type === 'string' ? value.type : null,
-          })
-        }
-        expanded.push({ name: typeof scope.type === 'string' ? scope.type : '', variables, truncated })
-      } catch {
-        // A scope that fails to expand must not lose the rest of the pause.
+        expanded.push(await this.expandScope(connection, scope, object))
+      } catch (_error) {
+        // The expansion error must not lose the rest of the pause.
       }
     }
     return { ...skeleton, scopes: expanded }
+  }
+
+  /**
+   * Expand one paused scope into its variables.
+   * @param connection - the live CDP connection.
+   * @param scope - the scope-chain entry to expand.
+   * @param object - the scope's remote object handle.
+   * @returns the scope's name, variables, and truncation flag.
+   */
+  private async expandScope(
+    connection: CdpConnection,
+    scope: Record<string, unknown>,
+    object: RemoteObject,
+  ): Promise<CodeScope> {
+    const properties = await connection.send('Runtime.getProperties', {
+      objectId: object.objectId,
+      ownProperties: true,
+      generatePreview: false,
+    }) as { result?: Array<{ name?: unknown; value?: RemoteObject }> }
+    const variables: CodeVariable[] = []
+    let truncated = false
+    for (const property of properties.result ?? []) {
+      if (variables.length >= this.limits.maxVariablesPerScope) {
+        truncated = true
+        break
+      }
+      const value = property.value
+      variables.push({
+        name: typeof property.name === 'string' ? property.name : '',
+        value: value === undefined ? 'undefined' : preview(value, this.limits.maxPreviewChars),
+        type: typeof value?.type === 'string' ? value.type : null,
+      })
+    }
+    return { name: typeof scope.type === 'string' ? scope.type : '', variables, truncated }
   }
 
   private async applyBreakpoints(path: string, lines: readonly number[]): Promise<void> {

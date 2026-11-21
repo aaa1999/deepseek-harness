@@ -10,7 +10,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-experimental-client-ui-code-studio/remote'
+import type {} from '@deepseek-ai/dsh-client-ui-code-studio/remote'
 import type {
   CodeCallFrame, CodeCompletionItem, CodeDebugCommand, CodeDebugFrame, CodeDiagnostic, CodeDirEntry, CodeRunFrame,
 } from '../types.ts'
@@ -111,12 +111,19 @@ export class CodeStudio {
     private readonly format: (key: CodeStudioLocaleKey, params?: Record<string, unknown>) => string,
   ) {}
 
-  /** Current snapshot. */
+  /**
+   * Current snapshot.
+   * @returns the state every panel view renders.
+   */
   getSnapshot(): StudioState {
     return this.state
   }
 
-  /** Subscribe to snapshot changes; returns the unsubscribe function. */
+  /**
+   * Subscribe to snapshot changes.
+   * @param listener - called on every snapshot change.
+   * @returns the unsubscribe function.
+   */
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => { this.listeners.delete(listener) }
@@ -176,7 +183,11 @@ export class CodeStudio {
     void this.loadDirectory('')
   }
 
-  /** List one directory level, folding it into the snapshot. */
+  /**
+   * List one directory level, folding it into the snapshot.
+   * @param path - directory path relative to the root, empty for the root.
+   * @returns after the listing folds into the snapshot, or after the load is declined.
+   */
   async loadDirectory(path: string): Promise<void> {
     const root = this.state.workspaceRoot
     if (root === null || this.disposed) return
@@ -220,7 +231,10 @@ export class CodeStudio {
     if (file.value !== null) this.syncLanguage(path, text)
   }
 
-  /** Close one file tab; the active tab moves to its neighbor. */
+  /**
+   * Close one file tab; the active tab moves to its neighbor.
+   * @param path - the open file's path.
+   */
   closeFile(path: string): void {
     const openFiles = this.state.openFiles.filter(open => open !== path)
     const texts = new Map(this.state.fileTexts)
@@ -232,7 +246,10 @@ export class CodeStudio {
     this.syncLanguage(path, null)
   }
 
-  /** Make one open file the active tab. */
+  /**
+   * Make one open file the active tab.
+   * @param path - the open file's path.
+   */
   setActiveFile(path: string): void {
     if (this.state.openFiles.includes(path)) this.update({ activeFile: path })
   }
@@ -300,7 +317,10 @@ export class CodeStudio {
     return true
   }
 
-  /** Choose the bottom panel tab. */
+  /**
+   * Choose the bottom panel tab.
+   * @param tab - the chosen tab.
+   */
   setBottomTab(tab: 'output' | 'debug' | 'terminal'): void {
     this.update({ bottomTab: tab })
   }
@@ -356,8 +376,8 @@ export class CodeStudio {
           if (controller.signal.aborted) return
           this.consumeRun(frame)
         }
-      } catch {
-        // An aborted run is an expected end; failures already arrived as frames.
+      } catch (_error) {
+        // The run error only reports the expected abort; failures already arrived as frames.
       } finally {
         this.release(controller)
         if (this.runController === controller) this.runController = null
@@ -436,12 +456,15 @@ export class CodeStudio {
     if (debugId === null) return
     try {
       await this.ctx.remote.codeStudio.debugCommand({ debugId, command })
-    } catch {
-      // A dead session reports itself through its stream.
+    } catch (_error) {
+      // The command error only reports a dead session, which ends its own stream.
     }
   }
 
-  /** Choose one paused stack frame for the variables view. */
+  /**
+   * Choose one paused stack frame for the variables view.
+   * @param index - index into the paused call frames.
+   */
   selectFrame(index: number): void {
     const paused = this.state.debug.paused
     if (paused === null || index < 0 || index >= paused.callFrames.length) return
@@ -545,8 +568,8 @@ export class CodeStudio {
     if (langId === null) return
     try {
       void this.ctx.remote.codeStudio.langSync({ langId, path, text })
-    } catch {
-      // A dead language session reports itself through its stream.
+    } catch (_error) {
+      // The sync error only reports a dead language session, which ends its own stream.
     }
   }
 
@@ -572,8 +595,8 @@ export class CodeStudio {
           this.update({ diagnostics })
         }
       }
-    } catch {
-      // The aborted session is the expected end of the stream.
+    } catch (_error) {
+      // The stream error only reports the expected abort, which ends the session.
     } finally {
       this.release(controller)
       if (this.langController === controller) this.langController = null

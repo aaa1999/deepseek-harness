@@ -21,6 +21,8 @@ flowchart LR
   pkg_text_to_speech_sherpaonnx["text-to-speech-sherpaonnx"]
   pkg_api_text_to_speech["api-text-to-speech"]
   svc_speechSynthesisController["ctx.speechSynthesisController<br/>Experimental speech synthesis Remote"]
+  pkg_client_ui_code_studio["client-ui-code-studio"]
+  svc_codeStudio["ctx.codeStudio<br/>Experimental code studio Remote"]
   pkg_pdf_reader["pdf-reader"]
   svc_pdfReaderController["ctx.pdfReaderController<br/>PDF reader host service"]
   pkg_epub_reader["epub-reader"]
@@ -384,6 +386,7 @@ flowchart LR
   pkg_client_modules --> svc_clientModules
   pkg_client_modules --> svc_config
   pkg_client_product_analytics --> svc_productAnalytics
+  pkg_client_ui_code_studio --> svc_codeStudio
   pkg_client_ui_connector_account --> svc_connectorAccounts
   pkg_client_ui_plugin_manager --> svc_pluginRegistryProbe
   pkg_client_ui_session_status --> svc_sessionStatus
@@ -728,6 +731,7 @@ flowchart LR
 | `ctx.deepseekChatImport` | `service` | [`deepseek-chat-import`](../packages/experimental/deepseek-chat-import) | - | - | - | Serves the owner-only upload route that imports each conversation of a DeepSeek chat export as a Session, and the upload limits the browser checks first. |
 | `ctx.textToSpeech` | `seam` | [`text-to-speech`](../packages/experimental/text-to-speech) | [`text-to-speech-sherpaonnx`](../packages/experimental/text-to-speech-sherpaonnx) | [`api-text-to-speech`](../packages/experimental/api-text-to-speech) | - | Named SpeechSynthesizer providers register synthesis info; resolve() pins one instance exactly as speech recognition does. |
 | `ctx.speechSynthesisController` | `service` | [`api-text-to-speech`](../packages/experimental/api-text-to-speech) | - | - | - | Serves preparation state and synthesis requests over the authenticated Remote; the voice-chat UI plays the returned audio. |
+| `ctx.codeStudio` | `service` | [`client-ui-code-studio`](../packages/experimental/client-ui-code-studio) | - | - | - | Serves workspace file access, sandbox-confined runs, CDP debugging, the editor language session, and the workspace terminal to the browser panel. |
 | `ctx.pdfReaderController` | `service` | [`pdf-reader`](../packages/experimental/pdf-reader) | - | - | - | Owns imported PDF storage, selection treatments and screenshot questions over the LLM service, and the cover and shot image routes. |
 | `ctx.epubReaderController` | `service` | [`epub-reader`](../packages/experimental/epub-reader) | - | - | - | Owns imported EPUB storage, selection treatments over the LLM service, and the book resource route. |
 | `ctx.sessionNodes` | `service` | [`session-node`](../packages/experimental/session-node) | - | [`session-node-ui`](../packages/experimental/session-node-ui) | - | Owns the per-workspace durable saved-node order and the fork that replays a saved prefix; the browser surfaces route its Remote. |

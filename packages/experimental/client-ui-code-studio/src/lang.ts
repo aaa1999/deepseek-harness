@@ -31,6 +31,7 @@ export interface LangLimits {
  * ends its frame queue with one `failed` frame.
  */
 export class LangSession {
+  /** Language frames of this session; server death ends it with one `failed` frame. */
   readonly frames = new FrameQueue<CodeLangFrame>()
   private readonly versions = new Map<string, number>()
   private disposed: boolean = false

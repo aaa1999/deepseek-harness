@@ -54,6 +54,7 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [voice-chat.md](voice-chat.md) | experimental realtime voice conversation: the synthesizer registry, auto-submitted transcript turns, read-aloud replies, and speech-onset interruption |
 | [pdf-reader.md](pdf-reader.md) | experimental PDF library: import and shelf rows, browser PDF.js parse with reported structure, text highlights and screenshot questions |
 | [epub-reader.md](epub-reader.md) | experimental EPUB library: import and shelf rows, sanitized chapters with book-served resources, and highlight treatments |
+| [code-studio.md](code-studio.md) | experimental in-app code studio: workspace files, a `typescript-language-server` session, sandbox-confined runs, CDP debugging, and the workspace terminal |
 | [translation.md](translation.md) | experimental anonymous text translation and explicit provider requests |
 | [agent-team.md](agent-team.md) | Agent Teams: shared task DAG and task ownership for a subagent tree |
 | [liveshare.md](liveshare.md) | the opt-in LiveShare bundle: nested share modes, a fork's ceiling and durability, enforcement installation, and the constraint a shared Session's externally driven turns run under |

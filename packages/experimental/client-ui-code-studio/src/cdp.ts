@@ -102,8 +102,8 @@ export class CdpConnection {
     this.close('disposed')
     try {
       this.socket.close()
-    } catch {
-      // A close after the socket ended is not an error worth reporting.
+    } catch (_error) {
+      // The close error only reports a socket that already ended; it needs no handling.
     }
   }
 

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Estudio de código",
+    "description": "Escribe, ejecuta y depura TypeScript en un espacio de trabajo: un editor con completado y diagnósticos, salida de ejecución y depuración con puntos de interrupción."
+  }
+}

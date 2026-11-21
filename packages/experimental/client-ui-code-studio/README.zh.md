@@ -3,7 +3,7 @@ description: "代码工作台 Host Remote：工作区文件、受限运行、CDP
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-client-ui-code-studio
+# @deepseek-ai/dsh-client-ui-code-studio
 
 [English](README.md) | 中文
 

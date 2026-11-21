@@ -3,7 +3,7 @@ description: "Code studio Host Remote: workspace files, confined runs, CDP debug
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-client-ui-code-studio
+# @deepseek-ai/dsh-client-ui-code-studio
 
 English | [中文](README.zh.md)
 

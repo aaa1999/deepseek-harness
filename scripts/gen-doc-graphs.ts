@@ -147,6 +147,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Serves preparation state and synthesis requests over the authenticated Remote; the voice-chat UI plays the returned audio.',
   },
   {
+    key: 'codeStudio',
+    pkg: 'client-ui-code-studio',
+    title: 'Experimental code studio Remote',
+    mode: 'service',
+    note: 'Serves workspace file access, sandbox-confined runs, CDP debugging, the editor language session, and the workspace terminal to the browser panel.',
+  },
+  {
     key: 'pdfReaderController',
     pkg: 'pdf-reader',
     title: 'PDF reader host service',

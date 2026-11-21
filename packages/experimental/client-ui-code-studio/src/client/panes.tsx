@@ -252,7 +252,7 @@ export function DebugPane({ studio, state, t }: {
                   void studio.openFile(callFrame.path)
                 }}
               >
-                <span className="code-studio-stack-name">{callFrame.functionName || '(anonymous)'}</span>
+                <span className="code-studio-stack-name">{callFrame.functionName || t('debug.anonymousFunction')}</span>
                 <span className="code-studio-stack-site">{callFrame.path}:{callFrame.line + 1}</span>
               </button>
             ))}

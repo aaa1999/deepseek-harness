@@ -19,6 +19,7 @@ const TERMINAL_TYPE = 'xterm-256color'
  * aborts, which terminates the shell.
  */
 export class WorkspaceTerminal {
+  /** Terminal frames of this session; shell exit ends it with the exit frame. */
   readonly frames = new FrameQueue<CodeTerminalFrame>()
   private disposed = false
 

@@ -23,6 +23,8 @@ flowchart LR
   pkg_text_to_speech_sherpaonnx["text-to-speech-sherpaonnx"]
   pkg_api_text_to_speech["api-text-to-speech"]
   svc_speechSynthesisController["ctx.speechSynthesisController<br/>Experimental speech synthesis Remote"]
+  pkg_client_ui_code_studio["client-ui-code-studio"]
+  svc_codeStudio["ctx.codeStudio<br/>Experimental code studio Remote"]
   pkg_pdf_reader["pdf-reader"]
   svc_pdfReaderController["ctx.pdfReaderController<br/>PDF reader host service"]
   pkg_epub_reader["epub-reader"]
@@ -386,6 +388,7 @@ flowchart LR
   pkg_client_modules --> svc_clientModules
   pkg_client_modules --> svc_config
   pkg_client_product_analytics --> svc_productAnalytics
+  pkg_client_ui_code_studio --> svc_codeStudio
   pkg_client_ui_connector_account --> svc_connectorAccounts
   pkg_client_ui_plugin_manager --> svc_pluginRegistryProbe
   pkg_client_ui_session_status --> svc_sessionStatus
@@ -730,6 +733,7 @@ flowchart LR
 | `ctx.deepseekChatImport` | `service` | [`deepseek-chat-import`](../packages/experimental/deepseek-chat-import) | - | - | - | 提供仅 owner 可用的上传路由，把 DeepSeek 会话导出的每个对话导入为一个会话，并提供浏览器先行检查的上传上限。 |
 | `ctx.textToSpeech` | `seam` | [`text-to-speech`](../packages/experimental/text-to-speech) | [`text-to-speech-sherpaonnx`](../packages/experimental/text-to-speech-sherpaonnx) | [`api-text-to-speech`](../packages/experimental/api-text-to-speech) | - | 具名 SpeechSynthesizer 提供方注册合成信息；resolve() 与语音识别完全一致地固定唯一实例。 |
 | `ctx.speechSynthesisController` | `service` | [`api-text-to-speech`](../packages/experimental/api-text-to-speech) | - | - | - | 通过带认证的 Remote 提供准备状态与合成请求；语音聊天界面播放返回的音频。 |
+| `ctx.codeStudio` | `service` | [`client-ui-code-studio`](../packages/experimental/client-ui-code-studio) | - | - | - | 向浏览器面板提供工作区文件访问、沙箱受限运行、CDP 调试、编辑器语言会话与工作区终端。 |
 | `ctx.pdfReaderController` | `service` | [`pdf-reader`](../packages/experimental/pdf-reader) | - | - | - | 负责导入 PDF 的存储、经 LLM 服务的划词处理与截图提问，以及封面和截图图片路由。 |
 | `ctx.epubReaderController` | `service` | [`epub-reader`](../packages/experimental/epub-reader) | - | - | - | 负责导入 EPUB 的存储、经 LLM 服务的划词处理，以及图书资源路由。 |
 | `ctx.sessionNodes` | `service` | [`session-node`](../packages/experimental/session-node) | - | [`session-node-ui`](../packages/experimental/session-node-ui) | - | 负责每个工作区持久化的保存节点顺序，以及重放已保存前缀的 fork；浏览器界面经其 Remote 调用。 |

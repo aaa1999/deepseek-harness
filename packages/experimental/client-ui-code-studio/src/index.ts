@@ -55,20 +55,35 @@ const MAX_TIMER_DELAY_MS = 2_147_483_647
 
 /** Panel limits: run and debug budgets plus the language server invocation. */
 interface Config {
+  /** Interpreter argv that runs a workspace entry; the entry path is appended. */
   readonly runtimeCommand: string[]
+  /** Command that starts the editor language server over stdio. */
   readonly languageServerCommand: string[]
+  /** Run deadline a request without its own timeout uses. */
   readonly defaultTimeoutMs: number
+  /** Largest run deadline a request may carry. */
   readonly maxTimeoutMs: number
+  /** Per-stream byte cap on delivered output text. */
   readonly maxOutputBytes: number
+  /** Grace period after terminate before a stopped child is killed. */
   readonly graceMs: number
+  /** Entry cap of one listed directory level. */
   readonly maxListEntries: number
+  /** Call-frame cap of one paused debug snapshot. */
   readonly maxCallFrames: number
+  /** Scope cap of one paused call frame. */
   readonly maxScopesPerFrame: number
+  /** Variable cap of one paused scope. */
   readonly maxVariablesPerScope: number
+  /** Preview length cap of one paused variable value. */
   readonly maxPreviewChars: number
+  /** Wait cap for scope and variable collection while paused. */
   readonly pausedCollectTimeoutMs: number
+  /** Initialize handshake timeout of the language server. */
   readonly initializeTimeoutMs: number
+  /** Per-request completion timeout of the language server. */
   readonly completionTimeoutMs: number
+  /** Per-request hover timeout of the language server. */
   readonly hoverTimeoutMs: number
 }
 
@@ -217,7 +232,7 @@ export class CodeStudioController extends TypertRemoteService {
    * Run one entry file and stream its lifetime.
    * @param request - root, entry path, and optional deadline.
    * @param signal - kills the child and ends the stream.
-   * @yields run frames in occurrence order.
+   * @returns run frames in occurrence order.
    */
   @Remote({ mode: 'stream' })
   async *run(request: CodeRunRequest, signal: AbortSignal): AsyncIterable<CodeRunFrame> {
@@ -231,7 +246,7 @@ export class CodeStudioController extends TypertRemoteService {
    * stays stopped at its entry until a `resume` command.
    * @param request - root, entry path, and initial breakpoints.
    * @param signal - terminates the child and ends the stream.
-   * @yields debug frames in occurrence order; the first is `started`.
+   * @returns debug frames in occurrence order; the first is `started`.
    */
   @Remote({ mode: 'stream' })
   async *debugStart(request: CodeDebugStartRequest, signal: AbortSignal): AsyncIterable<CodeDebugFrame> {
@@ -267,7 +282,7 @@ export class CodeStudioController extends TypertRemoteService {
    * Open one editor language session and stream its diagnostics.
    * @param request - root the language server indexes.
    * @param signal - terminates the server and ends the stream.
-   * @yields language frames; `started` on success, one `failed` frame instead when the server cannot start.
+   * @returns language frames; `started` on success, one `failed` frame instead when the server cannot start.
    */
   @Remote({ mode: 'stream' })
   async *langStart(request: CodeLangStartRequest, signal: AbortSignal): AsyncIterable<CodeLangFrame> {
@@ -322,7 +337,7 @@ export class CodeStudioController extends TypertRemoteService {
    * Open one interactive shell in the workspace and stream its output.
    * @param request - root and the client view's initial dimensions.
    * @param signal - terminates the shell and ends the stream.
-   * @yields terminal frames; the first is `started`.
+   * @returns terminal frames; the first is `started`.
    * @throws {RemoteError} `codeStudio/terminal-failed` when the shell cannot start.
    */
   @Remote({ mode: 'stream' })

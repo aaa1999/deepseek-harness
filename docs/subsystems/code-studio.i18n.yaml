@@ -1,0 +1,13 @@
+# Bilingual-pair consistency record for code-studio.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/code-studio.md
+/code-studio:
+  en: 19161bcd1c210e9a
+  zh: a3217cfa6a78e7d3
+/code-studio/files-and-editing:
+  en: 983ca687b3b5b7d3
+  zh: 403d700d109ca42c
+/code-studio/run-debug-and-terminal:
+  en: 718f3e3a643ed108
+  zh: e6f63292398f854b

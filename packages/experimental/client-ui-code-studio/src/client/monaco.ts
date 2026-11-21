@@ -33,7 +33,11 @@ export function loadMonaco(): Promise<MonacoApi> {
   return monacoPromise
 }
 
-/** Monaco language id of one workspace file path. */
+/**
+ * Monaco language id of one workspace file path.
+ * @param path - the workspace file path.
+ * @returns the Monaco language id.
+ */
 export function monacoLanguageOf(path: string): string {
   if (path.endsWith('.ts') || path.endsWith('.tsx')) return 'typescript'
   if (path.endsWith('.js') || path.endsWith('.jsx')) return 'javascript'
@@ -43,12 +47,21 @@ export function monacoLanguageOf(path: string): string {
 /** Model uri scheme of the panel's in-memory files. */
 const URI_SCHEME = 'code-studio'
 
-/** Build one file's model uri. */
+/**
+ * Build one file's model uri.
+ * @param monaco - the loaded editor API.
+ * @param path - the workspace file path.
+ * @returns the in-memory model uri.
+ */
 export function modelUri(monaco: MonacoApi, path: string): Monaco.Uri {
   return monaco.Uri.from({ scheme: URI_SCHEME, path: `/${path}` })
 }
 
-/** The file path a panel model uri names, or `null` for anything else. */
+/**
+ * The file path a panel model uri names, or `null` for anything else.
+ * @param uri - the uri to decode.
+ * @returns the workspace file path, or `null` for any other uri.
+ */
 export function pathOfModelUri(uri: { readonly scheme: string; readonly path: string }): string | null {
   return uri.scheme === URI_SCHEME && uri.path.startsWith('/') ? uri.path.slice(1) : null
 }

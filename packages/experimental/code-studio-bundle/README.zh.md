@@ -3,7 +3,7 @@ description: "从插件页启用 TypeScript 代码工作台面板。"
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-code-studio-bundle
+# @deepseek-ai/dsh-code-studio-bundle
 
 [English](README.md) | 中文
 

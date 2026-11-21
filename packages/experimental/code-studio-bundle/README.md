@@ -3,7 +3,7 @@ description: "Enable the TypeScript code studio panel from the Plugins page."
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-code-studio-bundle
+# @deepseek-ai/dsh-code-studio-bundle
 
 English | [中文](README.zh.md)
 

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Code-Studio",
+    "description": "TypeScript in einem Arbeitsbereich schreiben, ausführen und debuggen: ein Editor mit Vervollständigung und Diagnose, Laufausgabe und Breakpoint-Debugging."
+  }
+}

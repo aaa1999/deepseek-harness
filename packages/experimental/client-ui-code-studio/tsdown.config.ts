@@ -16,6 +16,15 @@ const ASYNC_CHUNK_PLUGIN = 'dsh-client-async-chunk-require'
 /** Package-local dynamic import the grouping lowers to a require call. */
 const DYNAMIC_REQUIRE = /Promise\.resolve\(\)\.then\(\(\)\s*=>\s*require\((['"])(\.\/client\.[A-Za-z0-9][A-Za-z0-9._-]*\.js)\1\)\)/g
 
+/**
+ * The async-chunk plugin face this panel rewrites: the preset types the
+ * renderChunk call shapes this override must match.
+ */
+interface AsyncChunkPlugin {
+  readonly name?: string
+  renderChunk?: (this: unknown, code: string, chunk: unknown, options: unknown) => unknown
+}
+
 export default (inline: Parameters<ReturnType<typeof clientBundle>>[0]) => {
   return faces(inline).map(config => {
     const name = (config as { name?: string }).name ?? ''
@@ -25,7 +34,7 @@ export default (inline: Parameters<ReturnType<typeof clientBundle>>[0]) => {
       // The grouping changes the call shapes the preset's plugin accepts, so
       // this panel owns the rewrite: every package-local dynamic import keeps
       // its expression tail but reaches the chunk through require.async.
-      ;(plugin as unknown as { renderChunk: (this: unknown, code: string, chunk: unknown, options: unknown) => unknown }).renderChunk = function (
+      ;(plugin as AsyncChunkPlugin).renderChunk = function (
         this: unknown, code: string, chunk: unknown, options: unknown,
       ) {
         const rewritten = code.replace(DYNAMIC_REQUIRE, 'Promise.resolve().then(() => require.async($1$2$1))')

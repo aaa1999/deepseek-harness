@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-code-studio-bundle",
+  "name": "@deepseek-ai/dsh-code-studio-bundle",
   "description": "Experimental TypeScript code studio panel: workspace editor with completions, diagnostics, runs, and breakpoint debugging",
   "version": "0.2.2-rc.5",
   "icon": "./icon.svg",
@@ -27,7 +27,6 @@
   "files": [
     "icon.svg",
     "locale/*.json",
-    "docs",
     "lib/index.js",
     "cordis.patch.yml",
     "lib/types/**/*.d.ts",
@@ -37,7 +36,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-experimental-client-ui-code-studio": "workspace:*"
+    "@deepseek-ai/dsh-client-ui-code-studio": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"

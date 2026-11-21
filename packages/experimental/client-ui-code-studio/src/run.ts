@@ -30,7 +30,7 @@ export interface RunLimits {
  * @param entryAbsolute - host-absolute entry file path.
  * @param timeoutMs - caller deadline; clamped to {@link RunLimits.maxTimeoutMs}.
  * @param signal - ends the run: the child terminates and the stream stops.
- * @yields run frames in occurrence order.
+ * @returns run frames in occurrence order.
  * @throws {RemoteError} `codeStudio/run-failed` when the runtime or sandbox is unavailable.
  */
 export async function* runWorkspaceEntry(

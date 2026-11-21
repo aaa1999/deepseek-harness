@@ -642,6 +642,51 @@ export interface AccountNotificationsConfig {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-account-notifications -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-code-studio -->
+<a id="deepseek-aidsh-client-ui-code-studio"></a>
+
+## `@deepseek-ai/dsh-client-ui-code-studio`
+
+- `inject`: `fs` · `subprocess` · `sandbox` · `workspaceRegistry`
+- `source`: [`packages/experimental/client-ui-code-studio/src/index.ts:57`](../packages/experimental/client-ui-code-studio/src/index.ts)
+
+```ts config-catalog
+/** Panel limits: run and debug budgets plus the language server invocation. */
+interface Config {
+  /** Interpreter argv that runs a workspace entry; the entry path is appended. */
+  readonly runtimeCommand: string[]
+  /** Command that starts the editor language server over stdio. */
+  readonly languageServerCommand: string[]
+  /** Run deadline a request without its own timeout uses. */
+  readonly defaultTimeoutMs: number
+  /** Largest run deadline a request may carry. */
+  readonly maxTimeoutMs: number
+  /** Per-stream byte cap on delivered output text. */
+  readonly maxOutputBytes: number
+  /** Grace period after terminate before a stopped child is killed. */
+  readonly graceMs: number
+  /** Entry cap of one listed directory level. */
+  readonly maxListEntries: number
+  /** Call-frame cap of one paused debug snapshot. */
+  readonly maxCallFrames: number
+  /** Scope cap of one paused call frame. */
+  readonly maxScopesPerFrame: number
+  /** Variable cap of one paused scope. */
+  readonly maxVariablesPerScope: number
+  /** Preview length cap of one paused variable value. */
+  readonly maxPreviewChars: number
+  /** Wait cap for scope and variable collection while paused. */
+  readonly pausedCollectTimeoutMs: number
+  /** Initialize handshake timeout of the language server. */
+  readonly initializeTimeoutMs: number
+  /** Per-request completion timeout of the language server. */
+  readonly completionTimeoutMs: number
+  /** Per-request hover timeout of the language server. */
+  readonly hoverTimeoutMs: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-code-studio -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-context-menu -->
 <a id="deepseek-aidsh-client-ui-context-menu"></a>
 
@@ -5727,6 +5772,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-client-ui-slots` | — | [`packages/client/ui-slots/src/index.ts`](../packages/client/ui-slots/src/index.ts) |
 | `@deepseek-ai/dsh-client-web` | — | [`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts) |
 | `@deepseek-ai/dsh-cmdline` | — | [`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts) |
+| `@deepseek-ai/dsh-code-studio-bundle` | — | [`packages/experimental/code-studio-bundle/src/index.ts`](../packages/experimental/code-studio-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-cua-bundle` | — | [`packages/experimental/cua-bundle/src/index.ts`](../packages/experimental/cua-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-deque` | — | [`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts) |
 | `@deepseek-ai/dsh-epub-reader-bundle` | — | [`packages/experimental/epub-reader-bundle/src/index.ts`](../packages/experimental/epub-reader-bundle/src/index.ts) |

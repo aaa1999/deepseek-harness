@@ -44,8 +44,8 @@ export function TerminalPane({ ctx, root, t }: {
     const fit = (): void => {
       try {
         fitterRef.current?.fit()
-      } catch {
-        // A fit against a detached view is a no-op for the next observer pass.
+      } catch (_error) {
+        // The fit error only reports a detached view; the next observer pass fits again.
       }
     }
     void (async () => {

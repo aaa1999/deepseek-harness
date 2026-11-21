@@ -22,7 +22,11 @@ export interface JsonRpcObserver {
 /** Cap of one inbound JSON-RPC message; larger frames fail the connection. */
 export const MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 
-/** Encode one framed message as UTF-8 bytes ready to write. */
+/**
+ * Encode one framed message as UTF-8 bytes ready to write.
+ * @param message - the message to frame.
+ * @returns the Content-Length header followed by the JSON body.
+ */
 export function encodeMessage(message: JsonRpcMessage): Uint8Array {
   const body = new TextEncoder().encode(JSON.stringify(message))
   const header = new TextEncoder().encode(`Content-Length: ${body.byteLength}\r\n\r\n`)
@@ -151,7 +155,11 @@ export class JsonRpcConnection {
     })
   }
 
-  /** Send one notification; fire-and-forget with no reply. */
+  /**
+   * Send one notification; fire-and-forget with no reply.
+   * @param method - the notification method name.
+   * @param params - the notification parameters.
+   */
   notify(method: string, params: unknown): void {
     this.send({ jsonrpc: '2.0', method, params })
   }
