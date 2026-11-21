@@ -79,7 +79,7 @@ const probeFlowPlugin = {
 async function bench(): Promise<SlotTestRuntime> {
   const runtime = await SlotTestRuntime.create()
   runtime.ctx.provide('shortcuts', { register: () => () => {}, catalog: createSnapshotStore([]) })
-  runtime.ctx.provide('layout', { selectPanel: vi.fn(), beginNavigation: () => new AbortController().signal })
+  runtime.ctx.provide('layout', { selectPanel: vi.fn(), beginNavigation: () => new AbortController().signal, panelInfo: createSnapshotStore({ activePanelId: null }) })
   runtime.releaseWorkspaceSource()
   // Directory picking goes through the probe occupant; the namespace only has
   // to be there for ui-workspace's inject to settle.

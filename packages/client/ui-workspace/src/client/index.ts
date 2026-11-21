@@ -16,7 +16,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-context-menu/client'
  * Session-row seats: the leading decoration a row renders only while its own
  * primary state is idle, and the section the row's hover card renders between
  * its relative time and its trailing status line. Export discipline:
- * packages/client/AGENTS.md.
+ * packages/client/AGENTS.md. The MainTabStrip fills the frame's
+ * `shell.maintabs` seat, projecting the open main views the same navigation
+ * drives.
  */
 import type {} from '@deepseek-ai/dsh-client-product-analytics/client'
 import type { Context } from '@deepseek-ai/cordis'
@@ -52,6 +54,9 @@ import {
 } from './contract/slots.ts'
 import { createWorkspaceShortcutControls, installWorkspaceShortcuts } from './shortcuts.ts'
 import { UiWorkspaceService } from './navigation.ts'
+import { MainTabsController, panelLabelSource } from './main-tabs.ts'
+import { MainTabStrip } from './MainTabStrip.tsx'
+import type { MainTabStripInjected } from './MainTabStrip.tsx'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
 import { ArchiveSessionRowButton, SessionArchiveConfirmDialog } from './session-actions/ArchiveSession.tsx'
@@ -124,6 +129,8 @@ declare module '@deepseek-ai/dsh-api-session-controller/client' {
     workspaceOperation: unknown
     /** Recently viewed Sessions kept receiving history after leaving the main view. */
     recentViews: unknown
+    /** Sessions behind an open main tab, kept receiving history while they are not the active view. */
+    tabs: unknown
   }
 }
 
@@ -167,6 +174,8 @@ export function apply(ctx: Context, config: SyncedConfig<WorkspaceNavigationConf
   const uiWorkspace = new UiWorkspaceService(
     ctx, ctx.remote.directoryPicker, workspaces, sessions, viewInstance.actions, notify, config.recentViewLimit,
   )
+  const mainTabs = new MainTabsController(ctx, uiWorkspace, sessions, workspaces)
+  ctx.effect(() => mainTabs.start(), 'ui-workspace: main tabs')
   ctx.slots.provideRoot({
     hooks: { workspaces: workspaces.list },
     keyedHooks: {
@@ -439,6 +448,16 @@ export function apply(ctx: Context, config: SyncedConfig<WorkspaceNavigationConf
     inject: pickerInjected(factoryFlowSource),
     locale: NS,
   }, WorkspacePickerFactory)
+  // The frame's main tab strip follows the same navigation the sidebar drives.
+  ctx.slots.inject('shell.maintabs', () => ctx.slots.register({
+    name: 'shell.maintabs',
+    locale: NS,
+    inject: (): MainTabStripInjected => ({
+      hooks: { mainTabs: mainTabs.state, panelLabels: panelLabelSource(ctx) },
+      activate: (key) => { mainTabs.activate(key) },
+      close: (key) => { mainTabs.close(key) },
+    }),
+  }, MainTabStrip))
 }
 
 /**

@@ -74,6 +74,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'main': { kind: 'keyed'; scope: 'root' }
     /**
+     * Tab strip above the main panel listing the open main views. OCCUPIED by
+     * ui-workspace's MainTabStrip, which renders nothing below two open views,
+     * so an empty seat reserves no height. Selecting a tab drives the ordinary
+     * navigation (session open or panel selection); the frame keeps no tab
+     * state of its own.
+     */
+    'shell.maintabs': { kind: 'single'; scope: 'root' }
+    /**
      * The right column: a track the centre makes room for, or nothing. OCCUPIED
      * by the right Sidebar, which uses the resolved column width in normal
      * mode and covers the viewport in fullscreen, retaining the wide-screen
@@ -195,6 +203,7 @@ export function apply(ctx: ClientContext): void {
       children: {
         'sidebar': { kind: 'single', scope: 'root' },
         'main': { kind: 'keyed', scope: 'root' },
+        'shell.maintabs': { kind: 'single', scope: 'root' },
         'rightbar': { kind: 'single', scope: 'root' },
         'shell.bottom': { kind: 'single', scope: 'root' },
         'shell.overlay': { kind: 'list', scope: 'root' },

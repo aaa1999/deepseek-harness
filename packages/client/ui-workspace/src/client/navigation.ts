@@ -27,7 +27,8 @@ import { pinOrderAccounts, pinOrderSource } from './pin-order.ts'
 import { RecentSessionViews } from './recent-views.ts'
 import type { WorkspaceViewStoreActions } from './stores.ts'
 
-interface MainSelection {
+/** The Session the Conversation view shows, persisted across reloads. */
+export interface MainSelection {
   readonly sessionId?: SessionId
   readonly subagentAddress?: SubagentAddress
 }
@@ -45,6 +46,12 @@ export interface UiWorkspace {
    * @param target - known Session identity or durable direct-parent subagent address to display.
    */
   openSession(target: SessionTarget): void
+  /**
+   * Close the Conversation view without archiving its Session: the main view
+   * releases its reference and shows the empty Conversation, and every other
+   * open view keeps its state.
+   */
+  closeMainView(): void
   /**
    * Connect a Workspace and open its Session unless a later navigation supersedes it.
    * @param workspaceId - target Workspace.
@@ -178,6 +185,8 @@ class UiWorkspaceService extends Service implements UiWorkspace {
   private mainReference: SessionReference | undefined
   private readonly recentViews: RecentSessionViews
   private restorationNavigation: AbortSignal | undefined
+  /** The main-view selection as a read-only observable. */
+  readonly mainSelection: ObservableSnapshot<MainSelection> = this.selection
 
   /**
    * @param ctx - Client root Context.
@@ -301,6 +310,10 @@ class UiWorkspaceService extends Service implements UiWorkspace {
 
   openSession(target: SessionTarget): void {
     this.replaceMain(target, this.lifetime.signal, 'reveal')
+  }
+
+  closeMainView(): void {
+    this.clearMain()
   }
 
   openWorkspace(

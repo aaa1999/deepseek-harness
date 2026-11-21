@@ -1,0 +1,102 @@
+/* Main tab strip: one row of open-view chips above the main panel. Design
+   tokens only; hover states stay fenced behind hover-capable pointers, and
+   touch pointers see every close button (no hover to reveal it). */
+
+.strip {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-bg-base);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 80px;
+  max-width: 180px;
+  height: 28px;
+  padding: 0 6px 0 10px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-interactive-bg-hover);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: var(--dsw-radius-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The active chip carries the darkest fill; resting chips keep a lighter one. */
+.tabActive {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover-accent);
+}
+
+.tab:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: -2px;
+}
+
+/* The close control stays hidden until its chip is active, hovered, or focused. */
+.close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tabActive .close,
+.close:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: hover) {
+  .tab:not(.tabActive):hover {
+    background: var(--dsw-alias-interactive-bg-active);
+  }
+
+  .tab:hover .close {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .close:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+@media (hover: none) {
+  .close {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

@@ -296,6 +296,15 @@ describe('AppFrame', () => {
       expect(document.title).toBe(panelId === null ? 'Session title — DSH Local Build' : 'DSH Local Build')
     }
   })
+
+  it('renders the main-tabs seat inside the centre column above the main panel', () => {
+    const { getByTestId } = mountFrame()
+    const tabs = getByTestId('shell.maintabs-content')
+    const panel = getByTestId('main-content').parentElement
+    if (panel === null) throw new Error('the main outlet has no panel wrapper')
+    expect(tabs.parentElement).toBe(panel.parentElement)
+    expect(tabs.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })
 
 describe('AppFrame normal width concessions', () => {
