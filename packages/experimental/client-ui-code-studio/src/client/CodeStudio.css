@@ -1,0 +1,322 @@
+/* Code studio layout: a toolbar, a tree-and-editor split, and a bottom console. */
+
+.code-studio {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.code-studio-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--dsh-border, #d0d4dc);
+  flex: none;
+}
+
+.code-studio-workspace {
+  max-width: 280px;
+  min-width: 120px;
+}
+
+.code-studio-spacer {
+  flex: 1;
+}
+
+.code-studio-button {
+  white-space: nowrap;
+}
+
+.code-studio-lang {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.code-studio-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.code-studio-files {
+  width: 220px;
+  flex: none;
+  overflow: auto;
+  border-right: 1px solid var(--dsh-border, #d0d4dc);
+  padding: 8px 0;
+}
+
+.code-studio-pane-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  padding: 6px 12px;
+}
+
+.code-studio-tree-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 3px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+
+.code-studio-tree-row:hover {
+  background: var(--dsh-hover, rgba(127, 127, 127, 0.12));
+}
+
+.code-studio-tree-active {
+  background: var(--dsh-selected, rgba(127, 127, 127, 0.2));
+}
+
+.code-studio-tree-note {
+  font-size: 12px;
+  opacity: 0.55;
+  padding: 2px 8px;
+}
+
+.code-studio-tree-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 8px;
+}
+
+.code-studio-tree-new {
+  background: none;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  font-family: inherit;
+  padding: 2px 6px;
+}
+
+.code-studio-tree-new:hover {
+  opacity: 1;
+}
+
+.code-studio-create {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 8px;
+}
+
+.code-studio-create-input {
+  font-size: 12px;
+  padding: 2px 6px;
+  min-width: 0;
+}
+
+.code-studio-create-error {
+  font-size: 11px;
+  color: #d05050;
+  padding-top: 2px;
+}
+
+.code-studio-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 120px;
+  background: var(--dsh-surface, #ffffff);
+  border: 1px solid var(--dsh-border, #d0d4dc);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  padding: 4px;
+}
+
+.code-studio-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+  border-radius: 4px;
+}
+
+.code-studio-menu-item:hover {
+  background: var(--dsh-hover, rgba(127, 127, 127, 0.12));
+}
+
+.code-studio-editor-area {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.code-studio-editor,
+.code-studio-editor-empty {
+  position: absolute;
+  inset: 0;
+}
+
+.code-studio-editor-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  font-size: 13px;
+}
+
+.code-studio-bottom {
+  height: 200px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--dsh-border, #d0d4dc);
+  min-height: 0;
+}
+
+.code-studio-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 12px 0;
+  flex: none;
+}
+
+.code-studio-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+
+.code-studio-tab-active {
+  border-bottom-color: currentColor;
+}
+
+.code-studio-output {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 12px;
+  font-family: var(--dsh-mono, ui-monospace, monospace);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.code-studio-output-line {
+  margin: 0;
+}
+
+.code-studio-output-stderr {
+  color: #d05050;
+}
+
+.code-studio-output-console {
+  color: #806020;
+}
+
+.code-studio-output-system {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.code-studio-output-empty {
+  opacity: 0.55;
+  padding: 4px 0;
+}
+
+.code-studio-debug {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.code-studio-debug > .code-studio-output {
+  flex: 1;
+}
+
+.code-studio-debug-side {
+  width: 300px;
+  flex: none;
+  overflow: auto;
+  border-left: 1px solid var(--dsh-border, #d0d4dc);
+}
+
+.code-studio-stack-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+
+.code-studio-stack-row:hover {
+  background: var(--dsh-hover, rgba(127, 127, 127, 0.12));
+}
+
+.code-studio-stack-name {
+  font-weight: 600;
+}
+
+.code-studio-stack-site {
+  opacity: 0.7;
+  font-family: var(--dsh-mono, ui-monospace, monospace);
+}
+
+.code-studio-scope-name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  padding: 6px 12px 2px;
+}
+
+.code-studio-variable {
+  display: flex;
+  gap: 8px;
+  padding: 1px 12px;
+  font-size: 12px;
+  font-family: var(--dsh-mono, ui-monospace, monospace);
+}
+
+.code-studio-variable-name {
+  flex: none;
+  font-weight: 600;
+}
+
+.code-studio-variable-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* Editor decorations registered with Monaco by class name. */
+
+.code-studio-breakpoint {
+  background: radial-gradient(circle at 6px center, #d04040 0 5px, transparent 5px) no-repeat;
+}
+
+.code-studio-paused-line {
+  background: rgba(255, 200, 0, 0.22);
+}

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Code studio",
+    "description": "Write, run, and debug TypeScript in a workspace: an editor with completions and diagnostics, run output, and breakpoint debugging."
+  }
+}

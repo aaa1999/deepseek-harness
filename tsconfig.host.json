@@ -467,6 +467,8 @@
     { "path": "./packages/experimental/forge-session" },
     { "path": "./packages/experimental/forge-bundle" },
     { "path": "./packages/experimental/client-ui-forge/tsconfig.host.json" },
+    { "path": "./packages/experimental/client-ui-code-studio/tsconfig.host.json" },
+    { "path": "./packages/experimental/code-studio-bundle" },
     { "path": "./packages/session-query/tool-session-list" },
     { "path": "./packages/session/session-title-llm" },
     { "path": "./packages/session/session-title-first-prompt-llm" },
