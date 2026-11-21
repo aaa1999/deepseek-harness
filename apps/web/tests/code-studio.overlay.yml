@@ -1,0 +1,7 @@
+# Loader overlay for the code studio smoke (`dsh web --patch`): mount the
+# experimental panel beside the shipped rows. The profile links the package
+# from the development checkout (see the profile's package.json), so the bare
+# name resolves against the profile's own node_modules.
+- insert:
+    - id: code-studio
+      name: '@deepseek-ai/dsh-experimental-client-ui-code-studio'

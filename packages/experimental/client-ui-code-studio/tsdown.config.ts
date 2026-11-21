@@ -13,8 +13,8 @@ const faces = clientBundle(import.meta.dirname, ['lib/types/index.js'], { hostPh
 /** The preset's async-chunk plugin name. */
 const ASYNC_CHUNK_PLUGIN = 'dsh-client-async-chunk-require'
 
-/** Dynamic import the grouping emits with a namespace-interop tail. */
-const INTEROP_IMPORT = /Promise\.resolve\(\)\.then\(\(\)\s*=>\s*require\((['"])(\.\/client\.[A-Za-z0-9][A-Za-z0-9._-]*\.js)\1\)\)\.then\(\(n\)\s*=>\s*n\.t\)/g
+/** Package-local dynamic import the grouping lowers to a require call. */
+const DYNAMIC_REQUIRE = /Promise\.resolve\(\)\.then\(\(\)\s*=>\s*require\((['"])(\.\/client\.[A-Za-z0-9][A-Za-z0-9._-]*\.js)\1\)\)/g
 
 export default (inline: Parameters<ReturnType<typeof clientBundle>>[0]) => {
   return faces(inline).map(config => {
@@ -22,26 +22,44 @@ export default (inline: Parameters<ReturnType<typeof clientBundle>>[0]) => {
     if (!name.endsWith('/client')) return config
     for (const plugin of (config.plugins as { name?: string }[])) {
       if (plugin.name !== ASYNC_CHUNK_PLUGIN) continue
-      const original = (plugin as { renderChunk: (this: unknown, code: string, chunk: unknown, options: unknown) => unknown }).renderChunk
-      ;(plugin as unknown as { renderChunk: (this: unknown, code: string, chunk: { dynamicImports?: readonly string[] }, options: unknown) => unknown }).renderChunk = function (
-        this: unknown, code: string, chunk: { dynamicImports?: readonly string[] }, options: unknown,
+      // The grouping changes the call shapes the preset's plugin accepts, so
+      // this panel owns the rewrite: every package-local dynamic import keeps
+      // its expression tail but reaches the chunk through require.async.
+      ;(plugin as unknown as { renderChunk: (this: unknown, code: string, chunk: unknown, options: unknown) => unknown }).renderChunk = function (
+        this: unknown, code: string, chunk: unknown, options: unknown,
       ) {
-        const rewritten = code.replace(INTEROP_IMPORT, 'require.async($1$2$1).then((n) => n.t)')
-        try {
-          return original.call(this, rewritten, chunk, options)
-        } catch (error) {
-          // The interop rewrite already produced the plugin's target form for
-          // every chunk import — the grouping lists the group's own chunk
-          // among its dynamic imports, which never carries a call — so only a
-          // genuinely missing import on another chunk rethrows.
-          const file = (chunk as { fileName?: string }).fileName
-          const covered = (chunk.dynamicImports ?? []).filter(spec => spec !== file).every(spec =>
-            rewritten.includes(`require.async("./${spec}")`) || rewritten.includes(`require.async('${spec}')`))
-          if (!covered) throw error
-          return rewritten === code ? null : rewritten
-        }
+        const rewritten = code.replace(DYNAMIC_REQUIRE, 'Promise.resolve().then(() => require.async($1$2$1))')
+        return rewritten === code ? null : rewritten
       }
     }
+    // The grouping makes both the entry and the monaco chunk require the
+    // 737-byte rolldown runtime chunk synchronously, which the module loader
+    // cannot resolve; inline that module into every consumer and drop the
+    // chunk instead.
+    ;(config.plugins as unknown[]).push({
+      name: 'dsh-inline-rolldown-runtime',
+      generateBundle(_options: unknown, bundle: Record<string, { type?: string; code?: string }>) {
+        const runtimeKey = 'client.rolldown-runtime.js'
+        const runtime = bundle[runtimeKey]
+        if (runtime === undefined || runtime.type !== 'chunk' || runtime.code === undefined) return
+        const head = 'var module={exports:{}};var exports=module.exports;'
+        const tail = 'return module.exports'
+        const start = runtime.code.indexOf(head)
+        const end = runtime.code.lastIndexOf(tail)
+        if (start < 0 || end < start + head.length) {
+          throw new Error('tsdown: the rolldown runtime chunk lost its expected wrapper shape')
+        }
+        const body = runtime.code.slice(start + head.length, end)
+        const inlined = `(()=>{var module={exports:{}};var exports=module.exports;${body}return module.exports})()`
+        for (const [key, output] of Object.entries(bundle)) {
+          if (output.type !== 'chunk' || output.code === undefined) continue
+          if (output.code.includes('./client.rolldown-runtime.js')) {
+            output.code = output.code.replaceAll('require("./client.rolldown-runtime.js")', inlined)
+          }
+        }
+        delete bundle[runtimeKey]
+      },
+    })
     config.outputOptions = {
       ...config.outputOptions,
       advancedChunks: { groups: [{ name: 'monaco', test: /monaco-editor[\\/]/ }] },

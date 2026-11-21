@@ -58,7 +58,7 @@ export interface StudioState {
   readonly breakpoints: ReadonlyMap<string, ReadonlySet<number>>
   readonly run: RunState
   readonly debug: DebugState
-  readonly bottomTab: 'output' | 'debug'
+  readonly bottomTab: 'output' | 'debug' | 'terminal'
 }
 
 const INITIAL: StudioState = {
@@ -301,7 +301,7 @@ export class CodeStudio {
   }
 
   /** Choose the bottom panel tab. */
-  setBottomTab(tab: 'output' | 'debug'): void {
+  setBottomTab(tab: 'output' | 'debug' | 'terminal'): void {
     this.update({ bottomTab: tab })
   }
 

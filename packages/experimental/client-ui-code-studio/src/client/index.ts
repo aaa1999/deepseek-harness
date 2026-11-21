@@ -61,6 +61,7 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
           locale: NS,
           inject: () => ({
             studio,
+            ctx: scoped,
             workspaces: scoped.workspaces.list,
             pickDirectory: () => scoped.uiWorkspace.pickDirectory(),
             createWorkspace: async (path: string) => (await scoped.workspaces.create({ path })).path,

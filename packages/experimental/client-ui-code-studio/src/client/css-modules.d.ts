@@ -10,14 +10,3 @@ declare module '*.css'
 declare module 'monaco-editor/esm/vs/editor/editor.main.js' {
   export * from 'monaco-editor/esm/vs/editor/editor.api'
 }
-
-declare module '@xterm/xterm' {
-  interface Terminal {
-    /** Internal renderer metrics; the fit addon reads the same fields. */
-    readonly _core?: {
-      readonly _renderService?: {
-        readonly dimensions?: { readonly cssCellWidth?: number; readonly cssCellHeight?: number }
-      }
-    }
-  }
-}

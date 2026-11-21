@@ -320,3 +320,16 @@
 .code-studio-paused-line {
   background: rgba(255, 200, 0, 0.22);
 }
+
+.code-studio-terminal {
+  flex: 1;
+  min-height: 0;
+  background: #1e1e1e;
+  position: relative;
+}
+
+.code-studio-terminal-host {
+  position: absolute;
+  inset: 0;
+  padding: 4px;
+}

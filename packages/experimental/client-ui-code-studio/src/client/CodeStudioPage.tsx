@@ -4,6 +4,7 @@
  * along the bottom. The editor loads lazily with the first selected file.
  */
 
+import type { Context } from '@deepseek-ai/cordis'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import type { HostObservable, InjectFace, PropsLocale, Translate } from '@deepseek-ai/dsh-client-ui-slots'
@@ -11,6 +12,7 @@ import { EditorPane } from './Editor.tsx'
 import type { MonacoApi } from './monaco.ts'
 import { loadMonaco, registerEditorServices } from './monaco.ts'
 import { DebugPane, FilePane, OutputPane } from './panes.tsx'
+import { TerminalPane } from './TerminalPane.tsx'
 import './CodeStudio.css'
 import type { CodeStudio } from './studio.ts'
 
@@ -33,7 +35,7 @@ export interface CodeStudioInjected {
 }
 
 /** Full props of the code studio page. */
-export type CodeStudioPageProps = InjectFace<CodeStudioInjected> & PropsLocale<typeof NS>
+export type CodeStudioPageProps = InjectFace<CodeStudioInjected> & PropsLocale<typeof NS> & { readonly ctx: Context }
 
 /** Locale namespace of the panel, referenced by the props type. */
 const NS = 'codeStudio'
@@ -43,7 +45,7 @@ const NS = 'codeStudio'
  * @param props - the panel controller, the workspace source, and the bound translate function.
  * @returns the panel.
  */
-export function CodeStudioPage({ studio, workspaces, pickDirectory, createWorkspace, t }: CodeStudioPageProps): ReactNode {
+export function CodeStudioPage({ studio, workspaces, pickDirectory, createWorkspace, ctx, t }: CodeStudioPageProps): ReactNode {
   const state = useSyncExternalStore(onChange => studio.subscribe(onChange), () => studio.getSnapshot())
   const listed = useSyncExternalStore(
     onChange => workspaces.subscribe(onChange),
@@ -160,8 +162,19 @@ export function CodeStudioPage({ studio, workspaces, pickDirectory, createWorksp
             className={`code-studio-tab${state.bottomTab === 'debug' ? ' code-studio-tab-active' : ''}`}
             onClick={() => { studio.setBottomTab('debug') }}
           >{t('output.debugTitle')}</button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={state.bottomTab === 'terminal'}
+            className={`code-studio-tab${state.bottomTab === 'terminal' ? ' code-studio-tab-active' : ''}`}
+            onClick={() => { studio.setBottomTab('terminal') }}
+          >{t('output.terminalTitle')}</button>
         </div>
-        {state.bottomTab === 'output' ? <OutputPane state={state} t={t} /> : <DebugPane studio={studio} state={state} t={t} />}
+        {state.bottomTab === 'output'
+          ? <OutputPane state={state} t={t} />
+          : state.bottomTab === 'debug'
+            ? <DebugPane studio={studio} state={state} t={t} />
+            : state.workspaceRoot === null ? null : <TerminalPane ctx={ctx} root={state.workspaceRoot} t={t} />}
       </footer>
     </div>
   )
