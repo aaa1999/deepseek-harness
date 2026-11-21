@@ -55,6 +55,10 @@ export class MainTabsController {
   private readonly held = new Map<SessionId, SessionReference>()
   private restored = false
   private stopped = false
+  /** Re-entrancy guard for {@link MainTabsController.syncRetention}: acquiring a reference publishes the Session list synchronously. */
+  private syncing = false
+  /** Incremented by every sync request, so a running pass repeats while requests arrive during it. */
+  private requests = 0
   /** The tab state as a read-only observable, bound by the strip. */
   readonly state = this.store
 
@@ -116,7 +120,8 @@ export class MainTabsController {
       : registered.has(tab.panelId))
     if (active !== undefined && !tabs.some(tab => keyOf(tab) === keyOf(active))) tabs = [...tabs, active]
     const activeKey = active === undefined ? undefined : keyOf(active)
-    if (tabs !== previous.tabs || activeKey !== previous.activeKey) this.store.set({ tabs, activeKey })
+    const unchanged = tabs.length === previous.tabs.length && tabs.every((tab, i) => tab === previous.tabs[i])
+    if (!unchanged || activeKey !== previous.activeKey) this.store.set({ tabs, activeKey })
     this.syncRetention()
   }
 
@@ -134,26 +139,41 @@ export class MainTabsController {
     this.ctx.layout.selectPanel(active.panelId)
   }
 
-  /** Hold exactly one `tabs` reference per background Session tab, retaining before releasing. */
+  /**
+   * Hold exactly one `tabs` reference per background Session tab, retaining before
+   * releasing. Acquiring a reference publishes the Session list synchronously,
+   * so a re-entrant call only records its request and the running pass repeats.
+   */
   private syncRetention(): void {
-    const current = this.service.mainSelection.getSnapshot().sessionId
-    const wanted = new Set(this.store.getSnapshot().tabs.flatMap(tab =>
-      tab.kind !== 'session' || tab.sessionId === current ? [] : [tab.sessionId]))
-    for (const sessionId of wanted) {
-      if (this.held.has(sessionId)) continue
-      const target = this.sessions.subagentAddress(sessionId) ?? sessionId
-      try {
-        this.held.set(sessionId, this.sessions.retain(target, { source: 'tabs' }))
-      } catch (error: unknown) {
-        // The tab cannot hold its Session; the view stays reachable through the sidebar.
-        console.warn('main tab Session retention failed:', error)
-        this.dropSessionTab(sessionId)
-      }
-    }
-    for (const [sessionId, reference] of [...this.held]) {
-      if (wanted.has(sessionId)) continue
-      this.held.delete(sessionId)
-      reference.release()
+    this.requests++
+    if (this.syncing) return
+    this.syncing = true
+    try {
+      let handled: number
+      do {
+        handled = this.requests
+        const current = this.service.mainSelection.getSnapshot().sessionId
+        const wanted = new Set(this.store.getSnapshot().tabs.flatMap(tab =>
+          tab.kind !== 'session' || tab.sessionId === current ? [] : [tab.sessionId]))
+        for (const sessionId of wanted) {
+          if (this.held.has(sessionId)) continue
+          const target = this.sessions.subagentAddress(sessionId) ?? sessionId
+          try {
+            this.held.set(sessionId, this.sessions.retain(target, { source: 'tabs' }))
+          } catch (error: unknown) {
+            // The tab cannot hold its Session; the view stays reachable through the sidebar.
+            console.warn('main tab Session retention failed:', error)
+            this.dropSessionTab(sessionId)
+          }
+        }
+        for (const [sessionId, reference] of [...this.held]) {
+          if (wanted.has(sessionId)) continue
+          this.held.delete(sessionId)
+          reference.release()
+        }
+      } while (this.requests !== handled)
+    } finally {
+      this.syncing = false
     }
   }
 
@@ -193,11 +213,36 @@ export class MainTabsController {
     const activeKey = previous.activeKey === key
       ? neighbour === undefined ? undefined : keyOf(neighbour)
       : previous.activeKey
+    // Reopen the neighbour before removing the closed tab: the open's
+    // synchronous list publication meets a reconcile that still lists the
+    // closed tab, so the leaving active view cannot be appended back as an
+    // arriving one.
+    if (previous.activeKey === key && neighbour !== undefined) this.activate(keyOf(neighbour))
     this.store.set({ tabs, activeKey })
-    if (previous.activeKey === key) {
-      if (neighbour === undefined) this.service.closeMainView()
-      else this.activate(keyOf(neighbour))
-    }
+    if (previous.activeKey === key && neighbour === undefined) this.service.closeMainView()
+    this.syncRetention()
+  }
+
+  /**
+   * Close a set of tabs at once; their Sessions keep running. A set that
+   * includes the active view activates the first surviving tab, and closing
+   * every tab empties the Conversation view.
+   * @param keys - {@link keyOf} identities of the tabs to close.
+   */
+  closeMany(keys: readonly string[]): void {
+    const previous = this.store.getSnapshot()
+    const closed = new Set(keys)
+    const tabs = previous.tabs.filter(tab => !closed.has(keyOf(tab)))
+    if (tabs.length === previous.tabs.length) return
+    const activeClosed = previous.activeKey !== undefined && closed.has(previous.activeKey)
+    const survivor = tabs[0]
+    const activeKey = activeClosed ? (survivor === undefined ? undefined : keyOf(survivor)) : previous.activeKey
+    // The survivor opens before the tab list shrinks, for the same reason as
+    // in close(): an open publishes the Session list synchronously, and the
+    // reconcile it triggers must still see the closing views listed.
+    if (activeClosed && survivor !== undefined) this.activate(keyOf(survivor))
+    this.store.set({ tabs, activeKey })
+    if (activeClosed && survivor === undefined) this.service.closeMainView()
     this.syncRetention()
   }
 }

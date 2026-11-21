@@ -456,6 +456,7 @@ export function apply(ctx: Context, config: SyncedConfig<WorkspaceNavigationConf
       hooks: { mainTabs: mainTabs.state, panelLabels: panelLabelSource(ctx) },
       activate: (key) => { mainTabs.activate(key) },
       close: (key) => { mainTabs.close(key) },
+      closeMany: (keys) => { mainTabs.closeMany(keys) },
     }),
   }, MainTabStrip))
 }

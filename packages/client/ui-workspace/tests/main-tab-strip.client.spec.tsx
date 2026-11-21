@@ -39,6 +39,7 @@ interface MountOptions {
 function mountStrip(options: MountOptions) {
   const activate = vi.fn()
   const close = vi.fn()
+  const closeMany = vi.fn()
   const tabsStore = createSnapshotStore<MainTabsState>({ tabs: options.tabs, activeKey: options.activeKey })
   const summaries = options.summaries ?? [
     summary('a', { title: 'Refactor plan' }),
@@ -59,10 +60,11 @@ function mountStrip(options: MountOptions) {
       useSessionStatus={selector => selector(status)}
       activate={activate}
       close={close}
+      closeMany={closeMany}
       t={t}
     />,
   )
-  return { ...utils, activate, close, tabsStore }
+  return { ...utils, activate, close, closeMany, tabsStore }
 }
 
 afterEach(cleanup)
@@ -144,5 +146,63 @@ describe('MainTabStrip', () => {
     expect(second.querySelector('[data-state="ongoing"]')).not.toBeNull()
     const first = screen.getAllByRole('tab')[0]!
     expect(first.querySelector('[data-state]')).toBeNull()
+  })
+
+  it('enters the selection mode from the manage menu and toggles chips instead of switching', () => {
+    const tabs = [sessionTab('a'), sessionTab('b')]
+    const summaries = [summary('a', { title: 'One' }), summary('b', { title: 'Two' })]
+    const { activate } = mountStrip({ tabs, activeKey: keyOf(tabs[0]!), summaries })
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Manage tabs' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Close multiple' }))
+    const checkboxes = screen.getAllByRole('checkbox')
+    expect(checkboxes).toHaveLength(2)
+    expect(screen.queryByRole('button', { name: 'Close "One"' })).toBeNull()
+    fireEvent.click(checkboxes[1]!)
+    expect((checkboxes[1]! as HTMLInputElement).checked).toBe(true)
+    // A chip click toggles its checkbox rather than activating the view.
+    fireEvent.click(screen.getAllByRole('tab')[0]!)
+    expect((checkboxes[0]! as HTMLInputElement).checked).toBe(true)
+    expect(activate).not.toHaveBeenCalled()
+  })
+
+  it('closes the checked selection through the manage menu and leaves the mode', () => {
+    const tabs = [sessionTab('a'), sessionTab('b'), sessionTab('c')]
+    const summaries = [summary('a', { title: 'One' }), summary('b', { title: 'Two' }), summary('c', { title: 'Three' })]
+    const { activate, closeMany } = mountStrip({ tabs, activeKey: keyOf(tabs[1]!), summaries })
+    fireEvent.click(screen.getByRole('button', { name: 'Manage tabs' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Close multiple' }))
+    const checkboxes = screen.getAllByRole('checkbox')
+    fireEvent.click(checkboxes[0]!)
+    fireEvent.click(checkboxes[2]!)
+    fireEvent.click(screen.getByRole('button', { name: 'Manage tabs' }))
+    const closeSelected = screen.getByRole('menuitem', { name: 'Close selected (2)' })
+    expect(closeSelected.getAttribute('aria-disabled')).not.toBe('true')
+    fireEvent.click(closeSelected)
+    expect(closeMany).toHaveBeenCalledWith([`session:${sid('a')}`, `session:${sid('c')}`])
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(activate).not.toHaveBeenCalled()
+  })
+
+  it('offers closing every tab from the manage menu', () => {
+    const tabs = [sessionTab('a'), sessionTab('b')]
+    const summaries = [summary('a', { title: 'One' }), summary('b', { title: 'Two' })]
+    const { closeMany } = mountStrip({ tabs, activeKey: keyOf(tabs[0]!), summaries })
+    fireEvent.click(screen.getByRole('button', { name: 'Manage tabs' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Close all' }))
+    expect(closeMany).toHaveBeenCalledWith([`session:${sid('a')}`, `session:${sid('b')}`])
+  })
+
+  it('exits the selection mode from the manage menu without closing anything', () => {
+    const tabs = [sessionTab('a'), sessionTab('b')]
+    const summaries = [summary('a', { title: 'One' }), summary('b', { title: 'Two' })]
+    const { closeMany } = mountStrip({ tabs, activeKey: keyOf(tabs[0]!), summaries })
+    fireEvent.click(screen.getByRole('button', { name: 'Manage tabs' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Close multiple' }))
+    fireEvent.click(screen.getAllByRole('checkbox')[1]!)
+    fireEvent.click(screen.getByRole('button', { name: 'Manage tabs' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Exit selection' }))
+    expect(closeMany).not.toHaveBeenCalled()
+    expect(screen.queryByRole('checkbox')).toBeNull()
   })
 })

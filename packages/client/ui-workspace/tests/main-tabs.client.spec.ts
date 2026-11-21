@@ -73,6 +73,11 @@ class MutableSource<T> {
     this.value = value
     for (const listener of [...this.listeners]) listener()
   }
+
+  /** Notify without changing the snapshot, the way a republished equal value does. */
+  notify(): void {
+    for (const listener of [...this.listeners]) listener()
+  }
 }
 
 class FakeSessions implements ISessions {
@@ -86,6 +91,10 @@ class FakeSessions implements ISessions {
       sessionId, binding, ready: Promise.resolve(binding), release, [Symbol.dispose]: release,
     }
     this.retained.push({ reference, release, options })
+    // The real Controller republishes the Session list synchronously on every
+    // retain; replaying that notification keeps the projection's re-entrant
+    // paths observable in this bench.
+    this.list.notify()
     return reference
   })
   readonly subagentAddress = vi.fn<ISessions['subagentAddress']>()
@@ -320,6 +329,68 @@ describe('MainTabsController', () => {
     b.sessions.list.set(readySessions())
     b.workspaces.list.set(workspaceState())
     expect(b.controller.state.getSnapshot().tabs.map(keyOf)).toEqual([`session:${sid('a')}`])
+  })
+
+  it('closeMany keeps the survivors in order and the untouched active view', async () => {
+    const b = await bench()
+    for (const id of ['a', 'b', 'c']) b.service.openSession(sid(id))
+    b.controller.closeMany([`session:${sid('a')}`])
+    expect(b.controller.state.getSnapshot().tabs.map(keyOf))
+      .toEqual([`session:${sid('b')}`, `session:${sid('c')}`])
+    expect(b.controller.state.getSnapshot().activeKey).toBe(`session:${sid('c')}`)
+    expect(b.service.mainSelection.getSnapshot().sessionId).toBe(sid('c'))
+  })
+
+  it('closeMany closing the active view activates the first survivor', async () => {
+    const b = await bench()
+    for (const id of ['a', 'b', 'c']) b.service.openSession(sid(id))
+    b.controller.closeMany([`session:${sid('a')}`, `session:${sid('c')}`])
+    expect(b.controller.state.getSnapshot().tabs.map(keyOf)).toEqual([`session:${sid('b')}`])
+    expect(b.controller.state.getSnapshot().activeKey).toBe(`session:${sid('b')}`)
+    expect(b.service.mainSelection.getSnapshot().sessionId).toBe(sid('b'))
+  })
+
+  it('closeMany closing every tab empties the main view', async () => {
+    const b = await bench()
+    for (const id of ['a', 'b']) b.service.openSession(sid(id))
+    b.controller.closeMany([`session:${sid('a')}`, `session:${sid('b')}`])
+    expect(b.controller.state.getSnapshot()).toEqual({ tabs: [], activeKey: undefined })
+    expect(b.service.mainSelection.getSnapshot()).toEqual({})
+  })
+
+  it('closeMany releases the closed background tabs only', async () => {
+    const b = await bench()
+    for (const id of ['a', 'b', 'c']) b.service.openSession(sid(id))
+    const released = (): readonly string[] => b.sessions.retained
+      .filter(item => (item.options as { source: string }).source === 'tabs' && item.release.mock.calls.length > 0)
+      .map(item => item.reference.sessionId)
+    b.controller.closeMany([`session:${sid('a')}`])
+    expect(released()).toEqual([sid('a')])
+    const held = b.sessions.retained
+      .filter(item => (item.options as { source: string }).source === 'tabs' && item.release.mock.calls.length === 0)
+      .map(item => item.reference.sessionId)
+    expect(held).toEqual([sid('b')])
+  })
+
+  it('closeMany ignores keys that name no open tab', async () => {
+    const b = await bench()
+    b.service.openSession(sid('a'))
+    b.service.openSession(sid('b'))
+    const before = b.controller.state.getSnapshot()
+    b.controller.closeMany(['panel:none', 'session:missing'])
+    expect(b.controller.state.getSnapshot()).toBe(before)
+  })
+
+  it('keeps the closed active view closed while its successor opens through a publishing list', async () => {
+    const b = await bench()
+    for (const id of ['a', 'b', 'c']) b.service.openSession(sid(id))
+    // The active view (c) is closed with a surviving neighbour; the successor's
+    // synchronous list publication must not append c back as an arriving view.
+    b.controller.closeMany([`session:${sid('a')}`, `session:${sid('c')}`])
+    expect(b.controller.state.getSnapshot().tabs.map(keyOf)).toEqual([`session:${sid('b')}`])
+    expect(b.controller.state.getSnapshot().activeKey).toBe(`session:${sid('b')}`)
+    b.controller.close(`session:${sid('b')}`)
+    expect(b.controller.state.getSnapshot()).toEqual({ tabs: [], activeKey: undefined })
   })
 
   it('drops a Session tab whose reference cannot be held', async () => {

@@ -1,6 +1,7 @@
-/* Main tab strip: one row of open-view chips above the main panel. Design
-   tokens only; hover states stay fenced behind hover-capable pointers, and
-   touch pointers see every close button (no hover to reveal it). */
+/* Main tab strip: one row of open-view chips above the main panel plus the
+   trailing manage control. Design tokens only; hover states stay fenced
+   behind hover-capable pointers, and touch pointers see every close button
+   (no hover to reveal it). */
 
 .strip {
   display: flex;
@@ -11,11 +12,20 @@
   padding: 0 10px;
   border-bottom: 0.5px solid var(--dsw-alias-border-l3);
   background: var(--dsw-alias-bg-base);
+}
+
+/* The chips scroll here while the manage control keeps its place at the end. */
+.tabs {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px;
+  align-items: center;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
-.strip::-webkit-scrollbar {
+.tabs::-webkit-scrollbar {
   display: none;
 }
 
@@ -79,6 +89,33 @@
   pointer-events: auto;
 }
 
+/* The leading checkbox of the selection mode: a native control over the
+   brand accent, sized to the chip's row. */
+.select {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--dsw-alias-state-business-primary);
+  cursor: pointer;
+}
+
+/* The trailing manage control opening the strip's menu. */
+.manage {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
 @media (hover: hover) {
   .tab:not(.tabActive):hover {
     background: var(--dsw-alias-interactive-bg-active);
@@ -90,6 +127,10 @@
   }
 
   .close:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+
+  .manage:hover {
     background: var(--dsw-alias-interactive-bg-hover);
   }
 }

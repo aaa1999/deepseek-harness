@@ -96,4 +96,29 @@ describe('web e2e: main tab strip', () => {
     expect(await restored.getByRole('tab', { name: FIRST.title }).getAttribute('aria-selected')).toBe('true')
     expect(tripwire.pageErrors).toEqual([])
   })
+
+  it('closes a checked selection and then every tab through the manage menu', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-main-tabs-manage'))
+    const strip = page.getByRole('tablist', { name: 'Open views' })
+    const manage = page.getByRole('button', { name: 'Manage tabs' })
+    await manage.click()
+    await page.getByRole('menuitem', { name: 'Close multiple' }).click()
+    // Check only the active Session tab: closing it leaves the strip with two
+    // tabs (SECOND and Plugins) and activates the first survivor (SECOND).
+    await page.getByRole('checkbox', { name: `Select "${FIRST.title}"` }).check()
+    await manage.click()
+    await page.getByRole('menuitem', { name: 'Close selected (1)' }).click()
+    await strip.getByRole('tab', { name: FIRST.title, exact: true }).waitFor({ state: 'detached', timeout: 30_000 })
+    expect(await strip.getByRole('tab').count()).toBe(2)
+    const activated = strip.getByRole('tab', { name: SECOND.title, exact: true })
+    expect(await activated.getAttribute('aria-selected')).toBe('true')
+    await page.getByText(SECOND.markers.assistant(SECOND.turns), { exact: false }).last()
+      .waitFor({ timeout: 30_000 })
+    expect(tripwire.pageErrors).toEqual([])
+    await manage.click()
+    await page.getByRole('menuitem', { name: 'Close all' }).click()
+    // Below two open views the strip itself is gone.
+    await strip.waitFor({ state: 'detached', timeout: 30_000 })
+    expect(tripwire.pageErrors).toEqual([])
+  })
 })
