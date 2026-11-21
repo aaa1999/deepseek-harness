@@ -35,7 +35,7 @@ The drawer mask fades with the panel’s transition duration and easing on both 
 
 Global panels occupy the root-scoped `main` keyed slot; `conversation` is the reserved key for the Conversation. `ctx.layout.selectPanel(id)` selects a registered panel, and `null` selects the Conversation without changing the current Session. The Plugins page contributes one of the shipped global panels.
 
-The single root-scoped `shell.maintabs` seat renders directly above the main panel inside the center column; ui-workspace occupies it with the open-view tab strip, which renders nothing below two open views so an empty seat reserves no height. Selecting a tab drives the ordinary navigation; the frame keeps no tab state.
+The single root-scoped `shell.maintabs` seat renders directly above the main panel inside the center column; ui-workspace occupies it with the open-view tab strip, which renders nothing without an open view so an empty seat reserves no height. Selecting a tab drives the ordinary navigation; the frame keeps no tab state.
 
 The single root-scoped `shell.bottom` slot spans the full width below the three columns. Its occupant controls its own height and visibility; the columns shrink by that height, and empty content reserves no space. Main-panel navigation preserves the bottom component. Column resize handles stop above it, while `shell.overlay` covers the whole frame. The default composition leaves this slot empty.
 

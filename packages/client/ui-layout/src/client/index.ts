@@ -75,7 +75,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'main': { kind: 'keyed'; scope: 'root' }
     /**
      * Tab strip above the main panel listing the open main views. OCCUPIED by
-     * ui-workspace's MainTabStrip, which renders nothing below two open views,
+     * ui-workspace's MainTabStrip, which renders nothing without an open view,
      * so an empty seat reserves no height. Selecting a tab drives the ordinary
      * navigation (session open or panel selection); the frame keeps no tab
      * state of its own.

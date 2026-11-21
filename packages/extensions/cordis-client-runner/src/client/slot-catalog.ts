@@ -4640,7 +4640,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     kind: 'single',
     scope: 'root',
     summary: 'Tab strip above the main panel listing the open main views.',
-    doc: 'Tab strip above the main panel listing the open main views. OCCUPIED by\nui-workspace\'s MainTabStrip, which renders nothing below two open views,\nso an empty seat reserves no height. Selecting a tab drives the ordinary\nnavigation (session open or panel selection); the frame keeps no tab\nstate of its own.',
+    doc: 'Tab strip above the main panel listing the open main views. OCCUPIED by\nui-workspace\'s MainTabStrip, which renders nothing without an open view,\nso an empty seat reserves no height. Selecting a tab drives the ordinary\nnavigation (session open or panel selection); the frame keeps no tab\nstate of its own.',
     registerOptions: [],
     ownerProps: [],
     ownerPropsReferences: [],

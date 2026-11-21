@@ -115,9 +115,17 @@ describe('web e2e: main tab strip', () => {
     await page.getByText(SECOND.markers.assistant(SECOND.turns), { exact: false }).last()
       .waitFor({ timeout: 30_000 })
     expect(tripwire.pageErrors).toEqual([])
+    // Closing down to a single open view keeps that view rendered as a tab.
+    // The close control of an inactive chip appears on hover.
+    const pluginsTab = strip.getByRole('tab', { name: 'Plugins', exact: true })
+    await pluginsTab.hover()
+    await pluginsTab.getByRole('button', { name: 'Close "Plugins"' }).click()
+    await strip.getByRole('tab', { name: 'Plugins', exact: true }).waitFor({ state: 'detached', timeout: 30_000 })
+    expect(await strip.getByRole('tab').count()).toBe(1)
+    expect(await strip.getByRole('tab', { name: SECOND.title, exact: true }).getAttribute('aria-selected')).toBe('true')
     await manage.click()
     await page.getByRole('menuitem', { name: 'Close all' }).click()
-    // Below two open views the strip itself is gone.
+    // With no open views the strip itself is gone.
     await strip.waitFor({ state: 'detached', timeout: 30_000 })
     expect(tripwire.pageErrors).toEqual([])
   })

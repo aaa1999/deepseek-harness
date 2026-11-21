@@ -5,7 +5,7 @@
  * switches, the close button or a middle click closes. The manage control at
  * the strip's end offers a checked selection of tabs to close together or
  * every tab at once; while it is active the chips toggle their checkbox
- * instead of switching views. Nothing renders below two open views.
+ * instead of switching views. Nothing renders without an open view.
  */
 import { useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
@@ -43,7 +43,7 @@ export type MainTabStripProps =
 /**
  * Render the main tab strip.
  * @param props - navigation signals and intents from the MainTabsController.
- * @returns the strip, or nothing below two open views.
+ * @returns the strip, or nothing without an open view.
  */
 export function MainTabStrip({
   useSessions,
@@ -62,10 +62,10 @@ export function MainTabStrip({
   const chips = useRef(new Map<string, HTMLElement>())
   const [menuOpen, setMenuOpen] = useState(false)
   // The selection mode is interaction state: it lives here and resets when the
-  // strip unmounts below two open views.
+  // strip unmounts without open views.
   const [selecting, setSelecting] = useState(false)
   const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set())
-  if (tabs.length < 2) return null
+  if (tabs.length === 0) return null
 
   const focusChip = (key: string): void => {
     chips.current.get(key)?.focus()

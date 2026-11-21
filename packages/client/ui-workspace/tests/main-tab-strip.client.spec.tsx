@@ -70,8 +70,14 @@ function mountStrip(options: MountOptions) {
 afterEach(cleanup)
 
 describe('MainTabStrip', () => {
-  it('renders nothing below two open views', () => {
-    const { container } = mountStrip({ tabs: [sessionTab('a')] })
+  it('renders a single open view as one tab', () => {
+    mountStrip({ tabs: [sessionTab('a')] })
+    const strip = screen.getByRole('tablist')
+    expect(within(strip).getAllByRole('tab').map(tab => tab.textContent)).toEqual(['Refactor plan'])
+  })
+
+  it('renders nothing without open views', () => {
+    const { container } = mountStrip({ tabs: [] })
     expect(container.firstElementChild).toBeNull()
   })
 
