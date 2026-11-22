@@ -3340,7 +3340,6 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-conversation ConversationPanel key \'conversation\'',
       'client-ui-plugin-manager PluginManagerPage',
       'client-ui-schedule TaskManagerPage',
-      'client-ui-code-studio CodeStudioPage',
       'client-ui-epub-reader ReaderPanel',
       'experimental-client-ui-forge ReviewPage',
       'client-ui-pdf-reader ReaderPanel',
@@ -5029,7 +5028,6 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     occupants: [
       'client-ui-plugin-manager PluginsPanelIcon',
       'client-ui-schedule TaskManagerIcon',
-      'client-ui-code-studio CodeStudioPanelIcon',
       'client-ui-epub-reader PanelIcon',
       'experimental-client-ui-forge ReviewNavIcon',
       'client-ui-pdf-reader PanelIcon',

@@ -47,8 +47,6 @@ export const EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS: Readonly<Record<string, strin
   'packages/experimental/voice-chat-bundle': '@deepseek-ai/dsh-voice-chat-bundle',
   'packages/experimental/session-node': '@deepseek-ai/dsh-session-node',
   'packages/experimental/session-node-ui': '@deepseek-ai/dsh-session-node-ui',
-  'packages/experimental/client-ui-code-studio': '@deepseek-ai/dsh-client-ui-code-studio',
-  'packages/experimental/code-studio-bundle': '@deepseek-ai/dsh-code-studio-bundle',
 } satisfies Record<`packages/experimental/${string}`, `@deepseek-ai/dsh-${string}`>
 
 /** Legacy npm namespace, allowed only in `LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES`. */

@@ -106,8 +106,6 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/experimental/client-ui-epub-reader': { kind: 'indirect', reason: 'The panel streams treatments the Host epub-reader service owns; the browser side registers nothing model-facing.' },
   'packages/experimental/client-ui-web-capture': { kind: 'none', reason: 'The relay reassembles extension snapshots into library storage; any later treatment request belongs to the Host reader service.' },
   'packages/experimental/session-node-ui': { kind: 'indirect', reason: 'The browser surfaces route the host sessionNodes Remote; dsh-session-node owns the saved nodes and the inherited history a forked child session later submits.' },
-  'packages/experimental/client-ui-code-studio': { kind: 'none', reason: 'The panel edits, runs, and debugs workspace files for the human user; its Remote streams never enter model requests.' },
-  'packages/experimental/code-studio-bundle': { kind: 'none', reason: 'The bundle composes the code studio panel and its Remote; neither contributes model input.' },
 
   'packages/account/deepseek-auth': { kind: 'none', reason: 'Request authentication releases HTTP headers to Host plugins and registers no model context or tools.' },
   'packages/account/deepseek-account': { kind: 'none', reason: 'Account authorization registers no model context or tools; credentials affect HTTP authentication only.' },

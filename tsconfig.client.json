@@ -100,7 +100,6 @@
     { "path": "./packages/experimental/liveshare/tsconfig.client.json" },
     { "path": "./packages/experimental/session-inspector" },
     { "path": "./packages/experimental/client-ui-forge/tsconfig.client.json" },
-    { "path": "./packages/experimental/client-ui-code-studio/tsconfig.client.json" },
     { "path": "./packages/client/config" },
     { "path": "./packages/client/hmr/tsconfig.client.json" },
     { "path": "./packages/client/connection/tsconfig.client.json" },

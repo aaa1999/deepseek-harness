@@ -71,8 +71,6 @@ const SAFE_HOST_DEPENDENCY_EXPORTS = {
   '@deepseek-ai/dsh-timeout': ['MAX_TIMER_DELAY_MS'],
   // Both operate only on the caller's subprocess service and handle; the module memoizes only the binary path.
   '@deepseek-ai/dsh-util-ripgrep': ['readRipgrepLines', 'spawnRipgrep'],
-  // A pure wrapper over Node realpath; it holds no module state.
-  '@deepseek-ai/dsh-workspace': ['realpathNormalize'],
   '@deepseek-ai/schemastery': ['default'],
 } as const satisfies HostDependencyExports
 
