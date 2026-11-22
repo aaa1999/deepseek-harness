@@ -2,13 +2,16 @@
  * Host Remote of the tweet panel: a personal microblog of plain-text posts
  * with separately laid out images, stored inside one registered Workspace at
  * `.dsh/tweet/`. Every request names the Workspace that owns the data;
- * validation failures are typed Remote errors.
+ * validation failures are typed Remote errors. A configured `workspacePath`
+ * registers one folder as such a Workspace at startup.
  *
  * @module @deepseek-ai/dsh-client-ui-tweet
  */
 
 import { Buffer } from 'node:buffer'
-import { Context } from '@deepseek-ai/cordis'
+import { isAbsolute } from 'node:path'
+import { Context, Service } from '@deepseek-ai/cordis'
+import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-workspace'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
@@ -23,6 +26,8 @@ import type {
   TweetImagePayload,
   TweetImageRequest,
   PublishTweetRequest,
+  TweetOpenRequest,
+  TweetWorkspace,
 } from './types.ts'
 
 export type * from './types.ts'
@@ -52,6 +57,12 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
+/** Configuration of the tweet panel. */
+export interface Config {
+  /** Absolute folder registered as a Workspace at startup; empty registers nothing, and the folder must exist. */
+  workspacePath: string
+}
+
 /**
  * Serves the tweet panel. Each method admits the named Workspace, then
  * reads or mutates only that Workspace's data directory.
@@ -59,8 +70,19 @@ declare module '@deepseek-ai/cordis' {
 export class TweetController extends TypertRemoteService {
   static inject = ['workspaceRegistry']
 
-  constructor(ctx: Context) {
+  static Config: z<Config> = z.object({ workspacePath: z.string().default('') })
+
+  constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'tweet')
+    if (config.workspacePath !== '' && !isAbsolute(config.workspacePath)) {
+      throw new Error('tweet: workspacePath must be an absolute directory path when set')
+    }
+  }
+
+  /** Register the configured folder as a Workspace before the panel can select it; a missing folder fails startup loudly. */
+  protected async [Service.init](): Promise<void> {
+    if (this.config.workspacePath === '') return
+    await this.ctx.workspaceRegistry.create(this.config.workspacePath)
   }
 
   /**
@@ -74,6 +96,36 @@ export class TweetController extends TypertRemoteService {
   async list(workspaceId: WorkspaceId): Promise<Tweet[]> {
     const root = admitDataRoot(this.ctx.workspaceRegistry, workspaceId)
     return (await listPosts(root)).map(toTweet)
+  }
+
+  /**
+   * Register one absolute folder as a Workspace (idempotent) and return it for
+   * selection, so the panel can post into any existing directory.
+   * @param request - absolute folder path.
+   * @returns the registered Workspace view.
+   * @throws {RemoteError} `tweet/invalid-workspace-path` when blank or relative;
+   * `tweet/workspace-open-failed` when the registry rejects the folder.
+   */
+  @Remote('open')
+  async open(request: TweetOpenRequest): Promise<TweetWorkspace> {
+    const path = request.path.trim()
+    if (path === '' || !isAbsolute(path)) {
+      throw new RemoteError(
+        'tweet/invalid-workspace-path',
+        'a workspace path must be absolute',
+        { path: request.path },
+      )
+    }
+    try {
+      const workspace = await this.ctx.workspaceRegistry.create(path)
+      return { workspaceId: workspace.id, path: workspace.path, title: workspace.title }
+    } catch (error) {
+      throw new RemoteError(
+        'tweet/workspace-open-failed',
+        `opening '${path}' as a workspace failed`,
+        { path, reason: String(error) },
+      )
+    }
   }
 
   /**

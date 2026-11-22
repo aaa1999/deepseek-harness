@@ -49,12 +49,21 @@ const OBJECT_A = `${'1'.repeat(64)}.png`
 const OBJECT_B = `${'2'.repeat(64)}.png`
 
 /** A remote double whose feed and verbs the assertions observe. */
-function fakeRemote(feed: Tweet[] = []): TweetsRemoteFace & { readonly published: string[]; readonly removed: string[] } {
+function fakeRemote(feed: Tweet[] = []): TweetsRemoteFace & {
+  readonly published: string[]
+  readonly removed: string[]
+  readonly opened: string[]
+} {
   const double = {
     published: [] as string[],
     removed: [] as string[],
+    opened: [] as string[],
     async list() {
       return ok([...feed].sort((left, right) => right.createdAt - left.createdAt))
+    },
+    async open(request: { readonly path: string }) {
+      double.opened.push(request.path)
+      return ok({ workspaceId: WS_ONE, path: request.path, title: 'opened' })
     },
     async publish(request: { text: string }) {
       double.published.push(request.text)
@@ -158,6 +167,7 @@ describe('TweetPage', () => {
   it('folds a list failure into the notice row', async () => {
     const tweet = new Tweets({
       list: async () => ({ ok: false, error: { message: 'nope' } as never }),
+      open: async () => ok({ workspaceId: WS_ONE, path: '/one', title: 'One' }),
       publish: async () => ok(post('x')),
       edit: async () => ok(post('x')),
       delete: async () => ok(true),
@@ -201,6 +211,7 @@ describe('TweetPage', () => {
       list: async () => ok([post('tweet-shot', {
         images: [{ file: OBJECT_A, mediaType: 'image/png', bytes: 10 }],
       })]),
+      open: async () => ok({ workspaceId: WS_ONE, path: '/one', title: 'One' }),
       publish: async () => ok(post('x')),
       edit: async () => ok(post('x')),
       delete: async () => ok(true),
@@ -216,25 +227,45 @@ describe('TweetPage', () => {
     expect(card.querySelector('[aria-label="image.loading"]')).toBeTruthy()
   })
 
-  it('renders the edited marker and every relative-time bucket', async () => {
-    const now = Date.now()
-    const MIN = 60_000
+  it('opens a typed working directory from the header and collapses the row', async () => {
+    const { remote } = mount()
+    await flush()
+    fireEvent.click(screen.getByLabelText('workspace.open'))
+    const input = screen.getByPlaceholderText('workspace.openPlaceholder')
+    fireEvent.change(input, { target: { value: '  /Users/you/Desktop/notes  ' } })
+    fireEvent.click(screen.getByText('workspace.openConfirm'))
+    await flush()
+    expect(remote.opened).toEqual(['/Users/you/Desktop/notes'])
+    expect(screen.queryByPlaceholderText('workspace.openPlaceholder')).toBeNull()
+  })
+
+  it('renders the explicit local timestamp of every post and the edited marker', async () => {
+    const n = new Date()
+    // Deterministic instants for the three visible buckets; the same-day one stays on
+    // today's calendar, the same-year one avoids today, January runs use December.
+    const sameDay = new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12, 34).getTime()
+    const sameYear = n.getMonth() === 0
+      ? new Date(n.getFullYear(), 11, 30, 5, 6).getTime()
+      : new Date(n.getFullYear(), 0, 2, 3, 4).getTime()
+    const otherYear = new Date(n.getFullYear() - 1, 5, 10, 7, 8).getTime()
+    const clockOf = (time: number): string => {
+      const d = new Date(time)
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+    }
+    const dateKeyOf = (prefix: 'time.clock.md' | 'time.clock.ymd', time: number): string => {
+      const d = new Date(time)
+      return `${prefix}:${JSON.stringify({ y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() })}`
+    }
     const feed = [
-      post('tweet-now', { createdAt: now }),
-      post('tweet-min', { createdAt: now - 5 * MIN }),
-      post('tweet-hour', { createdAt: now - 3 * 3_600_000 }),
-      post('tweet-day', { createdAt: now - 2 * 86_400_000 }),
-      post('tweet-month', { createdAt: now - 40 * 86_400_000 }),
-      post('tweet-year', { createdAt: now - 400 * 86_400_000, updatedAt: now - 1 }),
+      post('tweet-today', { createdAt: sameDay }),
+      post('tweet-year', { createdAt: sameYear, updatedAt: sameYear + 1000 }),
+      post('tweet-old', { createdAt: otherYear }),
     ]
     mount(feed)
     await flush()
-    expect(screen.getByText('time.now')).toBeTruthy()
-    expect(screen.getByText('time.minutes:{"n":5}')).toBeTruthy()
-    expect(screen.getByText('time.hours:{"n":3}')).toBeTruthy()
-    expect(screen.getByText('time.days:{"n":2}')).toBeTruthy()
-    expect(screen.getByText('time.months:{"n":1}')).toBeTruthy()
-    expect(screen.getByText('time.years:{"n":1}')).toBeTruthy()
+    expect(screen.getByText(clockOf(sameDay))).toBeTruthy()
+    expect(screen.getByText(`${dateKeyOf('time.clock.md', sameYear)} ${clockOf(sameYear)}`)).toBeTruthy()
+    expect(screen.getByText(`${dateKeyOf('time.clock.ymd', otherYear)} ${clockOf(otherYear)}`)).toBeTruthy()
     expect(screen.getByText('post.edited', { exact: false })).toBeTruthy()
   })
 

@@ -843,6 +843,23 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-trajectory -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-tweet -->
+<a id="deepseek-aidsh-client-ui-tweet"></a>
+
+## `@deepseek-ai/dsh-client-ui-tweet`
+
+- `inject`: `workspaceRegistry`
+- `source`: [`packages/experimental/client-ui-tweet/src/index.ts:61`](../packages/experimental/client-ui-tweet/src/index.ts)
+
+```ts config-catalog
+/** Configuration of the tweet panel. */
+export interface Config {
+  /** Absolute folder registered as a Workspace at startup; empty registers nothing, and the folder must exist. */
+  workspacePath: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-tweet -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-compaction-basic -->
 <a id="deepseek-aidsh-compaction-basic"></a>
 
@@ -5620,7 +5637,6 @@ export interface Config {
 | `@deepseek-ai/dsh-client-ui-skill` | — | [`packages/client/ui-skill/src/index.ts`](../packages/client/ui-skill/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-subagent` | — | [`packages/client/ui-subagent/src/index.ts`](../packages/client/ui-subagent/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-tool` | — | [`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts) |
-| `@deepseek-ai/dsh-client-ui-tweet` | `workspaceRegistry` | [`packages/experimental/client-ui-tweet/src/index.ts`](../packages/experimental/client-ui-tweet/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-user-questions` | — | [`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-voice-chat` | — | [`packages/experimental/client-ui-voice-chat/src/index.ts`](../packages/experimental/client-ui-voice-chat/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-web-capture` | — | [`packages/experimental/client-ui-web-capture/src/index.ts`](../packages/experimental/client-ui-web-capture/src/index.ts) |

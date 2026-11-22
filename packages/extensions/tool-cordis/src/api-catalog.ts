@@ -5219,6 +5219,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['{RemoteError} `tweet/unknown-workspace` when the id is not registered; `tweet/corrupt-store` when the index is invalid.'],
       },
       {
+        signature: '@Remote(\'open\') async open(request: TweetOpenRequest): Promise<TweetWorkspace>',
+        description: 'Register one absolute folder as a Workspace (idempotent) and return it for selection, so the panel can post into any existing directory.',
+        parameters: [{ name: 'request', description: 'absolute folder path.' }],
+        returns: 'the registered Workspace view.',
+        throws: ['{RemoteError} `tweet/invalid-workspace-path` when blank or relative; `tweet/workspace-open-failed` when the registry rejects the folder.'],
+      },
+      {
         signature: '@Remote(\'publish\') async publish(request: PublishTweetRequest): Promise<Tweet>',
         description: 'Publish one post: validate text and images, store the image bytes as content-addressed objects, and write the post record with its publish time.',
         parameters: [{ name: 'request', description: 'target Workspace, post text, and images in display order.' }],
@@ -11798,6 +11805,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TweetMediaType',
     declaration: 'export type TweetMediaType = \'image/png\' | \'image/jpeg\' | \'image/webp\' | \'image/gif\';',
+  },
+  {
+    name: 'TweetOpenRequest',
+    declaration: 'export interface TweetOpenRequest {\n    readonly path: string;\n}',
+  },
+  {
+    name: 'TweetWorkspace',
+    declaration: 'export interface TweetWorkspace {\n    readonly workspaceId: WorkspaceId;\n    readonly path: string;\n    readonly title: string;\n}',
   },
   {
     name: 'TypertCodec',

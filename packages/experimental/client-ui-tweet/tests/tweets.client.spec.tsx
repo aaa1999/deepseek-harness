@@ -52,22 +52,32 @@ function pngFile(name = 'shot.png'): File {
 type RemoteHarness = {
   readonly remote: TweetsRemoteFace
   readonly listed: Tweet[]
-  readonly calls: { readonly publish: unknown[]; readonly edit: unknown[]; readonly removed: string[] }
+  readonly calls: { readonly publish: unknown[]; readonly edit: unknown[]; readonly removed: string[]; readonly opened: string[] }
   failList: boolean
+  failOpen: boolean
+  /** Workspace id a successful open reports; defaults to a fresh unlisted id. */
+  openWorkspaceId: WorkspaceId
 }
 
 /** A remote double over one mutable feed. */
 function fakeRemote(): RemoteHarness {
   const listed: Tweet[] = []
-  const calls = { publish: [] as unknown[], edit: [] as unknown[], removed: [] as string[] }
+  const calls = { publish: [] as unknown[], edit: [] as unknown[], removed: [] as string[], opened: [] as string[] }
   const harness: RemoteHarness = {
     listed,
     calls,
     failList: false,
+    failOpen: false,
+    openWorkspaceId: brandString<WorkspaceId>('ws-opened'),
     remote: {
       list: async () => harness.failList
         ? failure<Tweet[]>('feed broke')
         : ok([...listed]),
+      open: async (request: { readonly path: string }) => {
+        if (harness.failOpen) return failure('open broke')
+        calls.opened.push(request.path)
+        return ok({ workspaceId: harness.openWorkspaceId, path: request.path, title: 'opened' })
+      },
       publish: async (request) => {
         calls.publish.push(request)
         const created = post(`tweet-created-${calls.publish.length}`, {
@@ -181,6 +191,63 @@ describe('workspace selection', () => {
     } finally {
       Object.defineProperty(window, 'localStorage', { configurable: true, value: native })
     }
+  })
+
+  it('opens a listed folder immediately and selects it', async () => {
+    const harness = fakeRemote()
+    harness.openWorkspaceId = WS_TWO
+    controller = new Tweets(harness.remote, format)
+    controller.syncWorkspaces([
+      { workspaceId: WS_ONE, path: '/one', title: 'One' },
+      { workspaceId: WS_TWO, path: '/two', title: 'Two' },
+    ])
+    await flush()
+    controller.setOpenPath('  /two  ')
+    await controller.openWorkspace()
+    await flush()
+    expect(harness.calls.opened).toEqual(['/two'])
+    expect(controller.getSnapshot().workspaceId).toBe(WS_TWO)
+    expect(controller.getSnapshot().openPath).toBe('')
+    expect(globalThis.localStorage.getItem('dsh.tweet.workspace.v1')).toBe(WS_TWO)
+  })
+
+  it('selects a freshly opened workspace once the list carries it', async () => {
+    const harness = fakeRemote()
+    controller = new Tweets(harness.remote, format)
+    controller.syncWorkspaces([{ workspaceId: WS_ONE, path: '/one', title: 'One' }])
+    await flush()
+    controller.setOpenPath('/fresh')
+    const opened = controller.openWorkspace()
+    await flush()
+    expect(controller.getSnapshot().workspaceId).toBe(WS_ONE)
+    controller.syncWorkspaces([
+      { workspaceId: WS_ONE, path: '/one', title: 'One' },
+      { workspaceId: harness.openWorkspaceId, path: '/fresh', title: 'opened' },
+    ])
+    await opened
+    await flush()
+    expect(controller.getSnapshot().workspaceId).toBe(harness.openWorkspaceId)
+    expect(controller.getSnapshot().status).toBe('ready')
+  })
+
+  it('folds an open failure and keeps the input', async () => {
+    const harness = fakeRemote()
+    harness.failOpen = true
+    controller = new Tweets(harness.remote, format)
+    controller.syncWorkspaces([{ workspaceId: WS_ONE, path: '/one', title: 'One' }])
+    await flush()
+    controller.setOpenPath('/missing')
+    await expect(controller.openWorkspace()).resolves.toBe(false)
+    expect(controller.getSnapshot().errorMessage).toBe('The action failed: open broke')
+    expect(controller.getSnapshot().openPath).toBe('/missing')
+    expect(controller.getSnapshot().workspaceId).toBe(WS_ONE)
+  })
+
+  it('refuses to open an empty input', async () => {
+    const harness = fakeRemote()
+    controller = new Tweets(harness.remote, format)
+    await expect(controller.openWorkspace()).resolves.toBe(false)
+    expect(harness.calls.opened).toEqual([])
   })
 })
 

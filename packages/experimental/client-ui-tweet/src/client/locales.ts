@@ -10,6 +10,9 @@ export const zh = {
   'workspace.select': '选择工作空间',
   'workspace.empty': '没有可用的工作空间，请先在工作区面板添加',
   'workspace.noneSelected': '先选择一个工作空间',
+  'workspace.open': '指定工作目录',
+  'workspace.openPlaceholder': '输入文件夹绝对路径，如 /Users/you/Desktop/notes',
+  'workspace.openConfirm': '打开',
   'composer.placeholder': '写下你的推文…（截图可直接粘贴）',
   'composer.publish': '发布',
   'composer.publishing': '发布中…',
@@ -34,12 +37,8 @@ export const zh = {
   'image.dialog': '图片预览',
   'image.close': '关闭',
   'image.loading': '图片加载中…',
-  'time.now': '刚刚',
-  'time.minutes': '{n} 分钟前',
-  'time.hours': '{n} 小时前',
-  'time.days': '{n} 天前',
-  'time.months': '{n} 个月前',
-  'time.years': '{n} 年前',
+  'time.clock.md': '{m}月{d}日',
+  'time.clock.ymd': '{y}年{m}月{d}日',
 } as const
 
 /** English copy. */
@@ -49,6 +48,9 @@ export const en: Record<keyof typeof zh, string> = {
   'workspace.select': 'Choose a workspace',
   'workspace.empty': 'No workspaces available; add one in the workspaces panel first',
   'workspace.noneSelected': 'Select a workspace to start',
+  'workspace.open': 'Set working directory',
+  'workspace.openPlaceholder': 'Absolute folder path, e.g. /Users/you/Desktop/notes',
+  'workspace.openConfirm': 'Open',
   'composer.placeholder': 'Share a take… (paste screenshots directly)',
   'composer.publish': 'Publish',
   'composer.publishing': 'Publishing…',
@@ -73,12 +75,8 @@ export const en: Record<keyof typeof zh, string> = {
   'image.dialog': 'Image preview',
   'image.close': 'Close',
   'image.loading': 'Loading image…',
-  'time.now': 'just now',
-  'time.minutes': '{n} min ago',
-  'time.hours': '{n} h ago',
-  'time.days': '{n} d ago',
-  'time.months': '{n} mo ago',
-  'time.years': '{n} y ago',
+  'time.clock.md': '{m}/{d}',
+  'time.clock.ymd': '{y}-{m}-{d}',
 }
 
 /** Dictionary keys of the tweet panel. */

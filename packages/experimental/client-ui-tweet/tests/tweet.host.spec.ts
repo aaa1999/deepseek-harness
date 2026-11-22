@@ -1,6 +1,7 @@
-/** TweetController behavior over the workspace-local store: publish, list order, edit, delete, and image reads. */
+/** TweetController behavior: publish, list order, edit, delete, image reads, and workspace registration. */
 
 import { Buffer } from 'node:buffer'
+import { existsSync } from 'node:fs'
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -13,6 +14,7 @@ import type { Tweet, TweetId } from '../src/types.ts'
 
 const roots: Context[] = []
 const workspaceDirs: string[] = []
+const registryCreates: string[] = []
 
 afterEach(async () => {
   await Promise.all(roots.splice(0).map(ctx => ctx.fiber.dispose()))
@@ -21,13 +23,18 @@ afterEach(async () => {
 
 const WS_ONE = WorkspaceId('ws-one')
 const WS_TWO = WorkspaceId('ws-two')
+const WS_CONFIGURED = WorkspaceId('ws-configured')
 
 /**
- * Mount the controller with one temp directory per registered workspace id.
+ * Mount the controller with one temp directory per registered workspace id and
+ * one plugin config; the registry double records `create` calls and maps the
+ * configured workspace id onto the created path.
  * @param ids - workspace ids to register, each over its own empty temp directory.
+ * @param config - plugin config the controller mounts with.
  * @returns the mounted controller.
  */
-async function harness(...ids: WorkspaceIdType[]): Promise<TweetController> {
+async function mountController(ids: readonly WorkspaceIdType[], config: { workspacePath: string }): Promise<TweetController> {
+  registryCreates.length = 0
   const byId = new Map<WorkspaceIdType, string>()
   for (const id of ids) {
     const dir = await mkdtemp(join(tmpdir(), 'tweet-spec-'))
@@ -41,9 +48,25 @@ async function harness(...ids: WorkspaceIdType[]): Promise<TweetController> {
       const path = byId.get(id)
       return path === undefined ? undefined : { path }
     },
+    create: async (path: string) => {
+      if (!existsSync(path)) throw new Error(`no such directory: ${path}`)
+      registryCreates.push(path)
+      byId.set(WS_CONFIGURED, path)
+      return { id: WS_CONFIGURED, path, title: 'configured' }
+    },
   } as never)
-  await ctx.plugin(TweetController)
+  await ctx.plugin(TweetController, config)
   return ctx.tweet
+}
+
+/**
+ * Mount the controller with the empty default config over one temp directory
+ * per registered workspace id.
+ * @param ids - workspace ids to register, each over its own empty temp directory.
+ * @returns the mounted controller.
+ */
+async function harness(...ids: WorkspaceIdType[]): Promise<TweetController> {
+  return await mountController(ids, { workspacePath: '' })
 }
 
 /** Deterministic image input: fixed bytes so every publish of it shares one digest. */
@@ -223,5 +246,56 @@ describe('TweetController.image', () => {
     await rm(join(root(0), 'objects', post.images[0]!.file))
     await expect(service.image({ workspaceId: WS_ONE, file: post.images[0]!.file }))
       .rejects.toMatchObject({ code: 'tweet/corrupt-store' })
+  })
+})
+
+describe('TweetController workspace registration', () => {
+  it('registers no workspace with the empty default config', async () => {
+    await harness(WS_ONE)
+    expect(registryCreates).toEqual([])
+  })
+
+  it('registers the configured absolute folder once and serves posts through it', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'tweet-spec-cfg-'))
+    workspaceDirs.push(dir)
+    const service = await mountController([], { workspacePath: dir })
+    expect(registryCreates).toEqual([dir])
+    const post = await service.publish({ workspaceId: WS_CONFIGURED, text: 'configured take', images: [] })
+    expect(post.text).toBe('configured take')
+    expect(await readdir(join(dir, '.dsh', 'tweet', 'posts'))).toEqual([`${post.id}.json`])
+  })
+
+  it('rejects a non-absolute workspacePath loudly at construction', async () => {
+    const ctx = new Context()
+    roots.push(ctx)
+    ctx.provide('workspaceRegistry', { get: () => undefined } as never)
+    await expect(ctx.plugin(TweetController, { workspacePath: 'relative/dir' }))
+      .rejects.toThrow('tweet: workspacePath must be an absolute directory path when set')
+  })
+})
+
+describe('TweetController.open', () => {
+  it('registers an absolute folder and returns its view for selection', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'tweet-spec-open-'))
+    workspaceDirs.push(dir)
+    const service = await harness(WS_ONE)
+    const view = await service.open({ path: dir })
+    expect(view).toMatchObject({ workspaceId: WS_CONFIGURED, path: dir })
+    expect(registryCreates).toEqual([dir])
+    const post = await service.publish({ workspaceId: WS_CONFIGURED, text: 'opened take', images: [] })
+    expect(await readdir(join(dir, '.dsh', 'tweet', 'posts'))).toEqual([`${post.id}.json`])
+  })
+
+  it('rejects a blank or relative path with a typed error', async () => {
+    const service = await harness(WS_ONE)
+    await expect(service.open({ path: 'relative/dir' })).rejects.toMatchObject({ code: 'tweet/invalid-workspace-path' })
+    await expect(service.open({ path: '  ' })).rejects.toMatchObject({ code: 'tweet/invalid-workspace-path' })
+    expect(registryCreates).toEqual([])
+  })
+
+  it('folds a registry refusal into a typed open failure', async () => {
+    const service = await harness(WS_ONE)
+    await expect(service.open({ path: '/definitely/not/a/directory' }))
+      .rejects.toMatchObject({ code: 'tweet/workspace-open-failed' })
   })
 })

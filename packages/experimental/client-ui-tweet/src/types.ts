@@ -72,6 +72,22 @@ export interface PublishTweetRequest {
   readonly images: readonly PublishImageInput[]
 }
 
+/** Open request: register one absolute folder as the Workspace this panel posts into. */
+export interface TweetOpenRequest {
+  /** Absolute folder path; must already exist. */
+  readonly path: string
+}
+
+/** One registered Workspace as the panel selects it. */
+export interface TweetWorkspace {
+  /** Registered Workspace identity. */
+  readonly workspaceId: WorkspaceId
+  /** Canonical absolute folder path. */
+  readonly path: string
+  /** Display title; defaults to the folder name. */
+  readonly title: string
+}
+
 /** Edit request: replaces the text of one post; images are immutable. */
 export interface EditTweetRequest {
   /** Registered Workspace that owns the stored data. */
@@ -102,6 +118,10 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** The request names a Workspace id the registry does not know. */
     'tweet/unknown-workspace': { readonly workspaceId: string }
+    /** The open request path is blank or not absolute. */
+    'tweet/invalid-workspace-path': { readonly path: string }
+    /** The registry refused to register the requested folder (missing or not a directory). */
+    'tweet/workspace-open-failed': { readonly path: string; readonly reason: string }
     /** The request text and images are both empty, or the edit text empties. */
     'tweet/empty-post': Record<string, never>
     /** The request declares an image type outside the accepted set. */

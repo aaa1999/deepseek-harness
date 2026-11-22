@@ -8,8 +8,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { ClipboardEvent as ReactClipboardEvent, ReactNode } from 'react'
-import { ImageLightbox, relativeTime } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { RelativeTimeUnit } from '@deepseek-ai/dsh-client-ui-primitives'
+import { ImageLightbox } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HostObservable, InjectFace, PropsLocale, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { Tweet, TweetImageRef } from '../types.ts'
 import type { Tweets, TweetsState, WorkspaceSummary } from './tweets.ts'
@@ -42,6 +41,7 @@ export function TweetPage({ tweet, workspaces, t }: TweetPageProps): ReactNode {
     () => workspaces.getSnapshot(),
   )
   const picker = useRef<HTMLInputElement | null>(null)
+  const [openRow, setOpenRow] = useState(false)
 
   useEffect(() => {
     tweet.syncWorkspaces(listed.items)
@@ -53,6 +53,10 @@ export function TweetPage({ tweet, workspaces, t }: TweetPageProps): ReactNode {
   const onPaste = (event: ReactClipboardEvent<HTMLElement>): void => {
     const files = imagesFromClipboard(Array.from(event.clipboardData.items))
     if (files.length > 0) tweet.addStagedFiles(files)
+  }
+
+  const submitOpen = (): void => {
+    void tweet.openWorkspace().then((success) => { if (success) setOpenRow(false) })
   }
 
   return (
@@ -72,7 +76,33 @@ export function TweetPage({ tweet, workspaces, t }: TweetPageProps): ReactNode {
             <option key={item.workspaceId} value={item.workspaceId}>{item.title === '' ? item.path : item.title}</option>
           ))}
         </select>
+        <button
+          type="button"
+          className={css.action}
+          aria-label={t('workspace.open')}
+          title={t('workspace.open')}
+          onClick={() => { setOpenRow(current => !current) }}
+        >+</button>
       </header>
+      {openRow
+        ? (
+          <div className={css.openRow}>
+            <input
+              className={css.openInput}
+              placeholder={t('workspace.openPlaceholder')}
+              value={state.openPath}
+              onChange={(event) => { tweet.setOpenPath(event.target.value) }}
+              onKeyDown={(event) => { if (event.key === 'Enter') submitOpen() }}
+            />
+            <button
+              type="button"
+              className={css.action}
+              disabled={state.openPath.trim().length === 0}
+              onClick={submitOpen}
+            >{t('workspace.openConfirm')}</button>
+          </div>
+        )
+        : null}
       <section className={css.composer} onPaste={onPaste}>
         <textarea
           className={css.textarea}
@@ -280,16 +310,31 @@ function PostImages({ post, tweet, t }: {
   )
 }
 
-/** Dictionary key of one relative-time bucket. */
-function relativeTimeKey(unit: RelativeTimeUnit): 'time.now' | 'time.minutes' | 'time.hours' | 'time.days' | 'time.months' | 'time.years' {
-  switch (unit) {
-    case 'now': return 'time.now'
-    case 'minutes': return 'time.minutes'
-    case 'hours': return 'time.hours'
-    case 'days': return 'time.days'
-    case 'months': return 'time.months'
-    case 'years': return 'time.years'
+/** Zero-pad one clock component to two digits. */
+function pad2(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+/**
+ * Visible local timestamp of one post: same calendar day → `HH:mm`; earlier
+ * this year → the `time.clock.md` date template + clock; other years → the
+ * `time.clock.ymd` template + clock. The date templates arrive through the
+ * panel's locale seat, so the label follows the app locale, never the browser.
+ * @param at - epoch milliseconds from the post's `createdAt`/`updatedAt`.
+ * @param t - translate seat supplying the `time.clock.md` / `time.clock.ymd` templates.
+ * @param now - reference instant for the day/year cut; defaults to the wall clock.
+ * @returns date-aware clock string, 24-hour zero-padded time.
+ */
+function absoluteClock(at: number, t: TranslateNS<typeof NS>, now: number = Date.now()): string {
+  const d = new Date(at)
+  const n = new Date(now)
+  const clock = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+  if (d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()) {
+    return clock
   }
+  const params = { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() }
+  const md = d.getFullYear() === n.getFullYear() ? t('time.clock.md', params) : t('time.clock.ymd', params)
+  return `${md} ${clock}`
 }
 
 /** Trailing-time props: the dated instant, the edit instant, and the translator. */
@@ -299,15 +344,11 @@ interface PostTimeProps {
   readonly t: TranslateNS<typeof NS>
 }
 
-/** The trailing time label: a relative bucket with the absolute instant on hover. */
+/** The trailing time label: the explicit local timestamp, then the edit marker. */
 function PostTime({ at, edited, t }: PostTimeProps): ReactNode {
-  const bucket = relativeTime(at, Date.now())
-  const label = bucket.unit === 'now'
-    ? t('time.now')
-    : t(relativeTimeKey(bucket.unit), { n: bucket.n })
   return (
-    <time className={css.time} dateTime={new Date(at).toISOString()} title={new Date(at).toLocaleString()}>
-      {label}
+    <time className={css.time} dateTime={new Date(at).toISOString()}>
+      {absoluteClock(at, t)}
       {edited === undefined ? null : <span className={css.edited}> · {t('post.edited')}</span>}
     </time>
   )

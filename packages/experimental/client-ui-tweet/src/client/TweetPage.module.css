@@ -31,6 +31,28 @@
   font-size: var(--dsh-content-font-size-secondary, 13px);
 }
 
+.openRow {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px 8px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-bg-base);
+}
+
+.openInput {
+  min-width: 0;
+  flex: 1;
+  height: 28px;
+  padding: 0 8px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-base);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+}
+
 .composer {
   display: flex;
   flex: none;

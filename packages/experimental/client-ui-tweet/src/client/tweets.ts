@@ -21,12 +21,14 @@ import type {
   TweetImageRef,
   TweetMediaType,
   PublishTweetRequest,
+  TweetWorkspace,
 } from '../types.ts'
 import type { TweetsLocaleKey } from './locales.ts'
 
 /** Narrow Remote face the controller needs; the generated client satisfies it. */
 export interface TweetsRemoteFace {
   list(workspaceId: WorkspaceId): Promise<RemoteResult<Tweet[]>>
+  open(request: { readonly path: string }): Promise<RemoteResult<TweetWorkspace>>
   publish(request: PublishTweetRequest): Promise<RemoteResult<Tweet>>
   edit(request: EditTweetRequest): Promise<RemoteResult<Tweet>>
   delete(workspaceId: WorkspaceId, id: TweetId): Promise<RemoteResult<boolean>>
@@ -68,6 +70,8 @@ export interface TweetsState {
   readonly editingId: TweetId | null
   readonly editingText: string
   readonly expanded: ReadonlySet<TweetId>
+  /** Current value of the open-directory input. */
+  readonly openPath: string
 }
 
 const INITIAL: TweetsState = {
@@ -82,6 +86,7 @@ const INITIAL: TweetsState = {
   editingId: null,
   editingText: '',
   expanded: new Set(),
+  openPath: '',
 }
 
 /** localStorage key of the last selected workspace. */
@@ -148,6 +153,10 @@ export class Tweets {
   /** Bumped by {@link dispose}; an in-flight request of an earlier generation never writes state. */
   private generation = 0
   private disposed = false
+  /** Latest Workspace rows {@link syncWorkspaces} saw, so an opened id can be checked immediately. */
+  private listed: readonly WorkspaceSummary[] = []
+  /** A freshly opened Workspace awaiting its first appearance in the Host list. */
+  private pendingOpen: WorkspaceId | null = null
 
   /**
    * @param remote - the mounted tweet Remote face.
@@ -187,10 +196,20 @@ export class Tweets {
 
   /**
    * Reconcile the selection with the Workspace list: keep the current choice,
-   * fall back to the persisted one, then to the first listed Workspace.
+   * fall back to the persisted one, then to the first listed Workspace. A
+   * freshly opened Workspace takes the selection as soon as the list carries it.
    * @param items - the current Workspace rows.
    */
   syncWorkspaces(items: readonly WorkspaceSummary[]): void {
+    this.listed = items
+    if (this.pendingOpen !== null) {
+      const pending = this.pendingOpen
+      if (items.some(item => item.workspaceId === pending)) {
+        this.pendingOpen = null
+        if (this.state.workspaceId !== pending) this.selectWorkspace(pending)
+        return
+      }
+    }
     const current = this.state.workspaceId
     const effective = current !== null && items.some(item => item.workspaceId === current)
       ? current
@@ -216,6 +235,38 @@ export class Tweets {
     }
     this.update({ workspaceId, status: 'loading', errorMessage: null })
     void this.refresh()
+  }
+
+  /**
+   * Replace the open-directory input text.
+   * @param text - the current input value.
+   */
+  setOpenPath(text: string): void {
+    this.update({ openPath: text })
+  }
+
+  /**
+   * Open the input's folder as a Workspace: register it on the Host, then
+   * select it once the Workspace list carries it (immediately when the
+   * registry already held it).
+   * @returns whether the registration succeeded; failures fold into `errorMessage`.
+   */
+  async openWorkspace(): Promise<boolean> {
+    const path = this.state.openPath.trim()
+    if (path === '') return false
+    const result = await this.remote.open({ path })
+    if (this.disposed) return result.ok
+    if (!result.ok) {
+      this.update({ errorMessage: this.format('action.failed', { message: result.error.message }) })
+      return false
+    }
+    this.update({ openPath: '', errorMessage: null })
+    if (this.listed.some(item => item.workspaceId === result.value.workspaceId)) {
+      this.selectWorkspace(result.value.workspaceId)
+    } else {
+      this.pendingOpen = result.value.workspaceId
+    }
+    return true
   }
 
   /**

@@ -581,6 +581,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   EditTweetRequest: 'tweet.md',
   TweetImageRequest: 'tweet.md',
   TweetImagePayload: 'tweet.md',
+  TweetOpenRequest: 'tweet.md',
+  TweetWorkspace: 'tweet.md',
   ForkNodeResult: 'session.md',
   SessionId: 'core.md',
   SessionLogOffset: 'session.md',

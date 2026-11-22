@@ -45,6 +45,16 @@ Serves the tweet panel. Each method admits the named Workspace, then reads or mu
 @Remote('list') async list(workspaceId: WorkspaceId): Promise<Tweet[]>
 
 /**
+ * Register one absolute folder as a Workspace (idempotent) and return it for
+ * selection, so the panel can post into any existing directory.
+ * @param request - absolute folder path.
+ * @returns the registered Workspace view.
+ * @throws {RemoteError} `tweet/invalid-workspace-path` when blank or relative;
+ * `tweet/workspace-open-failed` when the registry rejects the folder.
+ */
+@Remote('open') async open(request: TweetOpenRequest): Promise<TweetWorkspace>
+
+/**
  * Publish one post: validate text and images, store the image bytes as
  * content-addressed objects, and write the post record with its publish time.
  * @param request - target Workspace, post text, and images in display order.
