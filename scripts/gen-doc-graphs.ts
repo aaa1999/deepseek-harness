@@ -954,6 +954,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Providers prepare local children or execute external tasks; one activation manager owns both lifecycles. The delegation tool selects a backend, control tools deliver local follow-ups, and workflows await activation results.',
   },
   {
+    key: 'tweet',
+    pkg: 'experimental-client-ui-tweet',
+    title: 'Experimental tweet Remote',
+    mode: 'service',
+    note: 'Serves the personal microblog feed of a chosen workspace: publish, list, edit, delete, and image reads over the workspace-local store.',
+  },
+  {
     key: 'speechToText',
     pkg: 'experimental-speech-to-text',
     title: 'Experimental speech recognition providers',

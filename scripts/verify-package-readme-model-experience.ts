@@ -80,6 +80,8 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/host/authentication-token': { kind: 'none', reason: 'Launch-token exchange and Cookie verification authenticate HTTP callers without contributing model input.' },
   'packages/host/authentication-desktop': { kind: 'none', reason: 'Private Desktop credential verification authenticates HTTP callers without contributing model input.' },
   'packages/api/terminal-controller': { kind: 'indirect', reason: 'Working-directory recovery owns directory context; user terminal screens never enter model requests.' },
+  'packages/experimental/client-ui-tweet': { kind: 'none', reason: 'The panel and its Remote serve the human publisher only; posts never enter model requests or Session events.' },
+  'packages/experimental/tweet-bundle': { kind: 'none', reason: 'The bundle mounts only the human tweet panel; enabling it changes no model context.' },
   'packages/client/ui-sidebar-terminal': { kind: 'none', reason: 'The browser renders user terminal screens without exposing them to the model.' },
   'packages/ssh/ssh-helper-runtime': { kind: 'none', reason: 'The private executable carrier registers no model-facing content; its providers and consumers own operation results.' },
   'packages/experimental/forge': { kind: 'none', reason: 'Providers and watchers exchange code host status without contributing model context.' },

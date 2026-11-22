@@ -1,0 +1,92 @@
+/** Tweets panel copy owned by the locale dictionaries. */
+
+/** Locale namespace of the tweet panel. */
+export const NS = 'tweet'
+
+/** Chinese copy; its keys define the dictionary type. */
+export const zh = {
+  'panel.name': '推文',
+  'panel.description': '图文分离地发布个人推文，数据存在所选工作区内',
+  'workspace.select': '选择工作空间',
+  'workspace.empty': '没有可用的工作空间，请先在工作区面板添加',
+  'workspace.noneSelected': '先选择一个工作空间',
+  'composer.placeholder': '写下你的推文…（截图可直接粘贴）',
+  'composer.publish': '发布',
+  'composer.publishing': '发布中…',
+  'composer.empty': '写点什么，或添加至少一张图片',
+  'composer.addImages': '添加图片',
+  'composer.readFailed': '图片读取失败：{message}',
+  'composer.removeImage': '移除图片',
+  'post.expand': '展开',
+  'post.collapse': '收起',
+  'post.edited': '已编辑',
+  'post.edit': '编辑',
+  'post.delete': '删除',
+  'post.deleteConfirm': '确认删除',
+  'post.cancel': '取消',
+  'post.save': '保存',
+  'post.saving': '保存中…',
+  'post.editPlaceholder': '修改文字…',
+  'feed.loading': '加载中…',
+  'feed.failed': '加载失败：{message}',
+  'feed.empty': '还没有发布过推文',
+  'action.failed': '操作失败：{message}',
+  'image.dialog': '图片预览',
+  'image.close': '关闭',
+  'image.loading': '图片加载中…',
+  'time.now': '刚刚',
+  'time.minutes': '{n} 分钟前',
+  'time.hours': '{n} 小时前',
+  'time.days': '{n} 天前',
+  'time.months': '{n} 个月前',
+  'time.years': '{n} 年前',
+} as const
+
+/** English copy. */
+export const en: Record<keyof typeof zh, string> = {
+  'panel.name': 'Tweet',
+  'panel.description': 'Publish personal takes with separately laid out images, stored inside the chosen workspace',
+  'workspace.select': 'Choose a workspace',
+  'workspace.empty': 'No workspaces available; add one in the workspaces panel first',
+  'workspace.noneSelected': 'Select a workspace to start',
+  'composer.placeholder': 'Share a take… (paste screenshots directly)',
+  'composer.publish': 'Publish',
+  'composer.publishing': 'Publishing…',
+  'composer.empty': 'Write something or add at least one image',
+  'composer.addImages': 'Add images',
+  'composer.readFailed': 'Reading the image failed: {message}',
+  'composer.removeImage': 'Remove image',
+  'post.expand': 'More',
+  'post.collapse': 'Less',
+  'post.edited': 'edited',
+  'post.edit': 'Edit',
+  'post.delete': 'Delete',
+  'post.deleteConfirm': 'Confirm delete',
+  'post.cancel': 'Cancel',
+  'post.save': 'Save',
+  'post.saving': 'Saving…',
+  'post.editPlaceholder': 'Edit the text…',
+  'feed.loading': 'Loading…',
+  'feed.failed': 'Loading failed: {message}',
+  'feed.empty': 'Nothing published yet',
+  'action.failed': 'The action failed: {message}',
+  'image.dialog': 'Image preview',
+  'image.close': 'Close',
+  'image.loading': 'Loading image…',
+  'time.now': 'just now',
+  'time.minutes': '{n} min ago',
+  'time.hours': '{n} h ago',
+  'time.days': '{n} d ago',
+  'time.months': '{n} mo ago',
+  'time.years': '{n} y ago',
+}
+
+/** Dictionary keys of the tweet panel. */
+export type TweetsLocaleKey = keyof typeof zh
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    /** Tweets panel copy. */
+    'tweet': TweetsLocaleKey
+  }
+}

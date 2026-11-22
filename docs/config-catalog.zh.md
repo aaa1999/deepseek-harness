@@ -5620,6 +5620,7 @@ export interface Config {
 | `@deepseek-ai/dsh-client-ui-skill` | — | [`packages/client/ui-skill/src/index.ts`](../packages/client/ui-skill/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-subagent` | — | [`packages/client/ui-subagent/src/index.ts`](../packages/client/ui-subagent/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-tool` | — | [`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-tweet` | `workspaceRegistry` | [`packages/experimental/client-ui-tweet/src/index.ts`](../packages/experimental/client-ui-tweet/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-user-questions` | — | [`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-voice-chat` | — | [`packages/experimental/client-ui-voice-chat/src/index.ts`](../packages/experimental/client-ui-voice-chat/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-web-capture` | — | [`packages/experimental/client-ui-web-capture/src/index.ts`](../packages/experimental/client-ui-web-capture/src/index.ts) |
@@ -5783,6 +5784,7 @@ export interface Config {
 | `@deepseek-ai/dsh-ssh-helper-runtime` | — | [`packages/ssh/ssh-helper-runtime/src/index.ts`](../packages/ssh/ssh-helper-runtime/src/index.ts) |
 | `@deepseek-ai/dsh-timeout` | — | [`packages/util/timeout/src/index.ts`](../packages/util/timeout/src/index.ts) |
 | `@deepseek-ai/dsh-tool-testkit` | — | [`packages/test-support/tool-testkit/src/index.ts`](../packages/test-support/tool-testkit/src/index.ts) |
+| `@deepseek-ai/dsh-tweet-bundle` | — | [`packages/experimental/tweet-bundle/src/index.ts`](../packages/experimental/tweet-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-typert-generator` | — | [`packages/typert/generator/src/index.ts`](../packages/typert/generator/src/index.ts) |
 | `@deepseek-ai/dsh-typert-protocol` | — | [`packages/typert/protocol/src/index.ts`](../packages/typert/protocol/src/index.ts) |
 | `@deepseek-ai/dsh-typert-registry` | — | [`packages/typert/registry/src/index.ts`](../packages/typert/registry/src/index.ts) |

@@ -1,0 +1,294 @@
+/* Tweets panel: fixed selector and composer on top, scrolling feed below.
+   Design tokens only; hover states stay fenced behind hover-capable pointers.
+   The narrowest accepted width is 390px: the grid never drops below two
+   columns and every control stays reachable. */
+
+.panel {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l3);
+}
+
+.select {
+  min-width: 0;
+  max-width: 360px;
+  height: 28px;
+  padding: 0 8px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-base);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+}
+
+.composer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-bg-base);
+}
+
+.textarea {
+  min-height: 60px;
+  padding: 8px 10px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-sunken);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-md);
+  font: inherit;
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  resize: vertical;
+}
+
+.textarea:focus-visible,
+.editArea:focus-visible {
+  outline: none;
+  border-color: var(--dsw-alias-accent);
+}
+
+/* The staged-image strip and publish control: one row that wraps on narrow widths. */
+.stagedRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.stagedItem {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+
+.stagedImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--dsw-radius-sm);
+}
+
+.stagedRemove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--dsw-alias-label-invert);
+  background: var(--dsw-alias-label-secondary);
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.addImages,
+.publish,
+.action,
+.toggle {
+  height: 28px;
+  padding: 0 10px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  cursor: pointer;
+}
+
+.publish {
+  color: var(--dsw-alias-label-invert);
+  background: var(--dsw-alias-accent);
+}
+
+.publish:disabled,
+.action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (hover: hover) {
+
+  .addImages:hover,
+  .action:hover,
+  .toggle:hover {
+    background: var(--dsw-alias-interactive-bg-active);
+  }
+
+  .stagedRemove:hover {
+    background: var(--dsw-alias-label-primary);
+  }
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+/* The feed scrolls on its own while the composer stays put. */
+.feed {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px;
+  overflow-y: auto;
+}
+
+.notice {
+  padding: 24px 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  text-align: center;
+}
+
+.post {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--dsw-alias-bg-base);
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-lg);
+}
+
+/* The plain-text block; images never appear inside it. */
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.text,
+.editArea {
+  min-width: 0;
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.toggle {
+  align-self: flex-start;
+  height: 24px;
+  color: var(--dsw-alias-accent);
+}
+
+/* The separate image grid: tiles from two images on, a lone image runs larger. */
+.images,
+.singleImage {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.images {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 480px) {
+  .images {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.singleImage {
+  grid-template-columns: minmax(0, 360px);
+}
+
+.tile {
+  display: flex;
+  aspect-ratio: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  background: var(--dsw-alias-bg-sunken);
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  cursor: pointer;
+}
+
+.singleImage .tile {
+  aspect-ratio: auto;
+  max-height: 320px;
+}
+
+.tileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tileLoading {
+  width: 100%;
+  height: 100%;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time,
+.edited {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.action {
+  height: 24px;
+  padding: 0 8px;
+}
+
+.editBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editArea {
+  min-height: 60px;
+  padding: 8px 10px;
+  background: var(--dsw-alias-bg-sunken);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-md);
+  font: inherit;
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  resize: vertical;
+  white-space: pre-wrap;
+}

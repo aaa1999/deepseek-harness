@@ -54,6 +54,7 @@
 | [voice-chat.md](voice-chat.zh.md) | 实验性实时语音对话：合成器注册表、自动提交的转写轮次、朗读回复与起音打断 |
 | [pdf-reader.md](pdf-reader.zh.md) | 实验 PDF 书库：导入与书架行、浏览器 PDF.js 解析与结构回报、文本划线与截图提问 |
 | [epub-reader.md](epub-reader.zh.md) | 实验 EPUB 书库：导入与书架行、净化章节与书籍自带资源、划线处理 |
+| [tweet.md](tweet.zh.md) | 实验性个人微博：工作空间本地帖子与图片对象、最新在前的信息流与浏览器面板 |
 | [translation.md](translation.zh.md) | 实验性免登录文本翻译与显式 Provider 请求 |
 | [agent-team.md](agent-team.zh.md) | Agent Teams：子代理树共享的任务 DAG 与任务归属 |
 | [liveshare.md](liveshare.zh.md) | 可选的 LiveShare bundle：嵌套分享模式、fork 的上限与持久性、上限安装，以及共享会话外部驱动轮次所受的约束 |

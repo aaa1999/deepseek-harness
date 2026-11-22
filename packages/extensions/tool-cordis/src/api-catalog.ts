@@ -5207,6 +5207,48 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'tweet',
+    summary: 'Serves the tweet panel.',
+    description: 'Serves the tweet panel. Each method admits the named Workspace, then reads or mutates only that Workspace\'s data directory.',
+    methods: [
+      {
+        signature: '@Remote(\'list\') async list(workspaceId: WorkspaceId): Promise<Tweet[]>',
+        description: 'List the posts of one Workspace, newest first: `createdAt` descending, same-millisecond posts in publish order.',
+        parameters: [{ name: 'workspaceId', description: 'Workspace whose posts to list.' }],
+        returns: 'the posts in feed order.',
+        throws: ['{RemoteError} `tweet/unknown-workspace` when the id is not registered; `tweet/corrupt-store` when the index is invalid.'],
+      },
+      {
+        signature: '@Remote(\'publish\') async publish(request: PublishTweetRequest): Promise<Tweet>',
+        description: 'Publish one post: validate text and images, store the image bytes as content-addressed objects, and write the post record with its publish time.',
+        parameters: [{ name: 'request', description: 'target Workspace, post text, and images in display order.' }],
+        returns: 'the created post.',
+        throws: ['{RemoteError} `tweet/unknown-workspace`, `tweet/empty-post`, or `tweet/unsupported-image-type`.'],
+      },
+      {
+        signature: '@Remote(\'edit\') async edit(request: EditTweetRequest): Promise<Tweet>',
+        description: 'Replace one post\'s text; images and feed position stay unchanged.',
+        parameters: [{ name: 'request', description: 'target Workspace, post identity, and replacement text.' }],
+        returns: 'the updated post.',
+        throws: ['{RemoteError} `tweet/unknown-workspace`, `tweet/empty-post`, or `tweet/post-not-found`.'],
+      },
+      {
+        signature: '@Remote(\'delete\') async remove(workspaceId: WorkspaceId, id: Tweet[\'id\']): Promise<boolean>',
+        description: 'Delete one post. Idempotent: an unknown id resolves `false`.',
+        parameters: [{ name: 'workspaceId', description: 'Workspace whose post to delete.' }, { name: 'id', description: 'post identity.' }],
+        returns: 'whether a record was deleted.',
+        throws: ['{RemoteError} `tweet/unknown-workspace`.'],
+      },
+      {
+        signature: '@Remote(\'image\') async image(request: TweetImageRequest): Promise<TweetImagePayload>',
+        description: 'Read one stored image object for display.',
+        parameters: [{ name: 'request', description: 'target Workspace and object file name.' }],
+        returns: 'the recorded media type and base64 bytes.',
+        throws: ['{RemoteError} `tweet/unknown-workspace`, `tweet/invalid-object-name`, or `tweet/corrupt-store`.'],
+      },
+    ],
+  },
+  {
     key: 'typert',
     summary: 'Registry of generated schemas, package reflection, invocations, and Remote dependency providers.',
     description: 'Registry of generated schemas, package reflection, invocations, and Remote dependency providers.',
@@ -7742,6 +7784,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface EditGoalRequest {\n    readonly objective?: string;\n    readonly maxGoalRounds?: number;\n}',
   },
   {
+    name: 'EditTweetRequest',
+    declaration: 'export interface EditTweetRequest {\n    readonly workspaceId: WorkspaceId;\n    readonly id: TweetId;\n    readonly text: string;\n}',
+  },
+  {
     name: 'EncodedFileAttachment',
     declaration: 'export interface EncodedFileAttachment {\n    data: string;\n    name?: string;\n}',
   },
@@ -9584,6 +9630,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PtcRunSpec',
     declaration: 'export interface PtcRunSpec extends PtcRunRequest {\n    cwd: string;\n    timeoutMs: number | null;\n}',
+  },
+  {
+    name: 'PublishImageInput',
+    declaration: 'export interface PublishImageInput {\n    readonly mediaType: TweetMediaType;\n    readonly data: string;\n    readonly name?: string;\n    readonly width?: number;\n    readonly height?: number;\n}',
+  },
+  {
+    name: 'PublishTweetRequest',
+    declaration: 'export interface PublishTweetRequest {\n    readonly workspaceId: WorkspaceId;\n    readonly text: string;\n    readonly images: readonly PublishImageInput[];\n}',
   },
   {
     name: 'QueueAction',
@@ -11720,6 +11774,30 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TurnUsage',
     declaration: 'export interface TurnUsage {\n    input_tokens: number;\n    output_tokens: number;\n    cache_read_input_tokens: number;\n    cache_creation_input_tokens: number;\n    model: string;\n}',
+  },
+  {
+    name: 'Tweet',
+    declaration: 'export interface Tweet {\n    readonly id: TweetId;\n    readonly text: string;\n    readonly images: readonly TweetImageRef[];\n    readonly createdAt: number;\n    readonly updatedAt?: number;\n}',
+  },
+  {
+    name: 'TweetId',
+    declaration: 'export type TweetId = Branded<\'TweetId\'>;',
+  },
+  {
+    name: 'TweetImagePayload',
+    declaration: 'export interface TweetImagePayload {\n    readonly mediaType: TweetMediaType;\n    readonly data: string;\n}',
+  },
+  {
+    name: 'TweetImageRef',
+    declaration: 'export interface TweetImageRef {\n    readonly file: string;\n    readonly mediaType: TweetMediaType;\n    readonly bytes: number;\n    readonly name?: string;\n    readonly width?: number;\n    readonly height?: number;\n}',
+  },
+  {
+    name: 'TweetImageRequest',
+    declaration: 'export interface TweetImageRequest {\n    readonly workspaceId: WorkspaceId;\n    readonly file: string;\n}',
+  },
+  {
+    name: 'TweetMediaType',
+    declaration: 'export type TweetMediaType = \'image/png\' | \'image/jpeg\' | \'image/webp\' | \'image/gif\';',
   },
   {
     name: 'TypertCodec',

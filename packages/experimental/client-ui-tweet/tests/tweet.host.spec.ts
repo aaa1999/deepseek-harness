@@ -1,0 +1,227 @@
+/** TweetController behavior over the workspace-local store: publish, list order, edit, delete, and image reads. */
+
+import { Buffer } from 'node:buffer'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { Context } from '@deepseek-ai/cordis'
+import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
+import type { WorkspaceId as WorkspaceIdType } from '@deepseek-ai/dsh-workspace/types'
+import TweetController from '../src/index.ts'
+import type { Tweet, TweetId } from '../src/types.ts'
+
+const roots: Context[] = []
+const workspaceDirs: string[] = []
+
+afterEach(async () => {
+  await Promise.all(roots.splice(0).map(ctx => ctx.fiber.dispose()))
+  await Promise.all(workspaceDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
+})
+
+const WS_ONE = WorkspaceId('ws-one')
+const WS_TWO = WorkspaceId('ws-two')
+
+/**
+ * Mount the controller with one temp directory per registered workspace id.
+ * @param ids - workspace ids to register, each over its own empty temp directory.
+ * @returns the mounted controller.
+ */
+async function harness(...ids: WorkspaceIdType[]): Promise<TweetController> {
+  const byId = new Map<WorkspaceIdType, string>()
+  for (const id of ids) {
+    const dir = await mkdtemp(join(tmpdir(), 'tweet-spec-'))
+    workspaceDirs.push(dir)
+    byId.set(id, dir)
+  }
+  const ctx = new Context()
+  roots.push(ctx)
+  ctx.provide('workspaceRegistry', {
+    get: (id: WorkspaceIdType) => {
+      const path = byId.get(id)
+      return path === undefined ? undefined : { path }
+    },
+  } as never)
+  await ctx.plugin(TweetController)
+  return ctx.tweet
+}
+
+/** Deterministic image input: fixed bytes so every publish of it shares one digest. */
+function imageInput(name?: string) {
+  const bytes = Buffer.from('spec-image-bytes')
+  return { mediaType: 'image/png' as const, data: bytes.toString('base64'), ...(name === undefined ? {} : { name }) }
+}
+
+/** The data root of the n-th temp workspace. */
+function root(n: number): string {
+  return join(workspaceDirs[n]!, '.dsh', 'tweet')
+}
+
+describe('TweetController.publish', () => {
+  it('stores text-only posts inside the workspace data directory', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: '  first take  ', images: [] })
+    expect(post.text).toBe('first take')
+    expect(post.images).toEqual([])
+    expect(await readdir(join(root(0), 'posts'))).toEqual([`${post.id}.json`])
+    const index = JSON.parse(await readFile(join(root(0), 'index.json'), 'utf8')) as { order: string[] }
+    expect(index.order).toEqual([post.id])
+  })
+
+  it('stores image bytes content-addressed and deduplicates repeats', async () => {
+    const service = await harness(WS_ONE)
+    const input = imageInput('shot.png')
+    const first = await service.publish({ workspaceId: WS_ONE, text: '', images: [input] })
+    const second = await service.publish({ workspaceId: WS_ONE, text: 'again', images: [imageInput()] })
+    expect(await readdir(join(root(0), 'objects'))).toHaveLength(1)
+    expect(first.images[0]).toMatchObject({ mediaType: 'image/png', bytes: Buffer.from('spec-image-bytes').byteLength, name: 'shot.png' })
+    expect(second.images[0]?.name).toBeUndefined()
+  })
+
+  it('records measured dimensions when the publisher sends them', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({
+      workspaceId: WS_ONE,
+      text: 'sized',
+      images: [{ ...imageInput(), width: 640, height: 480 }],
+    })
+    expect(post.images[0]).toMatchObject({ width: 640, height: 480 })
+  })
+
+  it('rejects an unknown workspace, an empty post, and an unsupported image type', async () => {
+    const service = await harness(WS_ONE)
+    await expect(service.publish({ workspaceId: WS_TWO, text: 'x', images: [] }))
+      .rejects.toMatchObject({ code: 'tweet/unknown-workspace' })
+    await expect(service.publish({ workspaceId: WS_ONE, text: '   ', images: [] }))
+      .rejects.toMatchObject({ code: 'tweet/empty-post' })
+    await expect(service.publish({
+      workspaceId: WS_ONE,
+      text: 'x',
+      images: [{ mediaType: 'image/bmp' as never, data: imageInput().data }],
+    })).rejects.toMatchObject({ code: 'tweet/unsupported-image-type' })
+  })
+
+  it('reports a typed failure when the workspace path cannot hold the store', async () => {
+    const service = await harness(WS_ONE)
+    await rm(workspaceDirs[0]!, { recursive: true })
+    await writeFile(workspaceDirs[0]!, 'blocks the directory name')
+    await expect(service.publish({ workspaceId: WS_ONE, text: 'x', images: [] }))
+      .rejects.toMatchObject({ code: 'tweet/corrupt-store' })
+  })
+})
+
+describe('TweetController.list', () => {
+  it('lists newest first and breaks same-millisecond ties in publish order', async () => {
+    const service = await harness(WS_ONE)
+    const early = await service.publish({ workspaceId: WS_ONE, text: 'early', images: [] })
+    const tiedFirst = await service.publish({ workspaceId: WS_ONE, text: 'tied-b', images: [] })
+    const between = await service.publish({ workspaceId: WS_ONE, text: 'between', images: [] })
+    const tiedAgain = await service.publish({ workspaceId: WS_ONE, text: 'tied-a', images: [] })
+    const posts = await service.list(WS_ONE)
+    expect(posts.map(post => post.text)).toEqual(['tied-a', 'between', 'tied-b', 'early'])
+    expect(posts.map(post => post.id)).toEqual([tiedAgain.id, between.id, tiedFirst.id, early.id])
+  })
+
+  it('isolates workspaces and reports an unknown one', async () => {
+    const service = await harness(WS_ONE, WS_TWO)
+    await service.publish({ workspaceId: WS_ONE, text: 'one', images: [] })
+    await service.publish({ workspaceId: WS_TWO, text: 'two', images: [] })
+    expect((await service.list(WS_ONE)).map(post => post.text)).toEqual(['one'])
+    expect((await service.list(WS_TWO)).map(post => post.text)).toEqual(['two'])
+    await expect(service.list(WorkspaceId('ws-none'))).rejects.toMatchObject({ code: 'tweet/unknown-workspace' })
+  })
+
+  it('skips invalid post files, heals posts missing from the index, and fails on an invalid index', async () => {
+    const service = await harness(WS_ONE)
+    const kept = await service.publish({ workspaceId: WS_ONE, text: 'kept', images: [] })
+    await writeFile(join(root(0), 'posts', 'tweet-00000000-0000-4000-8000-000000000000.json'), '{ not json')
+    const orphan: Tweet = {
+      ...kept,
+      id: 'tweet-11111111-1111-4111-8111-111111111111' as TweetId,
+      text: 'orphan',
+      createdAt: kept.createdAt + 1,
+    }
+    await writeFile(join(root(0), 'posts', `${orphan.id}.json`), JSON.stringify(orphan))
+    expect((await service.list(WS_ONE)).map(post => post.text)).toEqual(['orphan', 'kept'])
+    await writeFile(join(root(0), 'index.json'), '{ "order": "nope" }')
+    await expect(service.list(WS_ONE)).rejects.toMatchObject({ code: 'tweet/corrupt-store' })
+  })
+
+  it('breaks same-millisecond ties in index order', async () => {
+    const service = await harness(WS_ONE)
+    const first = await service.publish({ workspaceId: WS_ONE, text: 'same-ms-first', images: [] })
+    const second = await service.publish({ workspaceId: WS_ONE, text: 'same-ms-second', images: [] })
+    await writeFile(join(root(0), 'posts', `${first.id}.json`), JSON.stringify({ ...first, createdAt: second.createdAt }))
+    expect((await service.list(WS_ONE)).map(post => post.text)).toEqual(['same-ms-second', 'same-ms-first'])
+  })
+})
+
+describe('TweetController.edit', () => {
+  it('replaces text without reordering the feed', async () => {
+    const service = await harness(WS_ONE)
+    const older = await service.publish({ workspaceId: WS_ONE, text: 'older', images: [] })
+    await service.publish({ workspaceId: WS_ONE, text: 'newer', images: [] })
+    const edited = await service.edit({ workspaceId: WS_ONE, id: older.id, text: ' rewritten ' })
+    expect(edited.text).toBe('rewritten')
+    expect(edited.updatedAt).toBeTypeOf('number')
+    const posts = await service.list(WS_ONE)
+    expect(posts).toHaveLength(2)
+    expect(posts[1]?.id).toBe(older.id)
+    expect(posts[1]?.text).toBe('rewritten')
+    expect(posts[1]?.updatedAt).toBe(edited.updatedAt)
+  })
+
+  it('rejects empty text, missing posts, and climbing ids', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'kept', images: [] })
+    await expect(service.edit({ workspaceId: WS_ONE, id: post.id, text: '  ' }))
+      .rejects.toMatchObject({ code: 'tweet/empty-post' })
+    await expect(service.edit({
+      workspaceId: WS_ONE,
+      id: 'tweet-22222222-2222-4222-8222-222222222222' as TweetId,
+      text: 'x',
+    })).rejects.toMatchObject({ code: 'tweet/post-not-found' })
+    await expect(service.edit({ workspaceId: WS_ONE, id: '../../etc/passwd' as TweetId, text: 'x' }))
+      .rejects.toMatchObject({ code: 'tweet/invalid-object-name' })
+  })
+})
+
+describe('TweetController.remove', () => {
+  it('deletes once and stays idempotent', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'gone soon', images: [] })
+    expect(await service.remove(WS_ONE, post.id)).toBe(true)
+    expect(await service.list(WS_ONE)).toEqual([])
+    expect(await service.remove(WS_ONE, post.id)).toBe(false)
+  })
+
+  it('reports a typed failure when unlinking under the posts path fails', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'blocked', images: [] })
+    await rm(join(root(0), 'posts'), { recursive: true })
+    await writeFile(join(root(0), 'posts'), 'blocks the directory name')
+    await expect(service.remove(WS_ONE, post.id)).rejects.toMatchObject({ code: 'tweet/corrupt-store' })
+  })
+})
+
+describe('TweetController.image', () => {
+  it('reads stored bytes back as base64 with the recorded media type', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'shot', images: [imageInput('shot.png')] })
+    const payload = await service.image({ workspaceId: WS_ONE, file: post.images[0]!.file })
+    expect(payload.mediaType).toBe('image/png')
+    expect(payload.data).toBe(imageInput().data)
+  })
+
+  it('rejects names that are not stored objects and reports missing objects', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'shot', images: [imageInput()] })
+    await expect(service.image({ workspaceId: WS_ONE, file: 'zzz.exe' }))
+      .rejects.toMatchObject({ code: 'tweet/invalid-object-name' })
+    await expect(service.image({ workspaceId: WS_ONE, file: `${'0'.repeat(64)}.png` }))
+      .rejects.toMatchObject({ code: 'tweet/corrupt-store' })
+    await rm(join(root(0), 'objects', post.images[0]!.file))
+    await expect(service.image({ workspaceId: WS_ONE, file: post.images[0]!.file }))
+      .rejects.toMatchObject({ code: 'tweet/corrupt-store' })
+  })
+})

@@ -304,6 +304,8 @@ flowchart LR
   pkg_subagent_dsh_sdk["subagent-dsh-sdk"]
   pkg_tool_subagent_control["tool-subagent-control"]
   pkg_tool_ralph["tool-ralph"]
+  pkg_experimental_client_ui_tweet["experimental-client-ui-tweet"]
+  svc_tweet["ctx.tweet<br/>Experimental tweet Remote"]
   pkg_experimental_speech_to_text["experimental-speech-to-text"]
   svc_speechToText["ctx.speechToText<br/>Experimental speech recognition providers"]
   pkg_experimental_speech_to_text_sensevoice["experimental-speech-to-text-sensevoice"]
@@ -414,6 +416,7 @@ flowchart LR
   pkg_experimental_claude_code_mods --> svc_claudeCodeMods
   pkg_experimental_client_ui_cot_translation --> svc_cotTranslation
   pkg_experimental_client_ui_forge --> svc_forgePanel
+  pkg_experimental_client_ui_tweet --> svc_tweet
   pkg_experimental_computer_use_cua_driver_mcp --> svc_computerUse
   pkg_experimental_computer_use_cua_driver_native --> svc_computerUse
   pkg_experimental_forge --> svc_forge
@@ -748,6 +751,7 @@ flowchart LR
 | `ctx.forge` | `seam` | [`experimental-forge`](../packages/experimental/forge) | [`experimental-forge-github`](../packages/experimental/forge-github), [`forge-gitlab`](../packages/experimental/forge-gitlab) | [`experimental-forge-session`](../packages/experimental/forge-session), [`experimental-client-ui-forge`](../packages/experimental/client-ui-forge) | - | 提供方映射远端与变更请求 URL、按 head 分支查找变更请求并批量读取状态；同一变更请求的监听方共享一个轮询循环。 |
 | `ctx.forgeSession` | `service` | [`experimental-forge-session`](../packages/experimental/forge-session) | - | [`experimental-client-ui-forge`](../packages/experimental/client-ui-forge) | - | Session 投影从 shell 结果与绑定记录派生绑定，并把不含状态的 URL 发布给客户端；推送结果触发按 head 分支的发现，Session 监听方通过 forge 注册表轮询已绑定的变更请求。 |
 | `ctx.forgePanel` | `service` | [`experimental-client-ui-forge`](../packages/experimental/client-ui-forge) | - | - | - | 为每个被跟随的 Session 推送一份面板状态：使用 Session 权限进行的 Git 检查、识别出的代码托管平台及其登录状态，以及带轮询状态的已绑定变更请求。 |
+| `ctx.tweet` | `service` | `experimental-client-ui-tweet` | - | - | - | 服务所选工作空间的个人微博信息流：基于工作空间本地存储的发布、列表、编辑、删除与图片读取。 |
 | `ctx.worktrees` | `seam` | [`experimental-worktree`](../packages/experimental/worktree) | [`experimental-worktree`](../packages/experimental/worktree) | [`experimental-tool-worktree`](../packages/experimental/tool-worktree) | - | 显式实验组合从固定的本地提交创建工作树。检出目录与共享 Git 元数据受现有写权限约束；工作目录服务拥有创建后的 Session 目录。 |
 | `ctx.workingDirectory` | `seam` | [`working-directory`](../packages/session/working-directory) | [`working-directory`](../packages/session/working-directory) | [`tool-fs`](../packages/fs/tool-fs), [`tool-bash`](../packages/shell/tool-bash), [`tool-pwsh`](../packages/shell/tool-pwsh), [`subagent`](../packages/subagent/subagent), [`sdk-jsonrpc-server`](../packages/sdk/server), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`api-workspace-files`](../packages/api/workspace-files), [`api-terminal-controller`](../packages/api/terminal-controller), [`workspace-changes`](../packages/deliverables/workspace-changes), [`file-reference-local`](../packages/context/file-reference-local), [`tool-skill`](../packages/skill/tool-skill), [`agent-instructions`](../packages/context/agent-instructions), [`tool-lsp`](../packages/lsp/tool-lsp) | - | 两个 Session 投影拥有有效执行目录与工作区根；Host 操作让两者一起移动。文件系统验证变更，用户上下文报告目录信息；模型工具从目录解析路径，沙箱边界、文件视图与发现跟随根，原始元数据保持不变。 |
 | `ctx.mcpResources` | `seam` | [`mcp-resources`](../packages/mcp/mcp-resources) | [`mcp-client`](../packages/mcp/mcp-client) | [`mcp-resources`](../packages/mcp/mcp-resources) | - | 连接所有者提供的操作在调用 agent 的作用域内服务于共享资源工具。 |

@@ -218,6 +218,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@deepseek-ai/dsh-client-ui-epub-reader` | no | The Reading panel: EPUB bookshelf, two-column reader, selection context menu, and streaming note cards |
 | `@deepseek-ai/dsh-client-ui-pdf-reader` | no | The PDF reader panel: bookshelf, single-page reader with text layer, selection context menu, screenshot region questions, and streaming note cards |
 | `@deepseek-ai/dsh-client-ui-plugin-recommendations` | no | Official plugin card body with catalog text and enabling |
+| `@deepseek-ai/dsh-client-ui-tweet` | no | Experimental tweet panel: a personal microblog of plain-text posts with separately laid out images, stored inside the chosen workspace |
 | `@deepseek-ai/dsh-client-ui-voice-chat` | no | Realtime voice conversation: continuous capture, auto-submit, spoken replies and barge-in |
 | `@deepseek-ai/dsh-client-ui-web-capture` | no | Browser relay that files companion-extension webpage snapshots into the PDF reader shelf; ships the companion MV3 extension under extension/ |
 | `@deepseek-ai/dsh-creation-recommendations` | no | Create persistent removable interface plugins from explicit conversation needs |

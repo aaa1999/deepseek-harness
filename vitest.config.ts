@@ -381,6 +381,7 @@ export default defineConfig({
         // The mods band entry imports the bridge's generated Remote contribution, which exists only in lib;
         // the Web snapshot exercises the built entry, while source tests cover mountModsBand.
         'packages/experimental/client-ui-claude-code-mods/src/client/index.ts',
+        'packages/experimental/client-ui-tweet/src/client/index.ts',
         // The access entry imports its generated Remote contribution, which exists only in lib;
         // the Web snapshot exercises the built entry, while source tests cover mountAccess.
         'packages/api/remote-access/src/client/index.ts',

@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/tweet-bundle/README.md
+/:
+  en: 79c598bfdb8d29f1
+  zh: ae50e506e5bf9ccc
+/deepseek-ai-dsh-tweet-bundle:
+  en: 21fa8bbd6a18f4c1
+  zh: e1c761c81f2496b1
+/deepseek-ai-dsh-tweet-bundle/summary:
+  en: 277ba38006beb03d
+  zh: bef4ab901f4a42de
+/deepseek-ai-dsh-tweet-bundle/table-of-contents:
+  en: 3460b3e585e0c020
+  zh: 7f26badc8c290813
+/deepseek-ai-dsh-tweet-bundle/use-this-package:
+  en: 45621da6e9d0f2e9
+  zh: 50e373370af9b800
+/deepseek-ai-dsh-tweet-bundle/understand-the-implementation:
+  en: 03efaf5d663c2d3a
+  zh: c712840fc63ba3ae
+/deepseek-ai-dsh-tweet-bundle/model-experience:
+  en: e8eec1920476aa47
+  zh: e8eec1920476aa47
+/deepseek-ai-dsh-tweet-bundle/model-experience/kv-cache-effect:
+  en: f41bdeb37a4a1268
+  zh: f41bdeb37a4a1268
+/deepseek-ai-dsh-tweet-bundle/known-limitations-and-deferred-work:
+  en: dfc712d0fa8d8e4b
+  zh: 0c0be5065ed3cd8e
+/deepseek-ai-dsh-tweet-bundle/known-limitations-and-deferred-work/dev-note:
+  en: 624cc6bb2dc234a9
+  zh: 22023e943fcad2eb
