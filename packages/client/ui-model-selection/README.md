@@ -45,6 +45,8 @@ Both entries group models by provider, with DeepSeek Account first and DeepSeek 
 
 The composer replaces the model and effort text with the Models icon when the expanded controls cannot share one line, and restores the text when space permits. The full selection remains available in the trigger's accessible name, tooltip, and menu.
 
+A provider whose route has stored key slots carries an **API key** row at the head of its group in the model pane: the masked preview of the slot in use, drilling into a radio list of the series' stored slots. Choosing another slot rewrites the route profile's `apiKeyEnv` through `settings.mutate` at the address the catalog names, so the provider's next request authenticates with the chosen key everywhere — the switch is provider-wide, not per conversation. The pane stays open and the checked slot moves with the refreshed catalog; a refused write announces through the shared toast, and Escape backs out to the model list with focus on the row that drilled in. Groups without stored slots and the account route carry no key affordance. The key row joins arrow-key and Tab navigation but never the search highlight, which addresses models alone.
+
 ### Model label extensions
 
 `conversation.input.model.label` is a session-scoped, inline `single` slot for the composer trigger (`placement: 'trigger'`), the root menu's current value (`'menu'`), and each model option (`'option'`). Its owner props provide `provider: { id, name }`, the exact catalog `model`, `placement`, and `selected`. Provider names are localized display names; match channels by `provider.id`, and identify a model by the provider/model ID pair. Connection URLs and credentials are not passed to the slot.

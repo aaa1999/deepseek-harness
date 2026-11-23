@@ -20,13 +20,14 @@ import type { ModelSelectionProjection } from '@deepseek-ai/dsh-agent/types'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { ReasoningEffortId } from '@deepseek-ai/dsh-llm/types'
 import type { CommandContribution, PopupSelectSpec, SelectOption } from '@deepseek-ai/dsh-client-ui-commands/client'
+import type { ModelProviderGroup } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { ModelSelectInjected } from '../src/client/slots.ts'
 import { apply, inject } from '../src/client/index.ts'
 import { zh } from '../src/client/locales.ts'
 
 const sid = (k: string): SessionId => k as SessionId
 
-const GROUPS = [{
+const GROUPS: readonly ModelProviderGroup[] = [{
   id: 'deepseek-official',
   name: 'DeepSeek',
   models: [
@@ -107,8 +108,14 @@ async function bench(locale: 'zh' | 'en' = 'zh') {
       return Promise.resolve({ ok: true as const, value: { selected } })
     },
   }
-  const remote = Object.assign(new TestRemote(ctx), { session: sessionRemote })
+  // The seat's key switcher writes through the settings namespace; the spy
+  // records the write and answers success.
+  const settingsRemote = {
+    mutate: vi.fn(() => Promise.resolve({ ok: true as const, value: undefined })),
+  }
+  const remote = Object.assign(new TestRemote(ctx), { session: sessionRemote, settings: settingsRemote })
   ctx.reflect.provide('remote.session', sessionRemote)
+  ctx.reflect.provide('remote.settings', settingsRemote)
   const blocks = new Map<SessionId, { reason: string } | undefined>()
   ctx.provide('conversation', {
     blocks: {
@@ -182,7 +189,7 @@ async function bench(locale: 'zh' | 'en' = 'zh') {
     return { ...handle, projection }
   }
   return {
-    ctx, fiber, mint, calls, remote, track,
+    ctx, fiber, mint, calls, remote, settingsRemote, track,
     contribution: () => contribution!,
     popup: (): PopupSelectSpec => {
       const ui = contribution!.ui
@@ -306,6 +313,38 @@ describe('ui-model-selection dual entry', () => {
       model: 'deepseek-v4-pro',
       reasoningEffort: 'high',
     })
+  })
+
+  it('switches a route key from the seat through the settings namespace it names', async () => {
+    const b = await bench()
+    b.setGroups([{
+      ...GROUPS[0]!,
+      keys: {
+        settingsNs: 'llm-deepseek',
+        settingsPath: [],
+        activeRef: 'DEEPSEEK_API_KEY',
+        slots: [
+          { ref: 'DEEPSEEK_API_KEY', masked: 'sk-••••wxyz' },
+          { ref: 'DEEPSEEK_API_KEY_2', masked: 'sk-••••q9de' },
+        ],
+      },
+    }, GROUPS[1]!])
+    b.mint('s1')
+    const seatFace = b.seat().inject!(sid('s1'))
+    // The resolver preloads the catalog at mount; the fixture change reaches
+    // the seat through the same invalidation the Host would send.
+    b.remote.emit('llm/adapters-updated', [])
+    await vi.waitFor(() => { expect(seatFace.directory.getSnapshot().groups[0]?.keys).toBeDefined() })
+    expect(await seatFace.switchKey('deepseek-official', 'DEEPSEEK_API_KEY_2')).toEqual({ ok: true, value: undefined })
+    // The write goes to the address the catalog block named, unfenced like the
+    // Models page's single-field settings writes.
+    expect(b.settingsRemote.mutate).toHaveBeenCalledExactlyOnceWith('llm-deepseek', [
+      { op: 'set', path: ['apiKeyEnv'], value: 'DEEPSEEK_API_KEY_2' },
+    ], undefined)
+    // A route the catalog carries no block for has nothing to switch.
+    expect(await seatFace.switchKey('external', 'EXTERNAL_API_KEY')).toBeUndefined()
+    expect(b.settingsRemote.mutate).toHaveBeenCalledTimes(1)
+    await b.ctx.fiber.dispose()
   })
 
   it.each(['en', 'zh'] as const)('localizes account provider headings in the %s model popup', async (locale) => {

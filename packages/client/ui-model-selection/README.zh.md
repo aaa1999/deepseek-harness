@@ -45,6 +45,8 @@ composer 菜单中的模型名称和推理等级均使用 400（regular）字重
 
 展开的控件无法排在同一行时，composer 将模型与推理强度文字替换为模型图标；空间足够后恢复文字。触发器的无障碍名称、提示和菜单仍提供完整选择。
 
+路由存有密钥槽位的提供方，其分组在模型列表头部多出一行 **API 密钥**：显示使用中槽位的掩码预览，点开是该系列已存槽位的单选列表。选择其他槽位会按目录给出的地址经 `settings.mutate` 改写路由 profile 的 `apiKeyEnv`，该提供商的下一个请求即使用所选密钥——切换对提供商全局生效，而非仅限单个会话。选择后面板保持打开，打勾槽位随目录刷新移动；写入被拒时通过共享 toast 提示，Escape 返回模型列表并把焦点交回进入它的那一行。没有已存槽位的分组与账号路由不显示密钥入口。密钥行参与方向键与 Tab 导航，但不参与只针对模型的搜索高亮。
+
 ### 模型名称扩展
 
 `conversation.input.model.label` 是会话作用域的内联 `single` slot，覆盖 composer 触发按钮（`placement: 'trigger'`）、根菜单中的当前值（`'menu'`）和各模型选项（`'option'`）。owner props 提供 `provider: { id, name }`、准确的目录 `model`、`placement` 和 `selected`。提供方名称是本地化显示名称；按 `provider.id` 匹配渠道，按提供方与模型 ID 的组合识别模型。slot 不接收连接 URL 或凭据。

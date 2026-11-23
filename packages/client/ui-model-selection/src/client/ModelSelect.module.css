@@ -328,6 +328,30 @@
   flex: none;
 }
 
+/* The per-group key row and the slot rows of its pane: a route fact beside the
+   models it serves, quieter than a model name so it never reads as one. */
+.keyLabel {
+  overflow: hidden;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keyPreview {
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keyRow {
+  min-height: 30px;
+}
+
 .check {
   display: grid;
   place-items: center;

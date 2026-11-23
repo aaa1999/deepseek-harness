@@ -106,4 +106,13 @@ export interface ModelSelectInjected {
    * @returns the Host outcome, or undefined when this Session cannot select a model.
    */
   select: (selection: ModelSelection) => Promise<RemoteResult<void> | undefined>
+  /**
+   * Switch a provider route's active key to another stored slot of its series.
+   * The switch rewrites the route profile's `apiKeyEnv`, so it reaches the
+   * provider's next request everywhere — not only this Session.
+   * @param provider - provider route id whose key-slot state the catalog carries.
+   * @param ref - the slot's credential reference.
+   * @returns the Host settings outcome, or undefined when this Session or route cannot switch.
+   */
+  switchKey: (provider: string, ref: string) => Promise<RemoteResult<void> | undefined>
 }

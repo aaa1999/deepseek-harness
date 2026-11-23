@@ -35,6 +35,7 @@ import {
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ModelProviderGroup } from '@deepseek-ai/dsh-api-session-controller/types'
 import {
   IconCheckOutlineRegular, IconChevronDownOutlineRegular, IconChevronRightOutlineRegular, IconCloseFillRegular,
   IconDataOutlineRegular, IconWarningOutlineRegular, Input, isMobileDevice, StateDot, Tag, Toast,
@@ -50,6 +51,7 @@ type Pane =
   | { kind: 'root' }
   | { kind: 'model' }
   | { kind: 'effort' }
+  | { kind: 'key'; provider: string }
   | { kind: 'detail'; pane: ModelMenuPaneRef }
 
 /** Any pane reached by drilling from the root menu. */
@@ -67,14 +69,24 @@ interface EffortChoice {
 }
 
 /**
+ * What one group's key row announces: the masked preview of the slot in use,
+ * or its reference when the credential provider offers no preview.
+ * @param keys - the group's key-slot state from the catalog.
+ * @returns the text beside the row's label.
+ */
+function keyPreviewOf(keys: NonNullable<ModelProviderGroup['keys']>): string {
+  return keys.slots.find(slot => slot.ref === keys.activeRef)?.masked ?? keys.activeRef
+}
+
+/**
  * Render the composer model seat.
  * @param props - owner share (locked) + injected face (shared directory
  * store/verbs) + the standard locale seat.
  * @returns the trigger and, while open, the two-level menu.
  */
 export function ModelSelect(
-  { locked, available, directory, load, select, resolveText, t, renderSlot }:
-  ModelSelectInjected & Pick<PropsRuntime<'conversation.input.model'>, 'locked'> & PropsLocale<'model'>
+  { locked, available, directory, load, select, switchKey, resolveText, t, renderSlot }:
+    ModelSelectInjected & Pick<PropsRuntime<'conversation.input.model'>, 'locked'> & PropsLocale<'model'>
     & Omit<PropsRenderSlots<'conversation.input.model.label' | 'conversation.input.model.options' | 'conversation.input.model.pane'>, 'SessionProvider'>,
 ) {
   const state = useSyncExternalStore(
@@ -227,8 +239,11 @@ export function ModelSelect(
     const cell = intent.kind === 'detail'
       ? Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[data-model-menu-pane]') ?? [])
         .find(button => button.dataset.modelMenuPane === intent.pane.key)
-      : itemRefs.current[intent.kind === 'effort' ? 1 : 0]
-    ;(cell !== null && cell !== undefined && !cell.disabled ? cell : triggerRef.current)?.focus()
+      : intent.kind === 'key'
+        ? Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[data-model-key-row]') ?? [])
+          .find(button => button.dataset.modelKeyRow === intent.provider)
+        : itemRefs.current[intent.kind === 'effort' ? 1 : 0]
+    ;(cell != null && !cell.disabled ? cell : triggerRef.current)?.focus()
   }, [open, pane, showSearch])
 
   useEffect(() => {
@@ -279,10 +294,12 @@ export function ModelSelect(
     setPane(next)
   }
 
-  /** Leave a drilled pane for the root one, handing the keyboard back to its cell. */
+  /** Leave a drilled pane for the one that opened it, handing the keyboard back to its cell. */
   const back = (from: DrilledPane): void => {
     paneFocus.current = from
-    setPane(ROOT_PANE)
+    // The key pane drills from a group's row in the model list, so backing out
+    // of it returns there; every other drilled pane returns to the root menu.
+    setPane(from.kind === 'key' ? MODEL_PANE : ROOT_PANE)
   }
 
   const controls: ModelMenuControls = {
@@ -435,6 +452,21 @@ export function ModelSelect(
       ...effort === undefined ? {} : { reasoningEffort: effort },
     }
     submit(selection)
+  }
+
+  /**
+   * Switch a group's active key slot. The pane stays open: the settings write
+   * the Host answers lands through `settings/document-updated`, the catalog
+   * reloads, and the checked slot moves with the refreshed state.
+   */
+  const chooseKey = (provider: string, ref: string): void => {
+    const keys = groups.find(group => group.id === provider)?.keys
+    if (keys === undefined || keys.activeRef === ref) return
+    void switchKey(provider, ref).then((result) => {
+      if (result === undefined || result.ok) return
+      toastSeq.current += 1
+      setToast({ seq: toastSeq.current, text: t('error.action', { message: `${result.error.code}: ${result.error.message}` }) })
+    })
   }
 
   const waiting = currentChoice === undefined && state.status === 'loading'
@@ -611,6 +643,28 @@ export function ModelSelect(
                 {filteredGroups.map((group) => {
                   return (
                     <MenuGroup key={group.id} label={group.provider.name}>
+                      {group.keys !== undefined && (
+                        // The route's key in use, beside the models it serves;
+                        // the row carries no itemRef, so search-mode highlight
+                        // and Enter keep addressing model rows alone.
+                        <button
+                          type="button"
+                          role="menuitem"
+                          data-model-key-row={group.id}
+                          className={clsx(css.option, css.keyRow)}
+                          tabIndex={showSearch ? -1 : 0}
+                          key="keys"
+                          disabled={busy}
+                          onMouseMove={busy || showSearch ? undefined : (event) => { event.currentTarget.focus() }}
+                          onClick={() => { drill({ kind: 'key', provider: group.id }) }}
+                        >
+                          <span className={css.optionCopy}>
+                            <span className={css.keyLabel}>{t('apiKey.row')}</span>
+                            <span className={css.keyPreview}>{keyPreviewOf(group.keys)}</span>
+                          </span>
+                          <IconChevronRightOutlineRegular className={css.cellChevron} />
+                        </button>
+                      )}
                       {group.models.map((model) => {
                         const index = modelIndex++
                         const selected = state.current?.provider === group.id && state.current.model === model.id
@@ -692,6 +746,35 @@ export function ModelSelect(
                   ))}
               </div>
             </>
+          )}
+          {pane.kind === 'key' && (
+            <div className={clsx(css.groups, 'scrollable')}>
+              {(() => {
+                // A refresh can drop the block the pane opened over (the last
+                // key was removed elsewhere); the pane says so instead of
+                // listing slots the route no longer has.
+                const keys = groups.find(group => group.id === pane.provider)?.keys
+                if (keys === undefined) return <div className={css.empty}>{t('apiKey.empty')}</div>
+                return keys.slots.map(slot => (
+                  <button
+                    key={slot.ref}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={slot.ref === keys.activeRef}
+                    className={clsx(css.option, slot.ref === keys.activeRef && css.selected)}
+                    onClick={() => { chooseKey(pane.provider, slot.ref) }}
+                  >
+                    <span className={css.optionCopy}>
+                      <span className={css.modelName}>{slot.ref}</span>
+                      {slot.masked === undefined ? null : <span className={css.keyPreview}>{slot.masked}</span>}
+                    </span>
+                    <span className={css.check}>
+                      {slot.ref === keys.activeRef ? <IconCheckOutlineRegular /> : null}
+                    </span>
+                  </button>
+                ))
+              })()}
+            </div>
           )}
           {pane.kind === 'detail' && (
             <div className={clsx(css.groups, 'scrollable')}>

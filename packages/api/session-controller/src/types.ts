@@ -109,11 +109,38 @@ export interface ModelCatalogModel {
   readonly badge?: LlmModelBadge
 }
 
+/** One stored key slot of a provider route's reference series. */
+export interface ModelProviderKeySlot {
+  /** Credential reference the slot stores its key under. */
+  readonly ref: string
+  /** Provider-masked preview of the stored key; absent when the provider offers none. */
+  readonly masked?: string
+}
+
+/**
+ * One provider route's key-slot state, for switching the route's key from the
+ * model picker. A route resolves keys through one reference at a time, so the
+ * slots are alternatives the picker offers beside the route's models; a switch
+ * rewrites the profile field named here and reaches the next request.
+ */
+export interface ModelProviderKeySlots {
+  /** Where a switch writes `apiKeyEnv`: the route profile's settings address. */
+  readonly settingsNs: string
+  /** Path from the namespace root to the route's profile. */
+  readonly settingsPath: readonly string[]
+  /** The reference the route resolves keys through now. */
+  readonly activeRef: string
+  /** Stored slots of the route's series (the active reference plus `_2`..`_9`), series order. */
+  readonly slots: readonly ModelProviderKeySlot[]
+}
+
 /** One provider and its successfully loaded model catalog. */
 export interface ModelProviderGroup {
   readonly id: string
   readonly name: string
   readonly models: readonly ModelCatalogModel[]
+  /** The route's key-slot state; absent while no slot of its series is stored. */
+  readonly keys?: ModelProviderKeySlots
 }
 
 /** One provider whose model catalog lookup failed. */

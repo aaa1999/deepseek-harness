@@ -351,6 +351,81 @@ describe('Web session model selection', () => {
     } finally { await ctx.fiber.dispose() }
   })
 
+  it('carries each route\'s stored key slots beside its models', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    ctx.llm.registerAdapter(['deepseek-official'], new CatalogAdapter('DeepSeek', [
+      { provider: 'deepseek-official', id: 'deepseek-chat', name: 'DeepSeek Chat' },
+    ]))
+    ctx.llm.registerAdapter(['openai'], new CatalogAdapter('openai', [
+      { provider: 'openai', id: 'gpt-x', name: 'GPT X' },
+    ]))
+    ctx.llm.registerAdapter(['addressless'], new CatalogAdapter('Addressless', [
+      { provider: 'addressless', id: 'plain', name: 'Plain' },
+    ]))
+    ctx.effect(() => ctx.llm.registerConfigurableProviders([
+      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+      { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'] },
+    ]))
+    ctx.provide('settings', { describe: () => [
+      { ns: 'llm-deepseek', value: { apiKeyEnv: 'DEEPSEEK_API_KEY' } },
+      { ns: 'llm-pi-ai', value: { providers: { openai: {} } } },
+    ] } as never)
+    ctx.provide('credentials', { describe: (ref: string) => Promise.resolve(
+      ref === 'DEEPSEEK_API_KEY' || ref === 'DEEPSEEK_API_KEY_2' || ref === 'OPENAI_API_KEY'
+        ? { configured: true, writable: true, masked: `mask-${ref}` }
+        : { configured: false, writable: true },
+    ) } as never)
+    try {
+      const catalog = await buildModelCatalog(ctx, { provider: 'deepseek-official', model: 'deepseek-chat' })
+      const byId = new Map(catalog.groups.map(group => [group.id, group]))
+      expect(byId.get('deepseek-official')?.keys).toEqual({
+        settingsNs: 'llm-deepseek',
+        settingsPath: [],
+        activeRef: 'DEEPSEEK_API_KEY',
+        slots: [
+          { ref: 'DEEPSEEK_API_KEY', masked: 'mask-DEEPSEEK_API_KEY' },
+          { ref: 'DEEPSEEK_API_KEY_2', masked: 'mask-DEEPSEEK_API_KEY_2' },
+        ],
+      })
+      // A profile naming no reference roots its series at the derived one, and
+      // a route without a settings address carries nothing to switch.
+      expect(byId.get('openai')?.keys).toEqual({
+        settingsNs: 'llm-pi-ai',
+        settingsPath: ['providers', 'openai'],
+        activeRef: 'OPENAI_API_KEY',
+        slots: [{ ref: 'OPENAI_API_KEY', masked: 'mask-OPENAI_API_KEY' }],
+      })
+      expect(byId.get('addressless')?.keys).toBeUndefined()
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('leaves key slots out while none is stored and degrades a failing credential read', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    ctx.llm.registerAdapter(['deepseek-official'], new CatalogAdapter('DeepSeek', [
+      { provider: 'deepseek-official', id: 'deepseek-chat', name: 'DeepSeek Chat' },
+    ]))
+    ctx.effect(() => ctx.llm.registerConfigurableProviders([
+      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+    ]))
+    ctx.provide('settings', { describe: () => [{ ns: 'llm-deepseek', value: {} }] } as never)
+    let failReads = false
+    ctx.provide('credentials', { describe: () => failReads
+      ? Promise.reject(new Error('store offline'))
+      : Promise.resolve({ configured: false, writable: true }) } as never)
+    try {
+      const bare = { provider: 'deepseek-official', model: 'deepseek-chat' }
+      expect((await buildModelCatalog(ctx, bare)).groups.every(group => group.keys === undefined)).toBe(true)
+      // A broken store reads as unconfigured: the block is picker enrichment,
+      // and the model list must survive it.
+      failReads = true
+      const degraded = await buildModelCatalog(ctx, bare)
+      expect(degraded.groups.every(group => group.keys === undefined)).toBe(true)
+      expect(degraded.groups[0]?.models).toHaveLength(1)
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it.each(['settings', 'credentials'] as const)('refuses account initialization without %s inspection', async (missing) => {
     const ctx = new Context()
     if (missing !== 'settings') ctx.provide('settings', {} as never)

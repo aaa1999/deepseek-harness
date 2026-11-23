@@ -104,7 +104,7 @@ function selectionOf(state: ModelDirectoryState, id: string): ModelSelection | u
 const NS = 'model'
 
 /** Required services: the contribution registry, the seat's slot registry, locale, and the service's own faces. */
-export const inject = ['commandUi', 'locale', 'sessions', 'slots', 'remote', 'remote.session']
+export const inject = ['commandUi', 'locale', 'sessions', 'slots', 'remote', 'remote.session', 'remote.settings']
 
 /**
  * Client plugin body: mount ModelDirectoryResolver, register the `model` dictionaries,
@@ -189,6 +189,15 @@ export function apply(ctx: ClientContext): void {
           select: (selection: ModelSelection) => available
             ? directory.select(selection)
             : Promise.resolve(undefined),
+          switchKey: (provider, ref) => {
+            // The block the row opened over names the write's address; a route
+            // the catalog carries no block for has nothing to switch.
+            const keys = directory.store.getSnapshot().groups.find(group => group.id === provider)?.keys
+            if (!available || keys === undefined) return Promise.resolve(undefined)
+            return ctx.remote.settings.mutate(keys.settingsNs, [
+              { op: 'set', path: [...keys.settingsPath, 'apiKeyEnv'], value: ref },
+            ], undefined).then(result => result.ok ? { ok: true, value: undefined } : result)
+          },
         }
       },
     }, ModelSelect))

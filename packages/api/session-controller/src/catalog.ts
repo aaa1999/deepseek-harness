@@ -1,15 +1,84 @@
 /** Shared projection of the live LLM registry into the browser model catalog. */
 
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import { credentialRef } from '@deepseek-ai/dsh-credentials'
+import { credentialRef, isCredentialRefName } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-settings'
 import type { LlmModelInfo } from '@deepseek-ai/dsh-llm'
 import type { Context } from '@deepseek-ai/cordis'
 import type {
   ModelCatalog,
+  ModelProviderKeySlot,
+  ModelProviderKeySlots,
   ModelReasoning,
   ModelSelection,
 } from './types.ts'
+
+/** Uppercase route id over non-alphanumerics: the stem of a derived credential reference. */
+function deriveKeyRef(provider: string): string {
+  return `${provider.toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_API_KEY`
+}
+
+/**
+ * The key-slot series of one route: the base reference its profile resolves
+ * keys through, then its numbered sisters `_2` through `_9`. Mirror of
+ * `keySlotRefs` in `packages/client/ui-settings-models/src/client/store.ts`:
+ * client packages reference only client packages, so the convention is
+ * mirrored here rather than imported — keep the two in step, as `apiKeyFailure`
+ * keeps in step with `normalizeApiKey`.
+ */
+function keySlotRefs(baseRef: string): string[] {
+  return [baseRef, ...Array.from({ length: 8 }, (_unused, index) => `${baseRef}_${String(index + 2)}`)]
+}
+
+/**
+ * The key-slot state of every catalog group a stored key belongs to. Routes
+ * without a settings address (nothing a switch could write), the account route
+ * (its credential is a sign-in, not a key slot), and routes naming a reference
+ * outside the credential-seam grammar contribute nothing. A credential read
+ * that fails reads as an unconfigured slot: the block is enrichment for the
+ * picker, and a broken store must not take the model list down with it.
+ * @param ctx - Host registry, settings, and credential services.
+ * @param groupIds - provider routes the catalog carries; only these are probed.
+ * @returns provider id to its key-slot state, for groups with at least one stored slot.
+ */
+async function providerKeyBlocks(
+  ctx: Context,
+  groupIds: ReadonlySet<string>,
+): Promise<Map<string, ModelProviderKeySlots>> {
+  const blocks = new Map<string, ModelProviderKeySlots>()
+  const settings = ctx.get('settings')
+  const credentials = ctx.get('credentials')
+  if (settings === undefined || credentials === undefined) return blocks
+  const namespaces = settings.describe({ redactSecrets: true })
+  for (const provider of ctx.llm.listConfigurableProviders()) {
+    if (!groupIds.has(provider.provider) || provider.provider === 'deepseek-account') continue
+    let profile: unknown = namespaces.find(namespace => namespace.ns === provider.settingsNs)?.value
+    for (const key of provider.settingsPath) {
+      profile = typeof profile === 'object' && profile !== null ? Reflect.get(profile, key) : undefined
+    }
+    const named: unknown = typeof profile === 'object' && profile !== null ? Reflect.get(profile, 'apiKeyEnv') : undefined
+    const activeRef = typeof named === 'string' && named.length > 0 ? named : deriveKeyRef(provider.provider)
+    if (!isCredentialRefName(activeRef)) continue
+    const series = keySlotRefs(activeRef)
+    const infos = await Promise.all(series.map(
+      ref => credentials.describe(credentialRef(ref)).catch(() => undefined),
+    ))
+    const slots: ModelProviderKeySlot[] = series.flatMap((ref, index) => {
+      const info = infos[index]
+      if (info?.configured !== true) return []
+      return [{ ref, ...info.masked === undefined ? {} : { masked: info.masked } }]
+    })
+    if (slots.length > 0) {
+      blocks.set(provider.provider, {
+        settingsNs: provider.settingsNs,
+        settingsPath: [...provider.settingsPath],
+        activeRef,
+        slots,
+      })
+    }
+  }
+  return blocks
+}
 
 /**
  * Build the browser model catalog without requiring a Session.
@@ -62,8 +131,13 @@ export async function buildModelCatalog(
       }
     }
   }))
-  const groups = catalog.flatMap(item => item.kind === 'group' ? [item.group] : [])
+  const loaded = catalog.flatMap(item => item.kind === 'group' ? [item.group] : [])
     .filter(group => group.models.length > 0)
+  const keyBlocks = await providerKeyBlocks(ctx, new Set(loaded.map(group => group.id)))
+  const groups = loaded.map((group) => {
+    const keys = keyBlocks.get(group.id)
+    return keys === undefined ? group : { ...group, keys }
+  })
   return {
     default: { ...defaultSelection },
     routableProviders: groups.map(group => group.id),
