@@ -29,7 +29,7 @@ import type { LlmNativeAuth, SettingsNamespaceView } from '@deepseek-ai/dsh-api-
 // Type-only: pulls this package's SlotMap merge (the two Models child slots).
 import type {} from './slot-contract.ts'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
-import { deriveKeyRef, protocolChoices, providerUsable, reasoningLevelChoices } from './store.ts'
+import { deriveKeyRef, keySlotRefs, protocolChoices, providerUsable, reasoningLevelChoices } from './store.ts'
 import type { ModelsSettingsStore, ProviderRow } from './store.ts'
 import type { ModelsOperations } from './operations.ts'
 import type { SettingsSchemaOperations } from './schema-operations.ts'
@@ -88,8 +88,13 @@ export interface ProviderIdentity {
 interface EditorTarget extends ProviderIdentity {
   settingsNs: string
   settingsPath: readonly string[]
-  /** Writable credential identified under this page's conventional reference. */
-  credentialRef?: string
+  /**
+   * Writable credentials this page stored for the route: the configured slots
+   * of its key-slot series, rooted at the reference the profile resolves
+   * through. Deletion clears them with the profile; anything else the route
+   * reads (a reference outside the series) is managed elsewhere and kept.
+   */
+  credentialRefs?: readonly string[]
   /** The adapter reports this route as one it does not ship (see {@link ProviderEditorProps.declared}). */
   declared?: boolean
   /** The route's catalog endpoint (see {@link ProviderEditorProps.defaultBaseURL}). */
@@ -133,6 +138,7 @@ function renderProviderEditor({ target, row, ...props }: ProviderEditorRenderPro
       {...target.baseURLEnv === undefined ? {} : { baseURLEnv: target.baseURLEnv }}
       {...target.nativeAuth === undefined ? {} : { nativeAuth: target.nativeAuth }}
       {...row.credential === undefined ? {} : { credential: row.credential }}
+      {...row.keySlots === undefined ? {} : { keySlots: row.keySlots }}
       {...row.credentialChecks === undefined ? {} : { credentialChecks: row.credentialChecks }}
       {...props}
     />
@@ -140,23 +146,23 @@ function renderProviderEditor({ target, row, ...props }: ProviderEditorRenderPro
 }
 
 /**
- * Remove one user-added provider and its page-managed credential. Credential
+ * Remove one user-added provider and its page-managed credentials. Credential
  * removal comes first so a second-step failure leaves the provider row visible
  * and the whole operation safely retryable; both unsets are idempotent.
  * The settings removal names the profile rather than rebuilding its whole
  * namespace from a partial view.
  * @param operations - the page's Host operations.
  * @param controller - the page store to refresh.
- * @param target - the provider's settings address and optional managed credential.
+ * @param target - the provider's settings address and optional managed credentials.
  * @returns the failure message, or undefined once the write and reload landed.
  */
 export async function removeProviderProfile(
   operations: ModelsOperations,
   controller: ModelsSettingsStore,
-  target: { settingsNs: string; settingsPath: readonly string[]; credentialRef?: string },
+  target: { settingsNs: string; settingsPath: readonly string[]; credentialRefs?: readonly string[] },
 ): Promise<string | undefined> {
-  if (target.credentialRef !== undefined) {
-    const credential = await operations.removeCredential(target.credentialRef)
+  for (const ref of target.credentialRefs ?? []) {
+    const credential = await operations.removeCredential(ref)
     if (credential !== undefined) return credential
   }
   const written = await operations.writeSettings(
@@ -198,18 +204,16 @@ function keyConfiguredOf(row: ProviderRow): boolean {
 }
 
 function targetOf(row: ProviderRow): EditorTarget {
-  const managedRef = deriveKeyRef(row.entry.provider)
-  const credentialRef = row.apiKeyEnv === managedRef
-    && row.credential?.configured === true
-    && row.credential.writable
-    ? managedRef
-    : undefined
+  // The page manages the slot series it offers on the editor: every configured,
+  // writable slot rooted at the reference the profile resolves through.
+  const credentialRefs = keySlotRefs(row.apiKeyEnv ?? deriveKeyRef(row.entry.provider))
+    .filter(ref => row.keySlots?.[ref]?.writable === true)
   return {
     provider: row.entry.provider,
     displayName: row.entry.displayName,
     settingsNs: row.entry.settingsNs,
-    settingsPath: row.entry.settingsPath,
-    ...credentialRef === undefined ? {} : { credentialRef },
+    settingsPath: [...row.entry.settingsPath],
+    ...credentialRefs.length === 0 ? {} : { credentialRefs },
     // Only declared routes may expose route-owned fields.
     ...row.entry.declared === true ? { declared: true } : {},
     ...row.entry.defaultBaseURL === undefined ? {} : { defaultBaseURL: row.entry.defaultBaseURL },
@@ -650,6 +654,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                       {...draft.target.baseURLEnv === undefined ? {} : { baseURLEnv: draft.target.baseURLEnv }}
                       {...draft.target.nativeAuth === undefined ? {} : { nativeAuth: draft.target.nativeAuth }}
                       {...addRow?.credentialChecks === undefined ? {} : { credentialChecks: addRow.credentialChecks }}
+                      {...addRow?.keySlots === undefined ? {} : { keySlots: addRow.keySlots }}
                       t={t}
                       readOnly={!state.writable}
                       onClose={(changed) => { closeEditor(changed, draft.target) }}
@@ -728,7 +733,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
         description={deleteTarget === undefined
           ? ''
           : providerCopy(
-            deleteTarget.credentialRef === undefined
+            (deleteTarget.credentialRefs?.length ?? 0) === 0
               ? t('deleteDescription')
               : t('deleteDescriptionWithCredential'),
             deleteTarget,

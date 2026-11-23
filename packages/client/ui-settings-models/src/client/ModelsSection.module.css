@@ -899,6 +899,76 @@ select.input {
   cursor: default;
 }
 
+/* The saved-key slot list: one row per stored key of the route's reference
+   series — the reference, its server-side mask, and the switch/remove actions.
+   Rows stay single-line; a long reference truncates behind its tooltip. */
+.keySlots {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.keySlotRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.keySlotRef {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.keySlotMasked {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* The active mark carries no action, so it reads as a tag beside the rows' buttons. */
+.keySlotActive {
+  flex: none;
+  padding: 1px 6px;
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-xs);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.keySlotRemoved,
+.keySlotPending {
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.keySlotAdd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.keySlotAdd .keyInput {
+  flex: 1;
+}
+
 /* Select variant of .input: replaces the OS arrow (which sits flush against
    the right edge) with the shared 12px chevron inset like the composer's
    .select chips; the right pad reserves its cell. */

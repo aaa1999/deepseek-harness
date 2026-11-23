@@ -35,7 +35,7 @@ import { EditorFooter } from './EditorFooter.tsx'
 import { ModelListEditor } from './ModelListEditor.tsx'
 import { validateReasoningEfforts } from './ModelReasoningEfforts.tsx'
 import type { ReasoningEffortsFailure } from './ModelReasoningEfforts.tsx'
-import { deriveKeyRef, protocolChoices, reasoningLevelChoices } from './store.ts'
+import { deriveKeyRef, keySlotRefs, protocolChoices, reasoningLevelChoices } from './store.ts'
 import { protocolLabel } from './protocol-label.ts'
 import { protocolNeedsKey, protocolReasoningLevels } from './protocol-rules.ts'
 import type { ModelsOperations } from './operations.ts'
@@ -82,6 +82,12 @@ export interface ProviderEditorProps {
   nativeAuth?: LlmNativeAuth
   /** Redacted state of the profile's named credential reference, from the page snapshot. */
   credential?: CredentialInfo
+  /**
+   * Configured slots of this route's key-slot series (the resolved reference
+   * plus its numbered sisters), from the page snapshot; absent while none is
+   * configured. Present, the card lists them for switching and removal.
+   */
+  keySlots?: Readonly<Record<string, CredentialInfo>>
   /** Redacted checks for the profile's named reference or the provider's native variables. */
   credentialChecks?: Readonly<Record<string, CredentialInfo>>
   /** Section copy. */
@@ -201,6 +207,12 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
   })
   // Undefined is untouched; strings hold new input and a reference stages removal.
   const [keyDraft, setKeyDraft] = useState<string | { readonly ref: string; readonly removed?: true }>()
+  // Edits on the non-active key slots: staged removals, split by whether their
+  // unset already landed when a later write failed, and the Add-key draft,
+  // which stays hidden until its affordance is opened.
+  const [slotRemovals, setSlotRemovals] = useState<ReadonlySet<string>>(() => new Set())
+  const [slotRemoved, setSlotRemoved] = useState<ReadonlySet<string>>(() => new Set())
+  const [addKeyDraft, setAddKeyDraft] = useState<string | undefined>(undefined)
   const keyText = typeof keyDraft === 'string' ? keyDraft : ''
   const keyRemoval = typeof keyDraft === 'object' ? keyDraft : undefined
   const [busy, setBusy] = useState(false)
@@ -247,6 +259,23 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
   }
   const clearsDerivedRef = keyRemoval !== undefined && layout === 'pi-ai'
     && props.nativeAuth !== undefined && stringAt(draft, 'apiKeyEnv') === deriveKeyRef(props.provider)
+  // A staged switch edits `apiKeyEnv` in the draft like any profile field, so
+  // path ops, the materialization guard, and this active mark all read one
+  // answer: the reference the route resolves through once this card applies.
+  const activeRef = stringAt(draft, 'apiKeyEnv') ?? keyRef
+  const slots = keySlotRefs(keyRef).flatMap((ref) => {
+    const info = props.keySlots?.[ref]
+    return info !== undefined && info.configured ? [{ ref, info }] : []
+  })
+  /** Slot removals this apply carries, staged or already landed host-side. */
+  const stagedSlots = new Set([...slotRemovals, ...slotRemoved])
+  /** Slots surviving this apply; the active one is removed by switching away, not beside a successor. */
+  const keptSlots = slots.filter(({ ref }) => !stagedSlots.has(ref))
+  /** Where the Add input stores: the first slot the page snapshot reports unoccupied. */
+  const freeSlot = keySlotRefs(keyRef).find(ref => ref !== activeRef && props.keySlots?.[ref]?.configured !== true)
+  const pendingSwitch = stringAt(draft, 'apiKeyEnv')
+  /** Restoring the user layer's own value un-stages a switch without unpinning a base-layer reference. */
+  const committedApiKeyEnv = stringAt(schema.getPath(namespace.user, settingsPath), 'apiKeyEnv')
 
   // The model list is validated by the same per-row checker for both families,
   // so a bad row is named by its position rather than by a blanket message.
@@ -280,6 +309,11 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     ? undefined
     : retryPolicyFailure(schema, retryNode, schema.getPath(draft, ['retryPolicy']), retryDefaults, t)
   const keyFailure = apiKeyFailure(keyText)
+  // The Add input judges by the same rule as the replace input; it is absent
+  // entirely until opened, so an unopened affordance gates nothing.
+  const addText = addKeyDraft ?? ''
+  const addFailure = addKeyDraft === undefined ? undefined : apiKeyFailure(addText)
+  const addValue = addText.trim()
   // What a probe or a write must carry: the typed key with paste whitespace
   // removed. A blank field yields an empty string, which both call sites read
   // as "no key supplied" rather than as a key — that is how a card whose
@@ -353,6 +387,12 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       // A later settings failure cannot restore a secret that was deleted.
       setKeyDraft({ ...keyRemoval, removed: true })
     }
+    for (const ref of slotRemovals) {
+      if (slotRemoved.has(ref)) continue
+      const removed = await operations.removeCredential(ref)
+      if (removed !== undefined) return removed
+      setSlotRemoved(current => new Set([...current, ref]))
+    }
     if (ops.length > 0) {
       const written = await operations.writeSettings(ns, ops, expectedRevision)
       if (written.kind !== 'written') return written.kind === 'conflict' ? t('conflict') : written.message
@@ -361,10 +401,17 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       setDraft(next)
     }
     if (keyValue.length > 0) {
-      const stored = await operations.storeCredential(keyRef, keyValue)
+      const stored = await operations.storeCredential(activeRef, keyValue)
+      if (stored !== undefined) return stored
+    }
+    // A typed addition lands on its own slot and changes nothing about which
+    // key is active — switching is the explicit Use action beside the list.
+    if (addValue.length > 0 && freeSlot !== undefined) {
+      const stored = await operations.storeCredential(freeSlot, addValue)
       if (stored !== undefined) return stored
     }
     setKeyDraft('')
+    setAddKeyDraft(undefined)
     return undefined
   }
 
@@ -441,6 +488,13 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     const detectedVisibleRef = detectedRef === undefined || !visibleRefs.includes(detectedRef) ? undefined : detectedRef
     const missingRefs = checkedRefs.length > 0 && checkedRefs.every(([, info]) => info?.configured === false)
     const savedCredential = detected?.[1]?.source === 'file' && detectedVisibleRef !== undefined
+    /**
+     * Whether the input's detected key is the route's last one. With another
+     * slot kept, removing the active key is the Use-then-Remove flow instead:
+     * an unset under a still-named reference is a missing credential, not a
+     * switch.
+     */
+    const soleSavedKey = keptSlots.every(({ ref }) => ref === detected?.[0])
     const credentialHint = props.credentialRequired === true
       ? undefined
       : keyText.length > 0 ? savedCredential ? t('keyReplacePending') : undefined
@@ -477,6 +531,117 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       },
       onReset: () => { setDraft(current => schema.deletePath(current, ['models'])) },
     }
+    /** One stored slot: its mask, the active mark or the Use switch, and removal. */
+    const slotRow = ({ ref, info }: { ref: string; info: CredentialInfo }): ReactNode => {
+      /** The switch or the mark; the switch un-stages itself when re-chosen. */
+      const activeControl = ref === activeRef
+        ? <span className={styles['keySlotActive']}>{t('keyActive')}</span>
+        : (
+          <button
+            type="button"
+            className={styles['secondaryButton']}
+            aria-label={t('keyUseNamed').replace('{ref}', () => ref)}
+            disabled={disabled}
+            onClick={() => {
+              // Choosing the pending switch again restores the user layer's
+              // own value rather than clearing the field — an unset here could
+              // expose a base-layer reference beneath it.
+              setField('apiKeyEnv', ref === pendingSwitch ? committedApiKeyEnv : ref)
+              setFailure(undefined)
+            }}
+          >
+            {t('keyUse')}
+          </button>
+        )
+      /**
+       * Removal. The active slot follows the single-key flow while it is the
+       * last one; with a successor kept it is the Use-then-Remove flow instead,
+       * because an unset under a still-named reference is a missing credential.
+       */
+      const removeControl = slotRemoved.has(ref)
+        ? <span className={styles['keySlotRemoved']}>{t('keySlotRemoved')}</span>
+        : ref === activeRef
+          ? (
+            <button
+              type="button"
+              className={styles['secondaryButton']}
+              aria-label={t('keyRemoveNamed').replace('{ref}', () => ref)}
+              {...keptSlots.some(({ ref: kept }) => kept !== ref)
+                ? { title: t('keyRemoveActiveTitle'), disabled: true }
+                : {
+                  disabled: disabled || keyRemoval?.removed === true,
+                  onClick: () => {
+                    setKeyDraft({ ref })
+                    setFailure(undefined)
+                  },
+                }}
+            >
+              {t('remove')}
+            </button>
+          )
+          : info.writable
+            ? (
+              <button
+                type="button"
+                className={styles['secondaryButton']}
+                aria-label={t('keyRemoveNamed').replace('{ref}', () => ref)}
+                disabled={disabled}
+                onClick={() => {
+                  setSlotRemovals((current) => {
+                    const next = new Set(current)
+                    if (next.has(ref)) next.delete(ref)
+                    else next.add(ref)
+                    return next
+                  })
+                  setFailure(undefined)
+                }}
+              >
+                {t(slotRemovals.has(ref) ? 'cancel' : 'remove')}
+              </button>
+            )
+            : null
+      const pending = slotRemovals.has(ref) || keyRemoval?.ref === ref && keyRemoval.removed !== true
+      return (
+        <li key={ref} className={styles['keySlotRow']}>
+          <span className={styles['keySlotRef']} title={ref}>{ref}</span>
+          <span className={styles['keySlotMasked']}>{info.masked ?? ''}</span>
+          {activeControl}
+          {removeControl}
+          {pending ? <span className={styles['keySlotPending']}>{t('keySlotRemovePending')}</span> : null}
+        </li>
+      )
+    }
+    /** The Add affordance: offered while a slot is free, explained when none is. */
+    const addControl: ReactNode = addKeyDraft === undefined
+      ? freeSlot === undefined
+        ? <p className={styles['advancedHint']}>{t('keySlotsFull')}</p>
+        : (
+          <button
+            type="button"
+            className={styles['secondaryButton']}
+            disabled={disabled}
+            onClick={() => { setAddKeyDraft(''); setFailure(undefined) }}
+          >
+            {t('keyAdd')}
+          </button>
+        )
+      : (
+        <div className={styles['keySlotAdd']}>
+          <ApiKeyInput
+            t={t}
+            value={addText}
+            placeholder={t('keyAddPlaceholder').replace('{ref}', () => freeSlot ?? '')}
+            aria-label={t('keyAddLabel')}
+            aria-invalid={addFailure !== undefined}
+            disabled={disabled || freeSlot === undefined}
+            autoFocus
+            onChange={(event) => { setAddKeyDraft(event.target.value); setFailure(undefined) }}
+          />
+          <button type="button" className={styles['secondaryButton']} disabled={disabled} onClick={() => { setAddKeyDraft(undefined) }}>
+            {t('cancel')}
+          </button>
+        </div>
+      )
     return (
       <>
         {keylessNativeAuth
@@ -492,7 +657,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
               {...keyDraft === undefined && savedCredential ? {
                 saved: {
                   masked: detected[1].masked ?? '',
-                  ...detected[1].writable
+                  ...detected[1].writable && soleSavedKey
                     ? { clear: () => { setKeyDraft({ ref: detected[0] }); setFailure(undefined) } } : {},
                 },
               } : {}}
@@ -505,7 +670,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
               disabled={disabled || keyRemoval?.removed === true}
               onChange={(event) => {
                 setKeyDraft(event.target.value === '' && savedCredential
-                  ? detected[1].writable ? { ref: detected[0] } : undefined
+                  ? detected[1].writable && soleSavedKey ? { ref: detected[0] } : undefined
                   : event.target.value)
                 setFailure(undefined)
               }}
@@ -516,6 +681,19 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
               ? null
               : <p className={styles[protocolKeyMissing ? 'advancedHint' : 'error']}>{t(shownKeyFailure)}</p>}
           </div>}
+        {slots.length === 0 ? null : (
+          <div className={styles['field']}>
+            <span className={styles['fieldLabel']}>{t('savedKeys')}</span>
+            <ul className={styles['keySlots']}>
+              {slots.map(slotRow)}
+            </ul>
+            {pendingSwitch !== undefined && pendingSwitch !== stringAt(fallback, 'apiKeyEnv')
+              ? <p className={styles['advancedHint']}>{t('keySwitchPending').replace('{ref}', () => pendingSwitch)}</p>
+              : null}
+            {addControl}
+            {addFailure === undefined ? null : <p className={styles['error']}>{t(addFailure)}</p>}
+          </div>
+        )}
         {props.credentialOnly === true ? null : <details
           className={styles['customized']}
           onToggle={(event) => { setCustomizedOpen(event.currentTarget.open) }}
@@ -677,6 +855,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
           || (props.credentialOnly !== true && modelFailure !== undefined)
           || retryFailure !== undefined
           || shownKeyFailure !== undefined
+          || addFailure !== undefined
           || (props.credentialRequired === true && keyValue.length === 0)}
         submitLabelKey={props.submitLabelKey ?? 'apply'}
         submitBusyLabelKey={props.submitBusyLabelKey ?? 'applying'}

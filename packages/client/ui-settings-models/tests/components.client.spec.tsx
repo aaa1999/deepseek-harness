@@ -22,7 +22,7 @@ import {
 } from '../src/client/DeepSeekModelsEditor.tsx'
 import { apiKeyFailure } from '../src/client/apiKey.ts'
 import { SettingsDescribeMirror } from '@deepseek-ai/dsh-client-ui-settings/src/client/settings-mirror.ts'
-import { deriveKeyRef, ModelsSettingsStore } from '../src/client/store.ts'
+import { deriveKeyRef, keySlotRefs, ModelsSettingsStore } from '../src/client/store.ts'
 import { createModelsOperations } from '../src/client/operations.ts'
 import type { ModelsOperations } from '../src/client/operations.ts'
 import type { ProviderRow } from '../src/client/store.ts'
@@ -182,6 +182,8 @@ function scriptedFace(overrides: {
   mutate?: ReturnType<typeof vi.fn>
   set?: ReturnType<typeof vi.fn>
   unset?: ReturnType<typeof vi.fn>
+  /** Credential describe answer, defaulting to OPENAI_API_KEY stored in the file source. */
+  describeCredentials?: (refs: string[]) => Promise<RemoteResult<Record<string, CredentialInfo>>>
 } = {}) {
   const providerNamespace = wireNamespaces().find(view => view.ns === 'llm-pi-ai')!
   const update = overrides.update ?? vi.fn(() => Promise.resolve(remoteOk(providerNamespace)))
@@ -220,13 +222,13 @@ function scriptedFace(overrides: {
       // Typed as the Remote answer rather than the success branch alone: a
       // case that scripts a refusal replaces this mock.
       describe: vi.fn((refs: string[]): Promise<RemoteResult<Record<string, CredentialInfo>>> =>
-        Promise.resolve(remoteOk(
-          Object.fromEntries(refs.map(ref => [ref, {
+        (overrides.describeCredentials ?? (asked => Promise.resolve(remoteOk(
+          Object.fromEntries(asked.map(ref => [ref, {
             configured: ref === 'OPENAI_API_KEY',
             ...ref === 'OPENAI_API_KEY' ? { source: 'file', masked: '••••••••' } : {},
             writable: true,
           }])),
-        ))),
+        ))))(refs)),
       set,
       unset,
     },
@@ -2145,13 +2147,144 @@ describe('ModelsSection', () => {
       {
         settingsNs: 'llm-pi-ai',
         settingsPath: ['providers', 'openai'],
-        credentialRef: 'OPENAI_API_KEY',
+        credentialRefs: ['OPENAI_API_KEY'],
       },
     )
     expect(failure).toBe('credential is read-only')
     expect(mutate).not.toHaveBeenCalled()
   })
 
+})
+
+describe('key slots', () => {
+  /** Describe answer marking the route's base and second slot as stored keys. */
+  const twoStoredKeys = (refs: string[]): Promise<RemoteResult<Record<string, CredentialInfo>>> =>
+    Promise.resolve(remoteOk(Object.fromEntries(refs.map(ref => [ref, {
+      configured: ref === 'OPENAI_API_KEY' || ref === 'OPENAI_API_KEY_2',
+      ...ref === 'OPENAI_API_KEY' ? { source: 'file', masked: 'sk-••••••••wxyz' }
+        : ref === 'OPENAI_API_KEY_2' ? { source: 'file', masked: 'sk-••••••••q9de' } : {},
+      writable: true,
+    }]))))
+
+  /** Open the openai row's editor, where the slot list renders once a key is stored. */
+  const openOpenAiEditor = (): void => {
+    fireEvent.click(screen.getByRole('button', { name: openaiCopy(en.editProvider) }))
+  }
+
+  it('adds a key to the first free slot without switching the active one', async () => {
+    const { mutate, set } = await mountSection({ describeCredentials: twoStoredKeys })
+    openOpenAiEditor()
+    fireEvent.click(screen.getByRole('button', { name: en.keyAdd }))
+    const addInput = screen.getByLabelText<HTMLInputElement>(en.keyAddLabel)
+    expect(addInput.placeholder).toBe(en.keyAddPlaceholder.replace('{ref}', () => 'OPENAI_API_KEY_3'))
+    fireEvent.change(addInput, { target: { value: '  sk-third  ' } })
+    fireEvent.click(screen.getByText(en.apply))
+    // The addition lands on its own slot and names no reference: which key is
+    // active is the Use action alone.
+    await waitFor(() => { expect(set).toHaveBeenCalledExactlyOnceWith('OPENAI_API_KEY_3', 'sk-third') })
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('switches the active key by writing the profile reference on apply', async () => {
+    const { mutate, set, unset } = await mountSection({ describeCredentials: twoStoredKeys })
+    openOpenAiEditor()
+    expect(screen.getByText('sk-••••••••q9de')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: en.keyUseNamed.replace('{ref}', () => 'OPENAI_API_KEY_2') }))
+    expect(screen.getByText(en.keySwitchPending.replace('{ref}', () => 'OPENAI_API_KEY_2'))).toBeTruthy()
+    fireEvent.click(screen.getByText(en.apply))
+    await waitFor(() => {
+      expect(mutate).toHaveBeenCalledExactlyOnceWith('llm-pi-ai', [
+        { op: 'set', path: ['providers', 'openai', 'apiKeyEnv'], value: 'OPENAI_API_KEY_2' },
+      ], 0)
+    })
+    expect(set).not.toHaveBeenCalled()
+    expect(unset).not.toHaveBeenCalled()
+  })
+
+  it('un-stages a switch back to the reference the user layer already names', async () => {
+    const { mutate } = await mountSection({ describeCredentials: twoStoredKeys })
+    openOpenAiEditor()
+    fireEvent.click(screen.getByRole('button', { name: en.keyUseNamed.replace('{ref}', () => 'OPENAI_API_KEY_2') }))
+    // Choosing the pending switch's predecessor restores the stored reference
+    // rather than unpinning it, so the apply carries no settings write at all.
+    fireEvent.click(screen.getByRole('button', { name: en.keyUseNamed.replace('{ref}', () => 'OPENAI_API_KEY') }))
+    expect(screen.queryByText(en.keySwitchPending.replace('{ref}', () => 'OPENAI_API_KEY_2'))).toBeNull()
+    fireEvent.click(screen.getByText(en.apply))
+    await waitFor(() => { expect(screen.queryByRole('button', { name: en.apply })).toBeNull() })
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('refuses to delete the active key while another remains', async () => {
+    await mountSection({ describeCredentials: twoStoredKeys })
+    openOpenAiEditor()
+    const active = screen.getByRole<HTMLButtonElement>('button', {
+      name: en.keyRemoveNamed.replace('{ref}', () => 'OPENAI_API_KEY'),
+    })
+    expect(active.disabled).toBe(true)
+    expect(active.title).toBe(en.keyRemoveActiveTitle)
+    // The non-active slot stays deletable.
+    expect(screen.getByRole<HTMLButtonElement>('button', {
+      name: en.keyRemoveNamed.replace('{ref}', () => 'OPENAI_API_KEY_2'),
+    }).disabled).toBe(false)
+  })
+
+  it('deletes a non-active slot on apply and can cancel the staging', async () => {
+    const { mutate, unset } = await mountSection({ describeCredentials: twoStoredKeys })
+    openOpenAiEditor()
+    const remove = screen.getByRole('button', { name: en.keyRemoveNamed.replace('{ref}', () => 'OPENAI_API_KEY_2') })
+    fireEvent.click(remove)
+    expect(screen.getByText(en.keySlotRemovePending)).toBeTruthy()
+    // The same button withdraws the staging — its accessible name keeps naming
+    // the key it deletes while its visible text reads as a cancel.
+    fireEvent.click(within(remove.closest('li')!).getByRole('button', {
+      name: en.keyRemoveNamed.replace('{ref}', () => 'OPENAI_API_KEY_2'),
+    }))
+    expect(screen.queryByText(en.keySlotRemovePending)).toBeNull()
+    fireEvent.click(remove)
+    fireEvent.click(screen.getByText(en.apply))
+    await waitFor(() => { expect(unset).toHaveBeenCalledExactlyOnceWith('OPENAI_API_KEY_2') })
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('deletes the last key through the row action too, clearing the derived reference', async () => {
+    const { mutate, unset } = await mountSection()
+    openOpenAiEditor()
+    fireEvent.click(screen.getByRole('button', { name: en.keyRemoveNamed.replace('{ref}', () => 'OPENAI_API_KEY') }))
+    expect(screen.getByText(en.keySlotRemovePending)).toBeTruthy()
+    fireEvent.click(screen.getByText(en.apply))
+    // The sole key's removal is today's single-key flow: the profile's derived
+    // reference goes with it, restoring the route's native authentication.
+    await waitFor(() => { expect(unset).toHaveBeenCalledExactlyOnceWith('OPENAI_API_KEY') })
+    expect(mutate).toHaveBeenCalledExactlyOnceWith('llm-pi-ai', [
+      { op: 'unset', path: ['providers', 'openai', 'apiKeyEnv'] },
+    ], 0)
+  })
+
+  it('clears every stored slot of the series when the provider is deleted', async () => {
+    const { unset, mutate } = await mountSection({ describeCredentials: twoStoredKeys })
+    fireEvent.click(screen.getByRole('button', { name: openaiCopy(en.removeProvider) }))
+    const dialog = screen.getByRole('dialog', { name: openaiCopy(en.deleteTitle) })
+    expect(dialog.textContent).toContain(providerCopy(en.deleteDescriptionWithCredential, OPENAI_TARGET))
+    fireEvent.click(within(dialog).getByRole('button', { name: openaiCopy(en.deleteConfirm) }))
+    await waitFor(() => {
+      expect(unset).toHaveBeenCalledWith('OPENAI_API_KEY')
+      expect(unset).toHaveBeenCalledWith('OPENAI_API_KEY_2')
+    })
+    await waitFor(() => { expect(mutate).toHaveBeenCalledOnce() })
+  })
+
+  it('reports every slot in use when the series is full', async () => {
+    // The base and all eight numbered slots stored: the Add affordance says
+    // why it is gone instead of silently disappearing.
+    const full = (refs: string[]): Promise<RemoteResult<Record<string, CredentialInfo>>> =>
+      Promise.resolve(remoteOk(Object.fromEntries(refs.map(ref => [ref, {
+        configured: keySlotRefs('OPENAI_API_KEY').includes(ref), writable: true,
+      }]))))
+    await mountSection({ describeCredentials: full })
+    openOpenAiEditor()
+    expect(screen.getByText(en.keySlotsFull)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: en.keyAdd })).toBeNull()
+  })
 })
 
 describe('apiKeyFailure', () => {

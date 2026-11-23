@@ -4,7 +4,7 @@ import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
 import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
 import { SettingsDescribeMirror } from '@deepseek-ai/dsh-client-ui-settings/src/client/settings-mirror.ts'
 import { settingsSchema } from './settings-schema.client.ts'
-import { deriveKeyRef, joinProviderDirectory, ModelsSettingsStore, providerUsable } from '../src/client/store.ts'
+import { deriveKeyRef, joinProviderDirectory, keySlotRefs, ModelsSettingsStore, providerUsable } from '../src/client/store.ts'
 
 it.each([
   ['anthropic', 'ANTHROPIC_API_KEY'],
@@ -14,6 +14,18 @@ it.each([
   ['constructor', 'CONSTRUCTOR_API_KEY'],
 ])('stores a typed key for route %s under a reference derived from the route id', (provider, ref) => {
   expect(deriveKeyRef(provider)).toBe(ref)
+})
+
+it('numbers a route reference into its key-slot series', () => {
+  expect(keySlotRefs('OPENAI_API_KEY')).toEqual([
+    'OPENAI_API_KEY',
+    ...Array.from({ length: 8 }, (_unused, index) => `OPENAI_API_KEY_${String(index + 2)}`),
+  ])
+  // The suffix stays inside the credential-reference grammar, so every slot
+  // the switcher offers is one the seam accepts.
+  for (const ref of keySlotRefs('ACME_GATEWAY_API_KEY')) {
+    expect(ref).toMatch(/^[A-Z_][A-Z0-9_]*$/)
+  }
 })
 
 it('carries the endpoint and native authentication the adapter reports onto the row', () => {
@@ -170,7 +182,9 @@ describe('ModelsSettingsStore', () => {
     const { ctx, mirror, seenRefs } = api({ providers: () => Promise.resolve(ok({ providers })) })
     const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
     await store.load()
-    expect(seenRefs.map(refs => refs.length)).toEqual([64, 64, 2])
+    // 65 dormant rows × 10 unique references each (derived, native, and the 8
+    // numbered slots of the series): 650 references over 64-per-request batches.
+    expect(seenRefs.map(refs => refs.length)).toEqual([...Array.from({ length: 10 }, () => 64), 10])
     expect(seenRefs.flat()).toContain('NATIVE_64')
     expect(store.store.getSnapshot().rows[64]!.credentialChecks)
       .toEqual({ NATIVE_64: { configured: false, writable: true } })
@@ -185,8 +199,12 @@ describe('ModelsSettingsStore', () => {
     expect(state.writable).toBe(true)
     expect(state.credentialError).toBeNull()
     // Named references first (rows order), then the derived <ROUTE>_API_KEY
-    // of every row whose profile names none — one batched describe.
-    expect(seenRefs).toEqual([['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GHOST_API_KEY']])
+    // of every row whose profile names none — and each row's whole slot
+    // series, so the switcher lists a stored second key with no reload.
+    expect(seenRefs).toEqual([[
+      ...keySlotRefs('DEEPSEEK_API_KEY'), ...keySlotRefs('OPENAI_API_KEY'),
+      ...keySlotRefs('ANTHROPIC_API_KEY'), ...keySlotRefs('GHOST_API_KEY'),
+    ]])
     const byProvider = new Map(state.rows.map(row => [row.entry.provider, row]))
     expect(byProvider.get('deepseek-official')).toMatchObject({
       configured: true,
@@ -200,6 +218,9 @@ describe('ModelsSettingsStore', () => {
       apiKeyEnv: 'OPENAI_API_KEY',
       credential: { configured: true },
     })
+    // Only configured slots reach the row: the describe marks OPENAI_API_KEY
+    // alone, and the switcher lists nothing it cannot switch to.
+    expect(byProvider.get('openai')?.keySlots).toEqual({ OPENAI_API_KEY: { configured: true, writable: true } })
     expect(byProvider.get('anthropic')).toMatchObject({ configured: false, removable: false })
     expect(byProvider.get('anthropic')?.apiKeyEnv).toBeUndefined()
     expect(byProvider.get('ghost')).toMatchObject({ configured: false, removable: false })
@@ -466,12 +487,16 @@ describe('edge joins', () => {
     const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
     await store.load()
     // The dormant row names no reference, so the join asks about the page's
-    // own derived <ROUTE>_API_KEY — what the editor would display for it.
-    expect(seenRefs).toEqual([['ANTHROPIC_API_KEY']])
+    // own derived <ROUTE>_API_KEY — what the editor would display for it —
+    // together with its slot series.
+    expect(seenRefs).toEqual([keySlotRefs('ANTHROPIC_API_KEY')])
     const state = store.store.getSnapshot()
     expect(state.status).toBe('ready')
     expect(state.rows[0]?.credential).toBeUndefined()
     expect(state.rows[0]?.derivedCredential).toMatchObject({ configured: true })
+    expect(state.rows[0]?.keySlots).toEqual(Object.fromEntries(
+      keySlotRefs('ANTHROPIC_API_KEY').map(ref => [ref, { configured: true, writable: true }]),
+    ))
   })
 
   it('recovers the provider directory when an initial settings failure is retried', async () => {

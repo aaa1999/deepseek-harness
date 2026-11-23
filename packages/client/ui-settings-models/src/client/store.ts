@@ -96,6 +96,12 @@ export interface ProviderRow {
    * own derivation rule.
    */
   derivedCredential?: CredentialInfo
+  /**
+   * Configured slots of the route's key-slot series (see {@link keySlotRefs}),
+   * reference to redacted state; absent while none is configured. The editor's
+   * switcher lists these and the page's provider deletion clears them.
+   */
+  keySlots?: Readonly<Record<string, CredentialInfo>>
   /** Redacted checks for named or native references; absent when their read failed. */
   credentialChecks?: Readonly<Record<string, CredentialInfo>>
 }
@@ -124,6 +130,19 @@ export interface ModelsSettingsState {
  */
 export function deriveKeyRef(provider: string): string {
   return `${provider.toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_API_KEY`
+}
+
+/**
+ * The page's key-slot series for one route: the base reference the route
+ * resolves through, then its numbered sisters a user adds to keep several keys
+ * for one provider and switch between them by pointing `apiKeyEnv` at another
+ * member. Numbering keeps every added key inside the route's own reference
+ * namespace, so one provider's keys can never read as another's.
+ * @param baseRef - the reference the route's profile names, or its derived one.
+ * @returns the base reference first, then `_2` through `_9` in order.
+ */
+export function keySlotRefs(baseRef: string): string[] {
+  return [baseRef, ...Array.from({ length: 8 }, (_unused, index) => `${baseRef}_${String(index + 2)}`)]
 }
 
 /**
@@ -271,8 +290,14 @@ export class ModelsSettingsStore {
           && catalog.value.groups.some(group => group.id === 'deepseek-account' && group.models.length > 0)
       }
     }
-    const refs = [...new Set(rows.filter(row => row.entry.provider !== 'deepseek-account').flatMap(row =>
-      row.apiKeyEnv === undefined ? [deriveKeyRef(row.entry.provider), ...row.entry.nativeAuth?.env ?? []] : [row.apiKeyEnv]))]
+    const refs = [...new Set(rows.filter(row => row.entry.provider !== 'deepseek-account').flatMap(row => [
+      ...(row.apiKeyEnv === undefined
+        ? [deriveKeyRef(row.entry.provider), ...row.entry.nativeAuth?.env ?? []]
+        : [row.apiKeyEnv]),
+      // Every series member is described up front, so the switcher lists a
+      // stored second key without a reload the moment the card opens.
+      ...keySlotRefs(row.apiKeyEnv ?? deriveKeyRef(row.entry.provider)),
+    ]))]
     const credentials: Record<string, CredentialInfo> = {}
     let credentialError: string | null = null
     // credentials.describe accepts at most 64 references per request.
@@ -294,10 +319,16 @@ export class ModelsSettingsStore {
         if (row.entry.provider === 'deepseek-account') return row
         const named = row.apiKeyEnv === undefined ? undefined : credentials[row.apiKeyEnv]
         const derived = row.apiKeyEnv !== undefined ? undefined : credentials[deriveKeyRef(row.entry.provider)]
+        const keySlots = Object.fromEntries(keySlotRefs(row.apiKeyEnv ?? deriveKeyRef(row.entry.provider))
+          .flatMap((ref) => {
+            const info = credentials[ref]
+            return info?.configured === true ? [[ref, info] as const] : []
+          }))
         return {
           ...row,
           ...named === undefined ? {} : { credential: named },
           ...derived === undefined ? {} : { derivedCredential: derived },
+          ...Object.keys(keySlots).length === 0 ? {} : { keySlots },
           ...credentialError === null ? { credentialChecks: Object.fromEntries(
             (row.apiKeyEnv === undefined ? row.entry.nativeAuth?.env ?? [] : [row.apiKeyEnv])
               .flatMap((ref) => {
