@@ -849,7 +849,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-client-ui-tweet`
 
 - `inject`: `workspaceRegistry`
-- `source`: [`packages/experimental/client-ui-tweet/src/index.ts:61`](../packages/experimental/client-ui-tweet/src/index.ts)
+- `source`: [`packages/experimental/client-ui-tweet/src/index.ts:70`](../packages/experimental/client-ui-tweet/src/index.ts)
 
 ```ts config-catalog
 /** Configuration of the tweet panel. */
