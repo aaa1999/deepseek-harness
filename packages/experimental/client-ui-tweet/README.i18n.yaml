@@ -3,23 +3,23 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/client-ui-tweet/README.md
 /:
-  en: 5148b32a8bc3a551
-  zh: 8b84640920438736
+  en: cb3ec2635e5768e7
+  zh: c3cd010ed5b74df8
 /deepseek-ai-dsh-client-ui-tweet:
   en: 481c224d9e4be643
   zh: 6975857996018c2b
 /deepseek-ai-dsh-client-ui-tweet/summary:
-  en: b5bb33cc17fb429b
-  zh: c9872ba646015ad9
+  en: 5a1f3f1666c5c602
+  zh: a86664e5c14ff4e1
 /deepseek-ai-dsh-client-ui-tweet/table-of-contents:
   en: 3460b3e585e0c020
   zh: 7f26badc8c290813
 /deepseek-ai-dsh-client-ui-tweet/use-this-package:
-  en: cd4be9466e878825
-  zh: 6ecc82a776967fef
+  en: 02a9114590f1520d
+  zh: df569879eb094043
 /deepseek-ai-dsh-client-ui-tweet/understand-the-implementation:
-  en: 7685ced4954e0b77
-  zh: 22470a2942ce1a14
+  en: 775e26e8e20e5c9e
+  zh: 29da0cf49e449cdd
 /deepseek-ai-dsh-client-ui-tweet/model-experience:
   en: 0a51086f9d1b2f1a
   zh: 0a51086f9d1b2f1a

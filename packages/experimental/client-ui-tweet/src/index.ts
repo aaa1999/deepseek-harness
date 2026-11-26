@@ -1,9 +1,10 @@
 /**
  * Host Remote of the tweet panel: a personal microblog of plain-text posts
- * with separately laid out images, stored inside one registered Workspace at
- * `.dsh/tweet/`. Every request names the Workspace that owns the data;
- * validation failures are typed Remote errors. A configured `workspacePath`
- * registers one folder as such a Workspace at startup.
+ * with separately laid out images and an unlimited comment list under every
+ * post, stored inside one registered Workspace at `.dsh/tweet/`. Every
+ * request names the Workspace that owns the data; validation failures are
+ * typed Remote errors. A configured `workspacePath` registers one folder as
+ * such a Workspace at startup.
  *
  * @module @deepseek-ai/dsh-client-ui-tweet
  */
@@ -18,11 +19,13 @@ import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typer
 import { admitDataRoot } from './paths.ts'
 import { TWEET_MEDIA_TYPES } from './records.ts'
 import type { TweetRecord } from './records.ts'
-import { createPost, deletePost, editPost, listPosts, readObject } from './store.ts'
+import { addComment, createPost, deletePost, editPost, listPosts, readObject } from './store.ts'
 import type { StoreImageInput } from './store.ts'
 import type {
+  AddTweetCommentRequest,
   EditTweetRequest,
   Tweet,
+  TweetComment,
   TweetImagePayload,
   TweetImageRequest,
   PublishTweetRequest,
@@ -45,9 +48,15 @@ function toTweet(record: TweetRecord): Tweet {
       ...(image.width === undefined ? {} : { width: image.width }),
       ...(image.height === undefined ? {} : { height: image.height }),
     })),
+    comments: record.comments.map(toTweetComment),
     createdAt: record.createdAt,
     ...(record.updatedAt === undefined ? {} : { updatedAt: record.updatedAt }),
   }
+}
+
+/** Project one stored comment onto the wire shape. */
+function toTweetComment(comment: TweetRecord['comments'][number]): TweetComment {
+  return { id: comment.id, text: comment.text, createdAt: comment.createdAt }
 }
 
 declare module '@deepseek-ai/cordis' {
@@ -175,6 +184,24 @@ export class TweetController extends TypertRemoteService {
       throw new RemoteError('tweet/empty-post', 'the edited text must not be empty', {})
     }
     return toTweet(await editPost(root, request.id, text, Date.now()))
+  }
+
+  /**
+   * Append one comment under a post. Comments are unlimited: every accepted
+   * request appends one more, oldest first, and deleting the post removes its
+   * comments with it.
+   * @param request - target Workspace, post identity, and comment text.
+   * @returns the updated post with its comments.
+   * @throws {RemoteError} `tweet/unknown-workspace`, `tweet/empty-comment`, or `tweet/post-not-found`.
+   */
+  @Remote('comment')
+  async comment(request: AddTweetCommentRequest): Promise<Tweet> {
+    const root = admitDataRoot(this.ctx.workspaceRegistry, request.workspaceId)
+    const text = request.text.trim()
+    if (text.length === 0) {
+      throw new RemoteError('tweet/empty-comment', 'the comment text must not be empty', {})
+    }
+    return toTweet(await addComment(root, request.id, text, Date.now()))
   }
 
   /**

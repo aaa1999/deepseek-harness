@@ -1,8 +1,10 @@
 /**
  * The tweet page: a fixed header with the Workspace selector and the
  * composer (text area and staged images as separate blocks), and the
- * scrolling feed below. Every post renders its plain-text block first and its
- * image grid as a separate block after it; long text folds to three lines
+ * scrolling feed below. Every post renders its plain-text block first, its
+ * image grid as a separate block after it, and its comments — an unlimited,
+ * oldest-first list with an input under every post, folded to the newest
+ * three until expanded — below the meta row; long text folds to three lines
  * with an expand control, and the feed always shows the newest post first.
  */
 
@@ -28,6 +30,9 @@ export type TweetPageProps = InjectFace<TweetsInjected> & PropsLocale<typeof NS>
 
 /** Locale namespace of the panel, referenced by the props type. */
 const NS = 'tweet'
+
+/** Comments a post shows by default before expansion; the newest ones win. */
+const COMMENT_WINDOW = 3
 
 /**
  * Render the tweet panel.
@@ -232,7 +237,59 @@ function PostCard({ post, tweet, state, t }: {
             )}
         </div>
       </footer>
+      <PostComments post={post} tweet={tweet} state={state} t={t} />
     </article>
+  )
+}
+
+/** One post's comments: the folded window (newest three) or the whole list, then the input. */
+function PostComments({ post, tweet, state, t }: {
+  readonly post: Tweet
+  readonly tweet: Tweets
+  readonly state: TweetsState
+  readonly t: TranslateNS<typeof NS>
+}): ReactNode {
+  const draft = state.commentDrafts.get(post.id) ?? ''
+  const busy = state.commenting.has(post.id)
+  const expanded = state.commentExpanded.has(post.id)
+  const shown = expanded || post.comments.length <= COMMENT_WINDOW
+    ? post.comments
+    : post.comments.slice(-COMMENT_WINDOW)
+  return (
+    <section className={css.comments} aria-label={t('comment.section')}>
+      {shown.map(comment => (
+        <div key={comment.id} className={css.commentRow}>
+          <p className={css.commentText}>{comment.text}</p>
+          <time className={css.commentTime} dateTime={new Date(comment.createdAt).toISOString()}>
+            {absoluteClock(comment.createdAt, t)}
+          </time>
+        </div>
+      ))}
+      {post.comments.length > COMMENT_WINDOW
+        ? (
+          <button
+            type="button"
+            className={css.commentToggle}
+            onClick={() => { tweet.toggleCommentExpanded(post.id) }}
+          >{expanded ? t('comment.collapse') : t('comment.expand', { count: post.comments.length })}</button>
+        )
+        : null}
+      <div className={css.commentForm}>
+        <input
+          className={css.commentInput}
+          placeholder={t('comment.placeholder')}
+          value={draft}
+          onChange={(event) => { tweet.setCommentDraft(post.id, event.target.value) }}
+          onKeyDown={(event) => { if (event.key === 'Enter') { void tweet.submitComment(post.id) } }}
+        />
+        <button
+          type="button"
+          className={css.commentSubmit}
+          disabled={draft.trim().length === 0 || busy}
+          onClick={() => { void tweet.submitComment(post.id) }}
+        >{t('comment.submit')}</button>
+      </div>
+    </section>
   )
 }
 

@@ -1,5 +1,5 @@
 ---
-description: "Tweet Host Remote: a personal microblog panel whose posts and images live inside the chosen workspace."
+description: "Tweet Host Remote: a personal microblog panel whose posts, images, and comments live inside the chosen workspace."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The experimental Tweet panel: publish personal takes as plain text with separately laid out images, Weibo style. Every request names a registered Workspace, and all data — post records plus content-addressed image bytes — lives inside that Workspace at `.dsh/tweet/`, so the feed travels with the directory. Posts carry their publish time, the feed shows the newest first, long text folds to three lines, and the composer accepts pasted screenshots. Enable it through the [tweet bundle](../tweet-bundle/README.md); shipped profiles leave it disabled.
+The experimental Tweet panel: publish personal takes as plain text with separately laid out images, Weibo style, and comment under any post without a count limit. Every request names a registered Workspace, and all data — post records (text, images, comments) plus content-addressed image bytes — lives inside that Workspace at `.dsh/tweet/`, so the feed travels with the directory. Posts carry their publish time, the feed shows the newest first, long text folds to three lines, and the composer accepts pasted screenshots. Enable it through the [tweet bundle](../tweet-bundle/README.md); shipped profiles leave it disabled.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ The experimental Tweet panel: publish personal takes as plain text with separate
 <a id="use-this-package"></a>
 ## Use this package
 
-Every request names a registered Workspace by id; an unknown id fails loudly as `tweet/unknown-workspace`. Publishing needs text or at least one image (`tweet/empty-post` otherwise) and accepts PNG, JPEG, WebP, and GIF images. The panel offers a Workspace selector, a composer with image staging and clipboard paste, text folding to three lines with an expand control, a scrolling feed with the newest post first, in-place text editing, and deletion with confirmation. There is no configuration: image admission keeps the panel's own media-type allowlist and stores bytes as-is.
+Every request names a registered Workspace by id; an unknown id fails loudly as `tweet/unknown-workspace`. Publishing needs text or at least one image (`tweet/empty-post` otherwise) and accepts PNG, JPEG, WebP, and GIF images. Commenting under a post needs non-empty text (`tweet/empty-comment` otherwise) and has no count limit. The panel offers a Workspace selector, a composer with image staging and clipboard paste, text folding to three lines with an expand control, a scrolling feed with the newest post first, an unlimited oldest-first comment list (folded to the newest three until expanded) with an input under every post, in-place text editing, and deletion with confirmation. There is no configuration: image admission keeps the panel's own media-type allowlist and stores bytes as-is.
 
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
@@ -31,7 +31,7 @@ Every request names a registered Workspace by id; an unknown id fails loudly as 
 <details>
 <summary>Maintainer details — click to expand</summary>
 
-The store keeps one directory per Workspace: `posts/<tweetId>.json` records, `objects/<sha256>.<ext>` image bytes, and `index.json` holding publish order. Every file replace is write-temp-then-rename, and every mutation of one root runs through a per-root promise chain, so concurrent Remote calls cannot interleave writes. Reads treat the directory as the source of truth — a post file missing from `index.json` after a crash between its two writes still lists — while the index only breaks `createdAt` ties in publish order. Invalid post files are skipped and kept on disk; an invalid index fails the read as `tweet/corrupt-store`. Text and images are separate record fields and the page renders them as separate blocks, so no mixing path exists.
+The store keeps one directory per Workspace: `posts/<tweetId>.json` records — text, image references, and the post's comments — `objects/<sha256>.<ext>` image bytes, and `index.json` holding publish order. Every file replace is write-temp-then-rename, and every mutation of one root runs through a per-root promise chain, so concurrent Remote calls cannot interleave writes. Reads treat the directory as the source of truth — a post file missing from `index.json` after a crash between its two writes still lists — while the index only breaks `createdAt` ties in publish order. Invalid post files are skipped and kept on disk; an invalid index fails the read as `tweet/corrupt-store`. Text and images are separate record fields and the page renders them as separate blocks, so no mixing path exists. Comments are one more record field: appending one atomically rewrites the post record, the list has no count limit and stays oldest first, deleting the post removes its comments with it, and a legacy record without the field reads as zero comments.
 
 </details>
 

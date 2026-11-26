@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod'
-import type { TweetId, TweetMediaType } from './types.ts'
+import type { TweetCommentId, TweetId, TweetMediaType } from './types.ts'
 
 /** File extensions of the accepted media types, in the same order. */
 export const OBJECT_EXTENSIONS: readonly string[] = ['png', 'jpeg', 'webp', 'gif']
@@ -20,7 +20,12 @@ export const OBJECT_NAME_PATTERN = /^[0-9a-f]{64}\.(?:png|jpeg|webp|gif)$/
 /** Post identity shape: `tweet-` plus a UUID. */
 const OPINION_ID_PATTERN = /^tweet-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
+/** Comment identity shape: `comment-` plus a UUID. */
+const COMMENT_ID_PATTERN = /^comment-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
 const tweetIdSchema = z.string().regex(OPINION_ID_PATTERN).transform(value => value as TweetId)
+
+const tweetCommentIdSchema = z.string().regex(COMMENT_ID_PATTERN).transform(value => value as TweetCommentId)
 
 /** Media type schema shared by records and publish validation. */
 export const mediaTypeSchema = z.enum(TWEET_MEDIA_TYPES)
@@ -35,11 +40,22 @@ export const tweetImageRef = z.object({
   height: z.number().int().positive().optional(),
 })
 
+/** Durable shape of one comment inside a post record. */
+export const tweetComment = z.object({
+  id: tweetCommentIdSchema,
+  text: z.string(),
+  createdAt: z.number(),
+})
+
+/** One stored comment, inferred from {@link tweetComment}. */
+export type TweetCommentRecord = z.infer<typeof tweetComment>
+
 /** Durable shape of one post record file under `posts/`. */
 export const tweetRecord = z.object({
   id: tweetIdSchema,
   text: z.string(),
   images: z.array(tweetImageRef),
+  comments: z.array(tweetComment).default([]),
   createdAt: z.number(),
   updatedAt: z.number().optional(),
 })

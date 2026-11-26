@@ -2,7 +2,8 @@
 /**
  * Tweets controller state machine: workspace selection with persistence,
  * feed loading and error folding, composer staging (picker and clipboard),
- * publish/edit/delete flows, expansion state, and the Blob-URL image cache.
+ * publish/edit/delete flows, unlimited per-post comments with the
+ * newest-three fold toggle, expansion state, and the Blob-URL image cache.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,7 +13,7 @@ import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { fileToStagedImage, imagesFromClipboard, Tweets } from '../src/client/tweets.ts'
 import type { TweetsRemoteFace } from '../src/client/tweets.ts'
 import { en, zh } from '../src/client/locales.ts'
-import type { Tweet, TweetId, TweetImagePayload } from '../src/types.ts'
+import type { Tweet, TweetComment, TweetCommentId, TweetId, TweetImagePayload } from '../src/types.ts'
 
 const WS_ONE = brandString<WorkspaceId>('ws-one')
 const WS_TWO = brandString<WorkspaceId>('ws-two')
@@ -39,9 +40,17 @@ function post(id: string, overrides: Partial<Tweet> = {}): Tweet {
     id: brandString<TweetId>(id),
     text: `text of ${id}`,
     images: [],
+    comments: [],
     createdAt: 1_000,
     ...overrides,
   }
+}
+
+/** One appended comment with a distinct identity per call. */
+let commentSerial = 0
+function comment(text: string, createdAt = 5_000): TweetComment {
+  commentSerial += 1
+  return { id: brandString<TweetCommentId>(`comment-${String(commentSerial).padStart(4, '0')}`), text, createdAt }
 }
 
 /** A png file whose bytes decode through the staging path. */
@@ -52,9 +61,16 @@ function pngFile(name = 'shot.png'): File {
 type RemoteHarness = {
   readonly remote: TweetsRemoteFace
   readonly listed: Tweet[]
-  readonly calls: { readonly publish: unknown[]; readonly edit: unknown[]; readonly removed: string[]; readonly opened: string[] }
+  readonly calls: {
+    readonly publish: unknown[]
+    readonly edit: unknown[]
+    readonly comments: { readonly id: string; readonly text: string }[]
+    readonly removed: string[]
+    readonly opened: string[]
+  }
   failList: boolean
   failOpen: boolean
+  failComment: boolean
   /** Workspace id a successful open reports; defaults to a fresh unlisted id. */
   openWorkspaceId: WorkspaceId
 }
@@ -62,12 +78,19 @@ type RemoteHarness = {
 /** A remote double over one mutable feed. */
 function fakeRemote(): RemoteHarness {
   const listed: Tweet[] = []
-  const calls = { publish: [] as unknown[], edit: [] as unknown[], removed: [] as string[], opened: [] as string[] }
+  const calls = {
+    publish: [] as unknown[],
+    edit: [] as unknown[],
+    comments: [] as { id: string; text: string }[],
+    removed: [] as string[],
+    opened: [] as string[],
+  }
   const harness: RemoteHarness = {
     listed,
     calls,
     failList: false,
     failOpen: false,
+    failComment: false,
     openWorkspaceId: brandString<WorkspaceId>('ws-opened'),
     remote: {
       list: async () => harness.failList
@@ -90,6 +113,15 @@ function fakeRemote(): RemoteHarness {
       edit: async (request) => {
         calls.edit.push(request)
         const next = { ...listed.find(item => item.id === request.id)!, text: request.text, updatedAt: 3_000 }
+        return ok(next)
+      },
+      comment: async (request) => {
+        if (harness.failComment) return failure('comment broke')
+        calls.comments.push({ id: request.id, text: request.text })
+        const appended = comment(request.text.trim())
+        const index = listed.findIndex(item => item.id === request.id)
+        const next = { ...listed[index]!, comments: [...listed[index]!.comments, appended] }
+        listed[index] = next
         return ok(next)
       },
       delete: async (_workspaceId, id) => {
@@ -454,6 +486,89 @@ describe('publish, edit, and delete', () => {
   })
 })
 
+describe('comments', () => {
+  it('submits drafted comments under a post, unlimited, and clears the draft', async () => {
+    const harness = fakeRemote()
+    const target = post('tweet-target')
+    harness.listed.push(target)
+    controller = new Tweets(harness.remote, format)
+    controller.syncWorkspaces([{ workspaceId: WS_ONE, path: '/one', title: 'One' }])
+    await flush()
+    controller.setCommentDraft(target.id, '  first note  ')
+    await controller.submitComment(target.id)
+    controller.setCommentDraft(target.id, 'second note')
+    await controller.submitComment(target.id)
+    expect(harness.calls.comments).toEqual([
+      { id: target.id, text: 'first note' },
+      { id: target.id, text: 'second note' },
+    ])
+    const state = controller.getSnapshot()
+    expect(state.posts[0]?.comments.map(item => item.text)).toEqual(['first note', 'second note'])
+    expect(state.posts[0]?.comments[0]?.id).toMatch(/^comment-/)
+    expect(state.commentDrafts.get(target.id)).toBeUndefined()
+    expect(state.commenting.has(target.id)).toBe(false)
+  })
+
+  it('ignores an empty or missing draft and a submit without a selection', async () => {
+    const harness = fakeRemote()
+    const target = post('tweet-target')
+    harness.listed.push(target)
+    controller = new Tweets(harness.remote, format)
+    controller.syncWorkspaces([{ workspaceId: WS_ONE, path: '/one', title: 'One' }])
+    await flush()
+    controller.setCommentDraft(target.id, '   ')
+    await controller.submitComment(target.id)
+    expect(harness.calls.comments).toEqual([])
+    const draftless = new Tweets(harness.remote, format)
+    try {
+      draftless.setCommentDraft(target.id, 'no selection')
+      await draftless.submitComment(target.id)
+      expect(harness.calls.comments).toEqual([])
+    } finally {
+      draftless.dispose()
+    }
+  })
+
+  it('folds a failed comment into the localized error message', async () => {
+    const harness = fakeRemote()
+    const target = post('tweet-target')
+    harness.listed.push(target)
+    harness.failComment = true
+    controller = new Tweets(harness.remote, format)
+    controller.syncWorkspaces([{ workspaceId: WS_ONE, path: '/one', title: 'One' }])
+    await flush()
+    controller.setCommentDraft(target.id, 'doomed')
+    await controller.submitComment(target.id)
+    const state = controller.getSnapshot()
+    expect(state.errorMessage).toBe('The action failed: comment broke')
+    expect(state.commentDrafts.get(target.id)).toBe('doomed')
+    expect(state.commenting.has(target.id)).toBe(false)
+  })
+
+  it('ignores a second submit while one is in flight', async () => {
+    let resolveComment: (value: RemoteResult<Tweet>) => void = () => {}
+    const target = post('tweet-target')
+    const seeded = fakeRemote()
+    seeded.listed.push(target)
+    const paused = {
+      ...seeded.remote,
+      comment: () => new Promise<RemoteResult<Tweet>>((resolve) => { resolveComment = resolve }),
+    }
+    controller = new Tweets(paused, format)
+    controller.syncWorkspaces([{ workspaceId: WS_ONE, path: '/one', title: 'One' }])
+    await flush()
+    controller.setCommentDraft(target.id, 'slow')
+    void controller.submitComment(target.id)
+    await flush()
+    expect(controller.getSnapshot().commenting.has(target.id)).toBe(true)
+    await controller.submitComment(target.id)
+    resolveComment(ok({ ...target, comments: [comment('slow')] }))
+    await flush()
+    expect(controller.getSnapshot().commenting.has(target.id)).toBe(false)
+    expect(controller.getSnapshot().posts[0]?.comments.map(item => item.text)).toEqual(['slow'])
+  })
+})
+
 describe('image cache and expansion', () => {
   it('loads object URLs for every listed image once', async () => {
     const harness = fakeRemote()
@@ -509,6 +624,17 @@ describe('image cache and expansion', () => {
     expect(controller.getSnapshot().expanded.has(target.id)).toBe(true)
     controller.toggleExpanded(target.id)
     expect(controller.getSnapshot().expanded.has(target.id)).toBe(false)
+  })
+
+  it('toggles per-post comment expansion independently of text expansion', () => {
+    const harness = fakeRemote()
+    const target = post('tweet-target')
+    controller = new Tweets(harness.remote, format)
+    controller.toggleCommentExpanded(target.id)
+    expect(controller.getSnapshot().commentExpanded.has(target.id)).toBe(true)
+    expect(controller.getSnapshot().expanded.has(target.id)).toBe(false)
+    controller.toggleCommentExpanded(target.id)
+    expect(controller.getSnapshot().commentExpanded.has(target.id)).toBe(false)
   })
 
   it('reads staged files into base64 with dimensions unknown until measured', async () => {

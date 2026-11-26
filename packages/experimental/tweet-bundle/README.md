@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Publish personal takes inside the app. Enable Tweet on the Web or Desktop Plugins page; shipped profiles leave it disabled. Pick one of the registered workspaces, then post plain text with separately laid out images, Weibo style: paste screenshots straight into the composer, fold long text to three lines with an expand control, edit the wording later, and scroll the newest-first feed. Every post and image byte lives in that workspace's `.dsh/tweet/` directory, so the feed travels with the workspace.
+Publish personal takes inside the app. Enable Tweet on the Web or Desktop Plugins page; shipped profiles leave it disabled. Pick one of the registered workspaces, then post plain text with separately laid out images, Weibo style: paste screenshots straight into the composer, fold long text to three lines with an expand control, edit the wording later, comment under any post without a count limit (comment lists fold to the newest three until expanded), and scroll the newest-first feed. Every post, comment, and image byte lives in that workspace's `.dsh/tweet/` directory, so the feed travels with the workspace.
 
 ## Table of Contents
 

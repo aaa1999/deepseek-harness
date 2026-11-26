@@ -14,6 +14,7 @@ import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { TWEET_MEDIA_TYPES } from '../records.ts'
 import type {
+  AddTweetCommentRequest,
   EditTweetRequest,
   Tweet,
   TweetId,
@@ -31,6 +32,7 @@ export interface TweetsRemoteFace {
   open(request: { readonly path: string }): Promise<RemoteResult<TweetWorkspace>>
   publish(request: PublishTweetRequest): Promise<RemoteResult<Tweet>>
   edit(request: EditTweetRequest): Promise<RemoteResult<Tweet>>
+  comment(request: AddTweetCommentRequest): Promise<RemoteResult<Tweet>>
   delete(workspaceId: WorkspaceId, id: TweetId): Promise<RemoteResult<boolean>>
   image(request: { readonly workspaceId: WorkspaceId; readonly file: string }): Promise<RemoteResult<TweetImagePayload>>
 }
@@ -70,6 +72,12 @@ export interface TweetsState {
   readonly editingId: TweetId | null
   readonly editingText: string
   readonly expanded: ReadonlySet<TweetId>
+  /** Comment drafts keyed by post identity; one draft per post, kept across refreshes. */
+  readonly commentDrafts: ReadonlyMap<TweetId, string>
+  /** Posts with a comment submission in flight. */
+  readonly commenting: ReadonlySet<TweetId>
+  /** Posts whose comment list shows every comment instead of the default newest three. */
+  readonly commentExpanded: ReadonlySet<TweetId>
   /** Current value of the open-directory input. */
   readonly openPath: string
 }
@@ -86,6 +94,9 @@ const INITIAL: TweetsState = {
   editingId: null,
   editingText: '',
   expanded: new Set(),
+  commentDrafts: new Map(),
+  commenting: new Set(),
+  commentExpanded: new Set(),
   openPath: '',
 }
 
@@ -414,6 +425,49 @@ export class Tweets {
   }
 
   /**
+   * Replace one post's comment draft text.
+   * @param id - post identity.
+   * @param text - the current comment draft.
+   */
+  setCommentDraft(id: TweetId, text: string): void {
+    const drafts = new Map(this.state.commentDrafts)
+    if (text === '') drafts.delete(id)
+    else drafts.set(id, text)
+    this.update({ commentDrafts: drafts })
+  }
+
+  /**
+   * Submit one post's comment draft: append it on the Host and swap in the
+   * returned post. Comments are unlimited, so an empty draft is the only
+   * local refusal; a second click while one submission runs is ignored.
+   * @param id - post identity.
+   */
+  async submitComment(id: TweetId): Promise<void> {
+    const { workspaceId, commentDrafts, commenting } = this.state
+    const text = (commentDrafts.get(id) ?? '').trim()
+    if (workspaceId === null || text.length === 0 || commenting.has(id)) return
+    this.update({ commenting: new Set(commenting).add(id) })
+    const result = await this.remote.comment({ workspaceId, id, text })
+    if (this.disposed) return
+    const busy = new Set(this.state.commenting)
+    busy.delete(id)
+    if (!result.ok) {
+      this.update({ commenting: busy, errorMessage: this.format('action.failed', { message: result.error.message }) })
+      return
+    }
+    const drafts = new Map(this.state.commentDrafts)
+    // Clear the draft only when it still holds what was submitted: typing that
+    // continued while the request ran survives.
+    if ((drafts.get(id) ?? '').trim() === text) drafts.delete(id)
+    this.update({
+      commenting: busy,
+      commentDrafts: drafts,
+      errorMessage: null,
+      posts: this.state.posts.map(post => post.id === id ? result.value : post),
+    })
+  }
+
+  /**
    * Delete one post from the selected Workspace.
    * @param id - post identity.
    */
@@ -438,6 +492,18 @@ export class Tweets {
     if (expanded.has(id)) expanded.delete(id)
     else expanded.add(id)
     this.update({ expanded })
+  }
+
+  /**
+   * Toggle one post's comment list between the default newest-three window
+   * and every comment.
+   * @param id - post identity.
+   */
+  toggleCommentExpanded(id: TweetId): void {
+    const expanded = new Set(this.state.commentExpanded)
+    if (expanded.has(id)) expanded.delete(id)
+    else expanded.add(id)
+    this.update({ commentExpanded: expanded })
   }
 
   /**

@@ -5240,6 +5240,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['{RemoteError} `tweet/unknown-workspace`, `tweet/empty-post`, or `tweet/post-not-found`.'],
       },
       {
+        signature: '@Remote(\'comment\') async comment(request: AddTweetCommentRequest): Promise<Tweet>',
+        description: 'Append one comment under a post. Comments are unlimited: every accepted request appends one more, oldest first, and deleting the post removes its comments with it.',
+        parameters: [{ name: 'request', description: 'target Workspace, post identity, and comment text.' }],
+        returns: 'the updated post with its comments.',
+        throws: ['{RemoteError} `tweet/unknown-workspace`, `tweet/empty-comment`, or `tweet/post-not-found`.'],
+      },
+      {
         signature: '@Remote(\'delete\') async remove(workspaceId: WorkspaceId, id: Tweet[\'id\']): Promise<boolean>',
         description: 'Delete one post. Idempotent: an unknown id resolves `false`.',
         parameters: [{ name: 'workspaceId', description: 'Workspace whose post to delete.' }, { name: 'id', description: 'post identity.' }],
@@ -6749,6 +6756,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AddShareSessionsRequest',
     declaration: 'export interface AddShareSessionsRequest {\n    readonly shareId: string;\n    readonly sessionIds: readonly string[];\n}',
+  },
+  {
+    name: 'AddTweetCommentRequest',
+    declaration: 'export interface AddTweetCommentRequest {\n    readonly workspaceId: WorkspaceId;\n    readonly id: TweetId;\n    readonly text: string;\n}',
   },
   {
     name: 'AdmittedPromptContentPart',
@@ -9088,7 +9099,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ModelProviderGroup',
-    declaration: 'export interface ModelProviderGroup {\n    readonly id: string;\n    readonly name: string;\n    readonly models: readonly ModelCatalogModel[];\n}',
+    declaration: 'export interface ModelProviderGroup {\n    readonly id: string;\n    readonly name: string;\n    readonly models: readonly ModelCatalogModel[];\n    readonly keys?: ModelProviderKeySlots;\n}',
+  },
+  {
+    name: 'ModelProviderKeySlot',
+    declaration: 'export interface ModelProviderKeySlot {\n    readonly ref: string;\n    readonly masked?: string;\n}',
+  },
+  {
+    name: 'ModelProviderKeySlots',
+    declaration: 'export interface ModelProviderKeySlots {\n    readonly settingsNs: string;\n    readonly settingsPath: readonly string[];\n    readonly activeRef: string;\n    readonly slots: readonly ModelProviderKeySlot[];\n}',
   },
   {
     name: 'ModelReasoning',
@@ -11784,7 +11803,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'Tweet',
-    declaration: 'export interface Tweet {\n    readonly id: TweetId;\n    readonly text: string;\n    readonly images: readonly TweetImageRef[];\n    readonly createdAt: number;\n    readonly updatedAt?: number;\n}',
+    declaration: 'export interface Tweet {\n    readonly id: TweetId;\n    readonly text: string;\n    readonly images: readonly TweetImageRef[];\n    readonly comments: readonly TweetComment[];\n    readonly createdAt: number;\n    readonly updatedAt?: number;\n}',
+  },
+  {
+    name: 'TweetComment',
+    declaration: 'export interface TweetComment {\n    readonly id: TweetCommentId;\n    readonly text: string;\n    readonly createdAt: number;\n}',
+  },
+  {
+    name: 'TweetCommentId',
+    declaration: 'export type TweetCommentId = Branded<\'TweetCommentId\'>;',
   },
   {
     name: 'TweetId',

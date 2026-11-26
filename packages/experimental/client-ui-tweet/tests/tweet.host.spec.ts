@@ -1,4 +1,4 @@
-/** TweetController behavior: publish, list order, edit, delete, image reads, and workspace registration. */
+/** TweetController behavior: publish, list order, edit, comments, delete, image reads, and workspace registration. */
 
 import { Buffer } from 'node:buffer'
 import { existsSync } from 'node:fs'
@@ -206,6 +206,66 @@ describe('TweetController.edit', () => {
     })).rejects.toMatchObject({ code: 'tweet/post-not-found' })
     await expect(service.edit({ workspaceId: WS_ONE, id: '../../etc/passwd' as TweetId, text: 'x' }))
       .rejects.toMatchObject({ code: 'tweet/invalid-object-name' })
+  })
+})
+
+describe('TweetController.comment', () => {
+  it('appends comments under one post in order with no count limit', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'opinion', images: [] })
+    const first = await service.comment({ workspaceId: WS_ONE, id: post.id, text: '  first take  ' })
+    expect(first.comments).toHaveLength(1)
+    expect(first.comments[0]).toMatchObject({ text: 'first take' })
+    expect(first.comments[0]?.id).toMatch(/^comment-[0-9a-f-]{36}$/)
+    for (let index = 2; index <= 40; index += 1) {
+      await service.comment({ workspaceId: WS_ONE, id: post.id, text: `reply ${index}` })
+    }
+    const updated = await service.comment({ workspaceId: WS_ONE, id: post.id, text: 'latest' })
+    expect(updated.comments).toHaveLength(41)
+    expect(updated.comments.map(comment => comment.text)).toEqual([
+      'first take', ...Array.from({ length: 39 }, (_, i) => `reply ${i + 2}`), 'latest',
+    ])
+    const listed = await service.list(WS_ONE)
+    expect(listed[0]?.comments).toHaveLength(41)
+    const record = JSON.parse(await readFile(join(root(0), 'posts', `${post.id}.json`), 'utf8')) as { comments: unknown[] }
+    expect(record.comments).toHaveLength(41)
+  })
+
+  it('keeps comments out of other posts and preserves them across an edit', async () => {
+    const service = await harness(WS_ONE)
+    const commented = await service.publish({ workspaceId: WS_ONE, text: 'commented', images: [] })
+    const quiet = await service.publish({ workspaceId: WS_ONE, text: 'quiet', images: [] })
+    await service.comment({ workspaceId: WS_ONE, id: commented.id, text: 'note' })
+    const edited = await service.edit({ workspaceId: WS_ONE, id: commented.id, text: 'rewritten' })
+    expect(edited.comments.map(comment => comment.text)).toEqual(['note'])
+    const listed = await service.list(WS_ONE)
+    expect(listed.find(item => item.id === quiet.id)?.comments).toEqual([])
+    expect(listed.find(item => item.id === commented.id)?.comments).toHaveLength(1)
+  })
+
+  it('reads legacy records without a comments field as zero comments', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'legacy', images: [] })
+    const legacy = { id: post.id, text: post.text, images: post.images, createdAt: post.createdAt }
+    await writeFile(join(root(0), 'posts', `${post.id}.json`), `${JSON.stringify(legacy)}\n`)
+    const listed = await service.list(WS_ONE)
+    expect(listed[0]?.comments).toEqual([])
+    const commented = await service.comment({ workspaceId: WS_ONE, id: post.id, text: 'revives' })
+    expect(commented.comments.map(comment => comment.text)).toEqual(['revives'])
+  })
+
+  it('rejects an unknown workspace, an empty comment, and a missing post', async () => {
+    const service = await harness(WS_ONE)
+    const post = await service.publish({ workspaceId: WS_ONE, text: 'kept', images: [] })
+    await expect(service.comment({ workspaceId: WS_TWO, id: post.id, text: 'x' }))
+      .rejects.toMatchObject({ code: 'tweet/unknown-workspace' })
+    await expect(service.comment({ workspaceId: WS_ONE, id: post.id, text: '   ' }))
+      .rejects.toMatchObject({ code: 'tweet/empty-comment' })
+    await expect(service.comment({
+      workspaceId: WS_ONE,
+      id: 'tweet-33333333-3333-4333-8333-333333333333' as TweetId,
+      text: 'x',
+    })).rejects.toMatchObject({ code: 'tweet/post-not-found' })
   })
 })
 

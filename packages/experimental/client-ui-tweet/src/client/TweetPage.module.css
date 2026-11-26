@@ -155,6 +155,10 @@
     background: var(--dsw-alias-interactive-bg-active);
   }
 
+  .commentToggle:hover {
+    background: var(--dsw-alias-interactive-bg-active);
+  }
+
   .stagedRemove:hover {
     background: var(--dsw-alias-label-primary);
   }
@@ -313,4 +317,89 @@
   font-size: var(--dsh-content-font-size-secondary, 13px);
   resize: vertical;
   white-space: pre-wrap;
+}
+
+/* One post's comments: the oldest-first rows, then the append input. */
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.commentRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.commentText {
+  min-width: 0;
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.commentTime {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: var(--dsh-content-font-size-tertiary, 12px);
+}
+
+.commentForm {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.commentInput {
+  min-width: 0;
+  flex: 1;
+  height: 26px;
+  padding: 0 8px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-sunken);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  font: inherit;
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+}
+
+.commentInput:focus-visible {
+  outline: none;
+  border-color: var(--dsw-alias-accent);
+}
+
+.commentSubmit {
+  height: 26px;
+  flex: none;
+  padding: 0 10px;
+  color: var(--dsw-alias-label-invert);
+  background: var(--dsw-alias-accent);
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  cursor: pointer;
+}
+
+.commentSubmit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The expand control that swaps the newest-three window for the whole list. */
+.commentToggle {
+  align-self: flex-start;
+  height: 22px;
+  padding: 0 6px;
+  color: var(--dsw-alias-accent);
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  font-size: var(--dsh-content-font-size-tertiary, 12px);
+  cursor: pointer;
 }

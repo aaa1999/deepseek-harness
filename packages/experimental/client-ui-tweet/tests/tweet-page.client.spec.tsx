@@ -3,8 +3,10 @@
  * TweetPage presentation behavior: the fixed workspace selector and
  * composer (text and staged images as separate blocks), the scrolling feed,
  * the strictly separated text block and image grid inside each post, the
- * three-line fold with its expand control, in-place editing, deletion with
- * confirmation, clipboard paste, and the lightbox.
+ * unlimited oldest-first comment list with its input under every post and
+ * its newest-three fold, the three-line fold with its expand control,
+ * in-place editing, deletion with confirmation, clipboard paste, and the
+ * lightbox.
  */
 
 import { createElement } from 'react'
@@ -17,7 +19,7 @@ import type { TweetsRemoteFace } from '../src/client/tweets.ts'
 import { TweetPage } from '../src/client/TweetPage.tsx'
 import type { TweetPageProps } from '../src/client/TweetPage.tsx'
 import { TweetPanelIcon } from '../src/client/TweetPanelIcon.tsx'
-import type { Tweet, TweetId, TweetImagePayload } from '../src/types.ts'
+import type { Tweet, TweetComment, TweetCommentId, TweetId, TweetImagePayload } from '../src/types.ts'
 
 const WS_ONE = brandString<WorkspaceId>('ws-one')
 const WS_TWO = brandString<WorkspaceId>('ws-two')
@@ -40,9 +42,17 @@ function post(id: string, overrides: Partial<Tweet> = {}): Tweet {
     id: brandString<TweetId>(id),
     text: `text ${id}`,
     images: [],
+    comments: [],
     createdAt: Date.now() - 10_000,
     ...overrides,
   }
+}
+
+/** One comment row with a distinct identity per call. */
+let commentSerial = 0
+function commentRow(text: string, createdAt = 4_000): TweetComment {
+  commentSerial += 1
+  return { id: brandString<TweetCommentId>(`comment-${String(commentSerial).padStart(4, '0')}`), text, createdAt }
 }
 
 const OBJECT_A = `${'1'.repeat(64)}.png`
@@ -51,11 +61,13 @@ const OBJECT_B = `${'2'.repeat(64)}.png`
 /** A remote double whose feed and verbs the assertions observe. */
 function fakeRemote(feed: Tweet[] = []): TweetsRemoteFace & {
   readonly published: string[]
+  readonly commented: string[]
   readonly removed: string[]
   readonly opened: string[]
 } {
   const double = {
     published: [] as string[],
+    commented: [] as string[],
     removed: [] as string[],
     opened: [] as string[],
     async list() {
@@ -73,6 +85,13 @@ function fakeRemote(feed: Tweet[] = []): TweetsRemoteFace & {
     },
     async edit(request: { id: TweetId; text: string }) {
       return ok({ ...feed.find(item => item.id === request.id)!, text: request.text, updatedAt: 4_000 })
+    },
+    async comment(request: { id: TweetId; text: string }) {
+      double.commented.push(request.text)
+      const index = feed.findIndex(item => item.id === request.id)
+      const next = { ...feed[index]!, comments: [...feed[index]!.comments, commentRow(request.text.trim())] }
+      feed[index] = next
+      return ok(next)
     },
     async delete(_workspaceId: WorkspaceId, id: TweetId) {
       double.removed.push(id)
@@ -170,6 +189,7 @@ describe('TweetPage', () => {
       open: async () => ok({ workspaceId: WS_ONE, path: '/one', title: 'One' }),
       publish: async () => ok(post('x')),
       edit: async () => ok(post('x')),
+      comment: async () => ok(post('x')),
       delete: async () => ok(true),
       image: async () => ok<TweetImagePayload>({ mediaType: 'image/png', data: '' }),
     }, t)
@@ -214,6 +234,7 @@ describe('TweetPage', () => {
       open: async () => ok({ workspaceId: WS_ONE, path: '/one', title: 'One' }),
       publish: async () => ok(post('x')),
       edit: async () => ok(post('x')),
+      comment: async () => ok(post('x')),
       delete: async () => ok(true),
       image: async () => new Promise(() => {}),
     }, t)
@@ -361,6 +382,68 @@ describe('TweetPage', () => {
     expect((within(view.container.querySelector('article')!).getByText('post.save').closest('button') as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(within(view.container.querySelector('article')!).getByText('post.cancel'))
     expect(view.container.querySelector('article')!.querySelector('textarea')).toBeNull()
+  })
+
+  it('renders comments under a post and appends submitted ones unlimited', async () => {
+    const commented = post('tweet-commented', {
+      comments: [commentRow('already here', Date.now() - 5_000)],
+    })
+    const { remote, view } = mount([commented])
+    await flush()
+    const card = view.container.querySelector('article')!
+    expect(within(card).getByText('already here')).toBeTruthy()
+    expect(within(card).getByLabelText('comment.section')).toBeTruthy()
+    const input = within(card).getByPlaceholderText('comment.placeholder') as HTMLInputElement
+    const submit = within(card).getByText('comment.submit').closest('button')!
+    expect(submit.disabled).toBe(true)
+    fireEvent.change(input, { target: { value: 'fresh note' } })
+    expect(submit.disabled).toBe(false)
+    fireEvent.click(submit)
+    await flush()
+    const updated = view.container.querySelector('article')!
+    expect(within(updated).getByText('fresh note')).toBeTruthy()
+    expect((within(updated).getByPlaceholderText('comment.placeholder') as HTMLInputElement).value).toBe('')
+    const again = within(updated).getByPlaceholderText('comment.placeholder')
+    fireEvent.change(again, { target: { value: 'one more' } })
+    fireEvent.keyDown(again, { key: 'Enter' })
+    await flush()
+    expect(remote.commented).toEqual(['fresh note', 'one more'])
+    expect(within(view.container.querySelector('article')!).getByText('one more')).toBeTruthy()
+  })
+
+  it('folds a long comment list to the newest three until expanded', async () => {
+    const many = post('tweet-many-comments', {
+      comments: [1, 2, 3, 4, 5].map(index => commentRow(`note ${index}`)),
+    })
+    const { view } = mount([many])
+    await flush()
+    const card = view.container.querySelector('article')!
+    expect(within(card).queryByText('note 1')).toBeNull()
+    expect(within(card).queryByText('note 2')).toBeNull()
+    expect(within(card).getByText('note 3')).toBeTruthy()
+    expect(within(card).getByText('note 4')).toBeTruthy()
+    expect(within(card).getByText('note 5')).toBeTruthy()
+    fireEvent.click(within(card).getByText('comment.expand:{"count":5}'))
+    await flush()
+    const opened = view.container.querySelector('article')!
+    expect(within(opened).getByText('note 1')).toBeTruthy()
+    expect(within(opened).getByText('note 2')).toBeTruthy()
+    fireEvent.click(within(opened).getByText('comment.collapse'))
+    await flush()
+    const folded = view.container.querySelector('article')!
+    expect(within(folded).queryByText('note 1')).toBeNull()
+    expect(within(folded).getByText('note 5')).toBeTruthy()
+  })
+
+  it('shows every comment without a fold control when there are three or fewer', async () => {
+    const few = post('tweet-few-comments', {
+      comments: [1, 2, 3].map(index => commentRow(`note ${index}`)),
+    })
+    const { view } = mount([few])
+    await flush()
+    const card = view.container.querySelector('article')!
+    expect(within(card).queryByText(/^comment\.expand/)).toBeNull()
+    for (const index of [1, 2, 3]) expect(within(card).getByText(`note ${index}`)).toBeTruthy()
   })
 
   it('deletes a post after inline confirmation', async () => {

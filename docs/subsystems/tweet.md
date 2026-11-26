@@ -6,15 +6,17 @@ Experimental personal microblog has two roles: the [panel package](../../package
 
 ## Workspace-local store
 
-Every request names one registered Workspace by id, and all data lives inside that Workspace at `.dsh/tweet/`: one JSON record per post under `posts/`, content-addressed image bytes under `objects/` named `<sha256>.<ext>`, and `index.json` holding publish order. File replaces are write-temp-then-rename and mutations of one root serialize through a per-root chain, so concurrent Remote calls cannot interleave writes. Reads treat the directory as the source of truth — a post file missing from the index after a crash between the two publish writes still lists — while the index only breaks `createdAt` ties in publish order. Invalid post files are skipped and kept; an invalid index fails the read loudly.
+Every request names one registered Workspace by id, and all data lives inside that Workspace at `.dsh/tweet/`: one JSON record per post — its text, image references, and comments — under `posts/`, content-addressed image bytes under `objects/` named `<sha256>.<ext>`, and `index.json` holding publish order. File replaces are write-temp-then-rename and mutations of one root serialize through a per-root chain, so concurrent Remote calls cannot interleave writes. Reads treat the directory as the source of truth — a post file missing from the index after a crash between the two publish writes still lists — while the index only breaks `createdAt` ties in publish order. Invalid post files are skipped and kept; an invalid index fails the read loudly.
 
-## Posts and images
+## Posts, images, and comments
 
 A post is plain text plus separately laid out images; the two are independent record fields and the page renders them as separate blocks, so no mixing path exists. `Tweet` carries the publish time and an optional edit time; the feed always lists `createdAt` descending, newest first, and an edit rewrites only the text without reordering. `PublishTweetRequest` accepts PNG, JPEG, WebP, and GIF images as base64 and stores the bytes as-is; identical bytes deduplicate onto one object. Image reads return the recorded media type and base64 bytes over the Remote.
 
+Comments are one more field of the post record: `AddTweetCommentRequest` appends one comment — plain text with its own identity and time — by atomically rewriting the record, so a post's comment list is only ever whole. Comments have no count limit, list oldest first, and deleting the post removes them with it; a legacy record without the field reads as zero comments, and the field lands with the first append.
+
 ## Panel behavior
 
-The browser page keeps the composer fixed — a text area and a staged-image strip as separate blocks, fed by the file picker or pasted clipboard images — above the scrolling feed. Long text folds to three lines with an expand control, deletion asks for inline confirmation, and the Workspace selector's choice persists in localStorage. Blob URLs cache loaded images per object name; disposal revokes them.
+The browser page keeps the composer fixed — a text area and a staged-image strip as separate blocks, fed by the file picker or pasted clipboard images — above the scrolling feed. Below every post's meta row sits its comment list, oldest first, with an input that appends one more on Enter or button, unlimited in count; a post with more than three comments folds to the newest three until expanded. Long text folds to three lines with an expand control, deletion asks for inline confirmation, and the Workspace selector's choice persists in localStorage. Blob URLs cache loaded images per object name; disposal revokes them.
 
 ## Design rationale
 
@@ -70,6 +72,16 @@ Serves the tweet panel. Each method admits the named Workspace, then reads or mu
  * @throws {RemoteError} `tweet/unknown-workspace`, `tweet/empty-post`, or `tweet/post-not-found`.
  */
 @Remote('edit') async edit(request: EditTweetRequest): Promise<Tweet>
+
+/**
+ * Append one comment under a post. Comments are unlimited: every accepted
+ * request appends one more, oldest first, and deleting the post removes its
+ * comments with it.
+ * @param request - target Workspace, post identity, and comment text.
+ * @returns the updated post with its comments.
+ * @throws {RemoteError} `tweet/unknown-workspace`, `tweet/empty-comment`, or `tweet/post-not-found`.
+ */
+@Remote('comment') async comment(request: AddTweetCommentRequest): Promise<Tweet>
 
 /**
  * Delete one post. Idempotent: an unknown id resolves `false`.

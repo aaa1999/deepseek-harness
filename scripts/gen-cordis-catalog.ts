@@ -579,6 +579,7 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   Tweet: 'tweet.md',
   PublishTweetRequest: 'tweet.md',
   EditTweetRequest: 'tweet.md',
+  AddTweetCommentRequest: 'tweet.md',
   TweetImageRequest: 'tweet.md',
   TweetImagePayload: 'tweet.md',
   TweetOpenRequest: 'tweet.md',

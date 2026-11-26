@@ -1,9 +1,10 @@
 /**
  * File-backed tweet store under one admitted data root
- * `<workspace>/.dsh/tweet/`: per-post records in `posts/`,
- * content-addressed image bytes in `objects/`, and publish order in
- * `index.json`. Every mutation is serialized per root and every file replace
- * is write-temp-then-rename, so a crashed process never leaves a torn file.
+ * `<workspace>/.dsh/tweet/`: per-post records (text, images, and the post's
+ * comments) in `posts/`, content-addressed image bytes in `objects/`, and
+ * publish order in `index.json`. Every mutation is serialized per root and
+ * every file replace is write-temp-then-rename, so a crashed process never
+ * leaves a torn file.
  *
  * A post file missing from `index.json` (a crash between its two writes)
  * still lists: reads treat the directory as the source of truth and the index
@@ -18,7 +19,7 @@ import { join } from 'node:path'
 import { Buffer } from 'node:buffer'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import type { TweetId, TweetMediaType } from './types.ts'
+import type { TweetCommentId, TweetId, TweetMediaType } from './types.ts'
 import { extensionOf, mediaTypeOf, tweetIndex, tweetRecord } from './records.ts'
 import type { TweetRecord } from './records.ts'
 import { admitDataFile, admitObjectName } from './paths.ts'
@@ -186,6 +187,7 @@ export function createPost(root: string, input: StorePostInput): Promise<TweetRe
         id: brandString<TweetId>(`tweet-${randomUUID()}`),
         text: input.text,
         images,
+        comments: [],
         createdAt: input.now,
       }
       await writeFileAtomic(admitDataFile(root, `posts/${record.id}.json`), `${JSON.stringify(record)}\n`)
@@ -220,6 +222,32 @@ export function editPost(root: string, id: TweetId, text: string, now: number): 
       throw new RemoteError('tweet/post-not-found', `post '${id}' not found`, { id })
     }
     const next: TweetRecord = { ...record, text, updatedAt: now }
+    await writeFileAtomic(absolute, `${JSON.stringify(next)}\n`)
+    return next
+  })
+}
+
+/**
+ * Append one comment under a post: the record's comment list grows by one,
+ * with no count limit, and the whole record is replaced atomically.
+ * @param root - admitted data root.
+ * @param id - post identity.
+ * @param text - comment text, already trimmed and non-empty.
+ * @param now - comment instant.
+ * @returns the updated record.
+ * @throws {RemoteError} `tweet/post-not-found` when no record file exists.
+ */
+export function addComment(root: string, id: TweetId, text: string, now: number): Promise<TweetRecord> {
+  return serialized(root, async () => {
+    const absolute = admitDataFile(root, `posts/${id}.json`)
+    const record = await readPostRecord(absolute)
+    if (record === undefined) {
+      throw new RemoteError('tweet/post-not-found', `post '${id}' not found`, { id })
+    }
+    const next: TweetRecord = {
+      ...record,
+      comments: [...record.comments, { id: brandString<TweetCommentId>(`comment-${randomUUID()}`), text, createdAt: now }],
+    }
     await writeFileAtomic(absolute, `${JSON.stringify(next)}\n`)
     return next
   })
