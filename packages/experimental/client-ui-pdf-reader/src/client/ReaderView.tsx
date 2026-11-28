@@ -150,7 +150,7 @@ export function ReaderView({
       lifetime.abort()
       void session?.dispose()
     }
-  }, [bookId, open?.ready]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [bookId, open?.ready])
 
   // Render the current page; the text layer builds once per page and scales with zoom.
   useEffect(() => {
@@ -196,7 +196,7 @@ export function ReaderView({
       if (!lifetime.signal.aborted) setFailure(errorText(error))
     })
     return () => { lifetime.abort() }
-  }, [document$, page, zoom]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [document$, page, zoom])
 
   // Release the text layer with the view.
   useEffect(() => () => {
@@ -227,7 +227,7 @@ export function ReaderView({
     repaintHighlights()
     // The painted rectangles are snapshot geometry: every zoom step and render
     // must repaint them, or the markers drift off their words.
-  }, [repaintHighlights, renderTick, zoom]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [repaintHighlights, renderTick, zoom])
 
   // Page-box resizes (pane width changes, fit-mode reflows) also invalidate the
   // snapshot geometry, even when no render tick follows them.
@@ -250,7 +250,7 @@ export function ReaderView({
       : Math.min(3, Math.max(0.5, (pane.clientWidth - 48) / base.width))
     if (Math.abs(fitted - open.zoom) < 0.01) return
     setZoom(fitted)
-  }, [fitMode, base, open?.zoom, mode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fitMode, base, open?.zoom, mode])
 
   /** Leave fit mode on manual zoom; re-arm it on a fresh book. */
   const manualZoom = (next: number): void => {
@@ -275,7 +275,7 @@ export function ReaderView({
     }
     pane.addEventListener('wheel', onWheel, { passive: false })
     return () => { pane.removeEventListener('wheel', onWheel) }
-  }, [open?.zoom]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open?.zoom])
 
   /** The selection target of the shared context menu, or undefined outside the text layer. */
   const capture = (): PdfSelectionValue | undefined => {

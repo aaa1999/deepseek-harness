@@ -27,20 +27,20 @@ id: 2026-11-14-amend-source
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-11-05-timeline-priority-notice"
-    after: "75f4c93b44a5a231de6c57857be01b1140dcac5fd045b51f7c7948979e496a45"
+    previous: "2026-11-19-cua-input-notices"
+    after: "dedc5e5861ebce3d34bf730897a1a89953485f39c893aefffec6b8c89f2f1c5d"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-11-05-timeline-priority-notice"
-    after: "78d59e50904fa0771d231bfe54c131c5753e2dc3d60f2e854ba26e430b695892"
+    previous: "2026-11-19-cua-input-notices"
+    after: "da0640ce2ea79de2b71ff682e63c8d096448bb2977d63cd7e4ef376c646a4826"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-11-05-timeline-priority-notice"
-    after: "b451ec63ddb35802cc6f47df1d3a18622157bab598c815579aee39e8e55ad125"
+    previous: "2026-11-19-cua-input-notices"
+    after: "0c07cc9b3f0dad09403b3093791afb0b80556455fa571ae59c926f25fb302761"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-11-05-timeline-priority-notice"
-    after: "0c392ac299d07b4d77d68c320e9ece80fd30637a1f150d7cbc121a3096026b80"
+    previous: "2026-11-19-cua-input-notices"
+    after: "150e301dbc68b105a6a52d1aef5d088562dd82a32e79b483e7225a8249b599cc"
     decision: same-version
 ```
 

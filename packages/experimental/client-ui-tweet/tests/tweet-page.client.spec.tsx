@@ -402,7 +402,7 @@ describe('TweetPage', () => {
     await flush()
     const updated = view.container.querySelector('article')!
     expect(within(updated).getByText('fresh note')).toBeTruthy()
-    expect((within(updated).getByPlaceholderText('comment.placeholder') as HTMLInputElement).value).toBe('')
+    expect(within(updated).getByPlaceholderText<HTMLInputElement>('comment.placeholder').value).toBe('')
     const again = within(updated).getByPlaceholderText('comment.placeholder')
     fireEvent.change(again, { target: { value: 'one more' } })
     fireEvent.keyDown(again, { key: 'Enter' })
